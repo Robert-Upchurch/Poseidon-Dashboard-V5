@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J1 Housing Finder — Direct Owner Rentals</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" onerror="this.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css'" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        if (typeof L === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"><\/script>');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== THEME VARIABLES ===== */
+        :root {
+            --transition-speed: 0.3s;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --bg-header: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #334155;
+            --border-hover: #475569;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-bg: rgba(99, 102, 241, 0.15);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.4);
+            --map-filter: brightness(0.85) contrast(1.1) saturate(0.9);
+            --badge-craigslist: #8b5cf6;
+            --badge-airbnb: #f43f5e;
+            --badge-vrbo: #0ea5e9;
+            --badge-owner: #10b981;
+            --stat-bg: rgba(99, 102, 241, 0.1);
+            --hover-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            --bg-header: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-bg: rgba(99, 102, 241, 0.08);
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
+            --map-filter: none;
+            --badge-craigslist: #7c3aed;
+            --badge-airbnb: #e11d48;
+            --badge-vrbo: #0284c7;
+            --badge-owner: #059669;
+            --stat-bg: rgba(99, 102, 241, 0.06);
+            --hover-bg: rgba(0, 0, 0, 0.03);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background var(--transition-speed), color var(--transition-speed);
+            line-height: 1.5;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: var(--bg-header);
+            color: #f1f5f9;
+            padding: 1.25rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-icon {
+            font-size: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header-sub {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #f1f5f9;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn-refresh {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #f1f5f9;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* ===== FILTERS BAR ===== */
+        .filters-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: flex-end;
+            transition: background var(--transition-speed), border var(--transition-speed);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .filter-group label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            min-width: 140px;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+
+        .filter-group input[type="text"] {
+            min-width: 220px;
+        }
+
+        .btn-search {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s;
+            height: 36px;
+            align-self: flex-end;
+        }
+
+        .btn-search:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        /* ===== SOURCE TABS ===== */
+        .source-tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            transition: background var(--transition-speed);
+        }
+
+        .source-tab {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .source-tab:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .source-tab.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .source-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot-all { background: var(--accent); }
+        .dot-craigslist { background: var(--badge-craigslist); }
+        .dot-airbnb { background: var(--badge-airbnb); }
+        .dot-vrbo { background: var(--badge-vrbo); }
+        .dot-owner { background: var(--badge-owner); }
+
+        /* ===== MAIN LAYOUT ===== */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: calc(100vh - 260px);
+            min-height: 500px;
+        }
+
+        /* ===== MAP ===== */
+        .map-container {
+            position: relative;
+            height: 100%;
+            min-height: 400px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            filter: var(--map-filter);
+            transition: filter var(--transition-speed);
+        }
+
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            z-index: 500;
+            box-shadow: var(--shadow);
+            font-size: 0.75rem;
+        }
+
+        .map-legend h4 {
+            margin-bottom: 0.4rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.15rem 0;
+            color: var(--text-primary);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* ===== WORK ADDRESS DISTANCE BAR ===== */
+        .distance-bar {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            transition: background var(--transition-speed);
+        }
+
+        .distance-bar label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .distance-bar input {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            flex: 1;
+            max-width: 350px;
+            font-family: inherit;
+        }
+
+        .distance-bar input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+
+        .distance-result {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .distance-chip {
+            background: var(--accent-bg);
+            color: var(--accent);
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* ===== LISTINGS PANEL ===== */
+        .listings-panel {
+            overflow-y: auto;
+            padding: 1rem;
+            background: var(--bg-primary);
+            transition: background var(--transition-speed);
+        }
+
+        .listings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0 0.25rem;
+        }
+
+        .listings-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .listings-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .sort-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.35rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-family: inherit;
+        }
+
+        /* ===== LISTING CARD ===== */
+        .listing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .listing-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        .listing-card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-bg);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .source-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .badge-craigslist { background: rgba(139,92,246,0.15); color: var(--badge-craigslist); }
+        .badge-airbnb { background: rgba(244,63,94,0.15); color: var(--badge-airbnb); }
+        .badge-vrbo { background: rgba(14,165,233,0.15); color: var(--badge-vrbo); }
+        .badge-owner { background: rgba(16,185,129,0.15); color: var(--badge-owner); }
+
+        .card-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .card-price span {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .card-address {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .card-details {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .card-utilities {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .utility-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .utility-yes {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .utility-no {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--text-muted);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-tag {
+            background: var(--hover-bg);
+            color: var(--text-secondary);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .card-distance {
+            font-size: 0.78rem;
+            color: var(--accent);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .card-link {
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid var(--accent-bg);
+            transition: all 0.2s;
+        }
+
+        .card-link:hover {
+            background: var(--accent-bg);
+        }
+
+        /* ===== SCROLLBAR ===== */
+        .listings-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .listings-panel::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        .listings-panel::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* ===== NO RESULTS ===== */
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .no-results-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .map-container {
+                height: 350px;
+            }
+            .listings-panel {
+                max-height: 60vh;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+            .filters-bar {
+                padding: 0.75rem 1rem;
+            }
+            .filter-group select,
+            .filter-group input {
+                min-width: 110px;
+            }
+        }
+
+        /* ===== TIMESTAMP ===== */
+        .updated-time {
+            font-size: 0.65rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <span class="header-icon">🏠</span>
+            <div>
+                <h1>J1 Housing Finder</h1>
+                <div class="header-sub">Direct Owner Rentals — 6 &amp; 12 Month Leases</div>
+            </div>
+        </div>
+        <div class="header-stats">
+            <div class="stat-box">
+                <div class="stat-num" id="stat-listings">0</div>
+                <div class="stat-label">Listings</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-markets">0</div>
+                <div class="stat-label">Markets</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-sources">4</div>
+                <div class="stat-label">Sources</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="updated-time" id="updated-time"></div>
+            <button class="btn-refresh" onclick="refreshData()">&#x21bb; Refresh</button>
+            <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle" title="Toggle light/dark mode">&#x263E;</button>
+        </div>
+    </div>
+
+    <!-- FILTERS BAR -->
+    <div class="filters-bar">
+        <div class="filter-group">
+            <label>City</label>
+            <select id="filter-city" onchange="onCityChange()">
+                <option value="">All Cities</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Area / Neighborhood</label>
+            <select id="filter-area">
+                <option value="">All Areas</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Bedrooms</label>
+            <select id="filter-beds">
+                <option value="">Any</option>
+                <option value="0">Studio</option>
+                <option value="1">1 BR</option>
+                <option value="2">2 BR</option>
+                <option value="3">3 BR</option>
+                <option value="4">4+ BR</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Bathrooms</label>
+            <select id="filter-baths">
+                <option value="">Any</option>
+                <option value="1">1 BA</option>
+                <option value="2">2 BA</option>
+                <option value="3">3+ BA</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Max Price</label>
+            <select id="filter-price">
+                <option value="">Any</option>
+                <option value="750">$750/mo</option>
+                <option value="1000">$1,000/mo</option>
+                <option value="1250">$1,250/mo</option>
+                <option value="1500">$1,500/mo</option>
+                <option value="2000">$2,000/mo</option>
+                <option value="2500">$2,500/mo</option>
+                <option value="3000">$3,000/mo</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Internet</label>
+            <select id="filter-internet">
+                <option value="">Any</option>
+                <option value="included">Included</option>
+                <option value="not-included">Not Included</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Electricity</label>
+            <select id="filter-electric">
+                <option value="">Any</option>
+                <option value="included">Included</option>
+                <option value="not-included">Not Included</option>
+            </select>
+        </div>
+        <button class="btn-search" onclick="applyFilters()">&#x1F50D; Search</button>
+    </div>
+
+    <!-- SOURCE TABS -->
+    <div class="source-tabs">
+        <button class="source-tab active" data-source="all" onclick="filterSource('all', this)">
+            <span class="source-dot dot-all"></span> All Listings
+        </button>
+        <button class="source-tab" data-source="craigslist" onclick="filterSource('craigslist', this)">
+            <span class="source-dot dot-craigslist"></span> Craigslist
+        </button>
+        <button class="source-tab" data-source="airbnb" onclick="filterSource('airbnb', this)">
+            <span class="source-dot dot-airbnb"></span> Airbnb
+        </button>
+        <button class="source-tab" data-source="vrbo" onclick="filterSource('vrbo', this)">
+            <span class="source-dot dot-vrbo"></span> Vrbo
+        </button>
+        <button class="source-tab" data-source="owner" onclick="filterSource('owner', this)">
+            <span class="source-dot dot-owner"></span> Rent by Owner
+        </button>
+    </div>
+
+    <!-- MAIN LAYOUT: MAP + LISTINGS -->
+    <div class="main-layout">
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-legend">
+                <h4>Map Legend</h4>
+                <div class="legend-item"><span style="color:#ef4444;font-size:14px;line-height:10px;">★</span> Host Company</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span> Miami / Fort Lauderdale</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span> Orlando / Kissimmee</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#f97316"></span> Dallas / DFW</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#a855f7"></span> Fayetteville / Syracuse</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#ec4899"></span> Atlanta</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#06b6d4"></span> Chicago</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#eab308"></span> San Francisco / LA</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#14b8a6"></span> Seattle</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#f43f5e"></span> Las Vegas</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6"></span> New Orleans / Nashville</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#64748b"></span> DC / Boston / Charlotte</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#d97706"></span> Denver / Phoenix</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#6366f1"></span> Other Cities</div>
+            </div>
+        </div>
+        <div class="listings-panel" id="listings-panel">
+            <div class="listings-header">
+                <div>
+                    <h3>Available Rentals</h3>
+                    <span class="listings-count" id="listings-count"></span>
+                </div>
+                <select class="sort-select" id="sort-select" onchange="applyFilters()">
+                    <option value="price-asc">Price: Low → High</option>
+                    <option value="price-desc">Price: High → Low</option>
+                    <option value="beds-desc">Bedrooms: Most</option>
+                    <option value="distance">Distance: Nearest</option>
+                </select>
+            </div>
+            <div id="listings-container"></div>
+        </div>
+    </div>
+
+    <!-- WORK ADDRESS DISTANCE BAR -->
+    <div class="distance-bar">
+        <label>&#x1F4CD; Work Address</label>
+        <input type="text" id="work-address" placeholder="Enter restaurant, hotel, or employer address..." onkeydown="if(event.key==='Enter') calcDistances()">
+        <button class="btn-search" onclick="calcDistances()">Calculate Distances</button>
+        <div class="distance-result" id="distance-result"></div>
+    </div>
+
+<script>
+// ===== TOP 100 US CITIES =====
+const TOP_CITIES = [
+    {name:"New York, NY",lat:40.7128,lng:-73.9960,areas:["Manhattan","Brooklyn","Queens","Bronx","Staten Island","Harlem","Midtown","Williamsburg"]},
+    {name:"Los Angeles, CA",lat:34.0522,lng:-118.2437,areas:["Hollywood","Downtown","Santa Monica","Venice","Koreatown","Silver Lake","Glendale","Pasadena"]},
+    {name:"Chicago, IL",lat:41.8781,lng:-87.6298,areas:["Loop","Lincoln Park","Wicker Park","Hyde Park","Lakeview","Pilsen","Logan Square"]},
+    {name:"Houston, TX",lat:29.7604,lng:-95.3698,areas:["Downtown","Midtown","Montrose","Heights","Galleria","Medical Center","Katy"]},
+    {name:"Phoenix, AZ",lat:33.4484,lng:-112.074,areas:["Downtown","Scottsdale","Tempe","Mesa","Chandler","Gilbert","Arcadia"]},
+    {name:"Philadelphia, PA",lat:39.9526,lng:-75.1652,areas:["Center City","University City","Old City","Fishtown","Manayunk","South Philly"]},
+    {name:"San Antonio, TX",lat:29.4241,lng:-98.4936,areas:["Downtown","Alamo Heights","Stone Oak","Medical Center","Southtown"]},
+    {name:"San Diego, CA",lat:32.7157,lng:-117.1611,areas:["Downtown","Pacific Beach","La Jolla","Hillcrest","North Park","Mission Valley"]},
+    {name:"Dallas, TX",lat:32.7767,lng:-96.797,areas:["Downtown","Uptown","Deep Ellum","Oak Lawn","Bishop Arts","Addison","Plano","Irving"]},
+    {name:"San Jose, CA",lat:37.3382,lng:-121.8863,areas:["Downtown","Willow Glen","Santana Row","Campbell","Milpitas"]},
+    {name:"Austin, TX",lat:30.2672,lng:-97.7431,areas:["Downtown","South Congress","East Austin","Domain","Cedar Park","Round Rock"]},
+    {name:"Jacksonville, FL",lat:30.3322,lng:-81.6557,areas:["Downtown","Riverside","San Marco","Beaches","Southside","Mandarin"]},
+    {name:"Fort Worth, TX",lat:32.7555,lng:-97.3308,areas:["Downtown","Sundance Square","TCU Area","Southlake","Arlington"]},
+    {name:"Columbus, OH",lat:39.9612,lng:-82.9988,areas:["Downtown","Short North","German Village","Clintonville","Dublin","Westerville"]},
+    {name:"Charlotte, NC",lat:35.2271,lng:-80.8431,areas:["Uptown","South End","NoDa","Plaza Midwood","Dilworth","Ballantyne"]},
+    {name:"Indianapolis, IN",lat:39.7684,lng:-86.1581,areas:["Downtown","Broad Ripple","Fountain Square","Carmel","Fishers"]},
+    {name:"San Francisco, CA",lat:37.7749,lng:-122.4194,areas:["SOMA","Mission","Marina","Castro","Sunset","Richmond","Nob Hill"]},
+    {name:"Seattle, WA",lat:47.6062,lng:-122.3321,areas:["Capitol Hill","Ballard","Fremont","Queen Anne","South Lake Union","Bellevue"]},
+    {name:"Denver, CO",lat:39.7392,lng:-104.9903,areas:["Downtown","LoDo","Capitol Hill","Cherry Creek","Highlands","RiNo","Aurora"]},
+    {name:"Washington, DC",lat:38.9072,lng:-77.0369,areas:["Capitol Hill","Georgetown","Dupont Circle","Adams Morgan","Navy Yard","Foggy Bottom"]},
+    {name:"Nashville, TN",lat:36.1627,lng:-86.7816,areas:["Downtown","East Nashville","The Gulch","Germantown","12 South","Music Row"]},
+    {name:"Oklahoma City, OK",lat:35.4676,lng:-97.5164,areas:["Downtown","Midtown","Bricktown","Nichols Hills","Edmond","Norman"]},
+    {name:"El Paso, TX",lat:31.7619,lng:-106.485,areas:["Downtown","Westside","Eastside","Central","Upper Valley"]},
+    {name:"Boston, MA",lat:42.3601,lng:-71.0589,areas:["Back Bay","Beacon Hill","South End","Cambridge","Somerville","Allston","Fenway"]},
+    {name:"Portland, OR",lat:45.5152,lng:-122.6784,areas:["Pearl District","Alberta","Hawthorne","Division","St Johns","Sellwood"]},
+    {name:"Las Vegas, NV",lat:36.1699,lng:-115.1398,areas:["The Strip","Downtown","Summerlin","Henderson","Spring Valley"]},
+    {name:"Memphis, TN",lat:35.1495,lng:-90.049,areas:["Downtown","Midtown","Cooper-Young","East Memphis","Germantown"]},
+    {name:"Louisville, KY",lat:38.2527,lng:-85.7585,areas:["Downtown","NuLu","Highlands","Germantown","St Matthews"]},
+    {name:"Baltimore, MD",lat:39.2904,lng:-76.6122,areas:["Inner Harbor","Federal Hill","Fells Point","Canton","Mount Vernon"]},
+    {name:"Milwaukee, WI",lat:43.0389,lng:-87.9065,areas:["Downtown","Third Ward","East Side","Bay View","Wauwatosa"]},
+    {name:"Albuquerque, NM",lat:35.0844,lng:-106.6504,areas:["Downtown","Nob Hill","Old Town","Northeast Heights","Rio Rancho"]},
+    {name:"Tucson, AZ",lat:32.2226,lng:-110.9747,areas:["Downtown","University","Catalina Foothills","Midtown","Oro Valley"]},
+    {name:"Fresno, CA",lat:36.7378,lng:-119.7871,areas:["Downtown","Tower District","Fig Garden","Clovis","Northeast"]},
+    {name:"Sacramento, CA",lat:38.5816,lng:-121.4944,areas:["Downtown","Midtown","East Sacramento","Land Park","Elk Grove"]},
+    {name:"Mesa, AZ",lat:33.4152,lng:-111.8315,areas:["Downtown","East Mesa","Superstition Springs","Red Mountain"]},
+    {name:"Kansas City, MO",lat:39.0997,lng:-94.5786,areas:["Downtown","Power & Light","Westport","Plaza","Crossroads","Brookside"]},
+    {name:"Atlanta, GA",lat:33.749,lng:-84.388,areas:["Midtown","Buckhead","Virginia-Highland","Decatur","East Atlanta","Inman Park"]},
+    {name:"Omaha, NE",lat:41.2565,lng:-95.9345,areas:["Downtown","Midtown","Old Market","Dundee","Aksarben","West Omaha"]},
+    {name:"Colorado Springs, CO",lat:38.8339,lng:-104.8214,areas:["Downtown","Old Colorado City","Manitou Springs","Briargate","Northgate"]},
+    {name:"Raleigh, NC",lat:35.7796,lng:-78.6382,areas:["Downtown","North Hills","Cameron Village","Glenwood South","Cary"]},
+    {name:"Long Beach, CA",lat:33.7701,lng:-118.1937,areas:["Downtown","Belmont Shore","Bixby Knolls","Signal Hill"]},
+    {name:"Virginia Beach, VA",lat:36.8529,lng:-75.978,areas:["Oceanfront","Town Center","Hilltop","Great Neck"]},
+    {name:"Miami, FL",lat:25.7617,lng:-80.1918,areas:["Downtown","Brickell","Wynwood","Little Havana","Coral Gables","Coconut Grove","Miami Beach","Fort Lauderdale"]},
+    {name:"Oakland, CA",lat:37.8044,lng:-122.2712,areas:["Downtown","Jack London Square","Rockridge","Temescal","Lake Merritt"]},
+    {name:"Minneapolis, MN",lat:44.9778,lng:-93.265,areas:["Downtown","Uptown","Northeast","North Loop","St Paul","Dinkytown"]},
+    {name:"Tampa, FL",lat:27.9506,lng:-82.4572,areas:["Downtown","Ybor City","Channelside","South Tampa","Westchase","Brandon"]},
+    {name:"Tulsa, OK",lat:36.154,lng:-95.9928,areas:["Downtown","Brookside","Cherry Street","Midtown","South Tulsa"]},
+    {name:"Arlington, TX",lat:32.7357,lng:-97.1081,areas:["Entertainment District","Downtown","North Arlington","South Arlington"]},
+    {name:"New Orleans, LA",lat:29.9511,lng:-90.0715,areas:["French Quarter","Garden District","Marigny","Bywater","Uptown","Mid-City"]},
+    {name:"Orlando, FL",lat:28.5383,lng:-81.3792,areas:["Downtown","Thornton Park","Mills 50","Winter Park","Lake Nona","Kissimmee","International Drive"]},
+    {name:"Cleveland, OH",lat:41.4993,lng:-81.6944,areas:["Downtown","Ohio City","Tremont","University Circle","Lakewood"]},
+    {name:"Honolulu, HI",lat:21.3069,lng:-157.8583,areas:["Waikiki","Downtown","Ala Moana","Kailua","Manoa"]},
+    {name:"Pittsburgh, PA",lat:40.4406,lng:-79.9959,areas:["Downtown","South Side","Lawrenceville","Shadyside","Strip District","Oakland"]},
+    {name:"St. Louis, MO",lat:38.627,lng:-90.1994,areas:["Downtown","Central West End","Soulard","The Grove","Clayton"]},
+    {name:"Cincinnati, OH",lat:39.1031,lng:-84.512,areas:["Downtown","Over-the-Rhine","Clifton","Hyde Park","Mount Adams"]},
+    {name:"Irvine, CA",lat:33.6846,lng:-117.8265,areas:["Irvine Spectrum","University","Woodbridge","Tustin","Newport Beach"]},
+    {name:"Riverside, CA",lat:33.9533,lng:-117.3962,areas:["Downtown","Mission Inn","University","Canyon Crest","Moreno Valley"]},
+    {name:"Stockton, CA",lat:37.9577,lng:-121.2908,areas:["Downtown","Lincoln Village","Pacific","Brookside"]},
+    {name:"Corpus Christi, TX",lat:27.8006,lng:-97.3964,areas:["Downtown","Southside","Island","Portland","Flour Bluff"]},
+    {name:"Newark, NJ",lat:40.7357,lng:-74.1724,areas:["Downtown","Ironbound","University Heights","North Ward"]},
+    {name:"Anchorage, AK",lat:61.2181,lng:-149.9003,areas:["Downtown","Midtown","South Anchorage","Eagle River"]},
+    {name:"Lexington, KY",lat:38.0406,lng:-84.5037,areas:["Downtown","University","Chevy Chase","Hamburg","Palomar"]},
+    {name:"Henderson, NV",lat:36.0395,lng:-114.9817,areas:["Green Valley","Anthem","MacDonald Ranch","Lake Las Vegas"]},
+    {name:"St. Paul, MN",lat:44.9537,lng:-93.09,areas:["Downtown","Cathedral Hill","Highland Park","Grand Avenue","Lowertown"]},
+    {name:"Greensboro, NC",lat:36.0726,lng:-79.792,areas:["Downtown","Lindley Park","Fisher Park","Friendly","Lake Jeanette"]},
+    {name:"Buffalo, NY",lat:42.8864,lng:-78.8784,areas:["Downtown","Elmwood Village","Allentown","North Buffalo","Williamsville"]},
+    {name:"Plano, TX",lat:33.0198,lng:-96.6989,areas:["Downtown","Legacy West","Shops at Legacy","West Plano"]},
+    {name:"Lincoln, NE",lat:40.8136,lng:-96.7026,areas:["Downtown","Haymarket","South","Near South","East Campus"]},
+    {name:"Norfolk, VA",lat:36.8508,lng:-76.2859,areas:["Downtown","Ghent","Ocean View","Larchmont","Wards Corner"]},
+    {name:"Madison, WI",lat:43.0731,lng:-89.4012,areas:["Downtown","Capitol Square","Williamson","Tenney-Lapham","Hilldale"]},
+    {name:"Chandler, AZ",lat:33.3062,lng:-111.8413,areas:["Downtown","Ocotillo","Sun Groves","Gilbert"]},
+    {name:"Baton Rouge, LA",lat:30.4515,lng:-91.1871,areas:["Downtown","Mid City","Garden District","Southdowns","Perkins Rowe"]},
+    {name:"Durham, NC",lat:35.994,lng:-78.8986,areas:["Downtown","Brightleaf","American Tobacco","Duke","Southpoint"]},
+    {name:"Lubbock, TX",lat:33.5779,lng:-101.8552,areas:["Downtown","Tech Terrace","Southwest","Depot District"]},
+    {name:"Laredo, TX",lat:27.5036,lng:-99.5076,areas:["Downtown","North Laredo","Del Mar","Mines Road"]},
+    {name:"Winston-Salem, NC",lat:36.0999,lng:-80.2442,areas:["Downtown","West End","Ardmore","Reynolda","Hanes Mall"]},
+    {name:"Garland, TX",lat:32.9126,lng:-96.6389,areas:["Downtown","Firewheel","South Garland","North Garland"]},
+    {name:"Glendale, AZ",lat:33.5387,lng:-112.186,areas:["Downtown","Arrowhead","Westgate","Peoria"]},
+    {name:"Hialeah, FL",lat:25.8576,lng:-80.2781,areas:["Downtown","Palm Springs","Miami Lakes","Hialeah Gardens"]},
+    {name:"Reno, NV",lat:39.5296,lng:-119.8138,areas:["Downtown","Midtown","South Reno","Northwest","Sparks"]},
+    {name:"Chesapeake, VA",lat:36.7682,lng:-76.2875,areas:["Great Bridge","Greenbrier","Western Branch","Deep Creek"]},
+    {name:"Gilbert, AZ",lat:33.3528,lng:-111.789,areas:["Downtown","Val Vista","San Tan","Agritopia"]},
+    {name:"Irving, TX",lat:32.814,lng:-96.9489,areas:["Las Colinas","Valley Ranch","South Irving","Downtown"]},
+    {name:"North Las Vegas, NV",lat:36.1989,lng:-115.1175,areas:["Aliante","Eldorado","Downtown","North Valley"]},
+    {name:"Scottsdale, AZ",lat:33.4942,lng:-111.9261,areas:["Old Town","North Scottsdale","Arcadia","Fashion Square","Gainey Ranch"]},
+    {name:"Boise, ID",lat:43.615,lng:-116.2023,areas:["Downtown","North End","Boise Bench","Harris Ranch","Eagle"]},
+    {name:"Fremont, CA",lat:37.5485,lng:-121.9886,areas:["Centerville","Niles","Warm Springs","Irvington"]},
+    {name:"Richmond, VA",lat:37.5407,lng:-77.436,areas:["Downtown","Fan District","Carytown","Scott's Addition","Church Hill"]},
+    {name:"Spokane, WA",lat:47.6588,lng:-117.426,areas:["Downtown","South Hill","Browne's Addition","Perry","North Side"]},
+    {name:"San Bernardino, CA",lat:34.1083,lng:-117.2898,areas:["Downtown","Arrowhead","Hospitality Lane","North End"]},
+    {name:"Tacoma, WA",lat:47.2529,lng:-122.4443,areas:["Downtown","Stadium","Proctor","6th Ave","North End"]},
+    {name:"Fayetteville, NY",lat:43.03,lng:-76.0,areas:["Downtown","Manlius","DeWitt","East Syracuse","Jamesville"]},
+    {name:"Salt Lake City, UT",lat:40.7608,lng:-111.891,areas:["Downtown","Sugar House","9th & 9th","Capitol Hill","The Avenues"]},
+    {name:"Des Moines, IA",lat:41.5868,lng:-93.625,areas:["Downtown","East Village","Sherman Hill","Drake","Beaverdale"]},
+    {name:"Birmingham, AL",lat:33.5207,lng:-86.8025,areas:["Downtown","Five Points","Avondale","Lakeview","Homewood"]},
+    {name:"Rochester, NY",lat:43.1566,lng:-77.6088,areas:["Downtown","Park Avenue","South Wedge","NOTA","Brighton"]},
+    {name:"Modesto, CA",lat:37.6391,lng:-120.9969,areas:["Downtown","Village One","College Area","Scenic Drive"]},
+    {name:"Montgomery, AL",lat:32.3792,lng:-86.3077,areas:["Downtown","Cloverdale","Old Cloverdale","Eastdale","Dalraida"]},
+    {name:"Huntsville, AL",lat:34.7304,lng:-86.5861,areas:["Downtown","Five Points","Twickenham","Jones Valley","Research Park"]}
+];
+
+// ===== SAMPLE LISTINGS DATA =====
+const ALL_LISTINGS = [
+    // MIAMI / FLL
+    {id:1,source:"owner",price:1050,address:"6050 SW 44th Ter",city:"Miami, FL",area:"Coral Gables",beds:3,baths:1,sqft:1200,lat:25.726,lng:-80.283,tags:["Single Family","Fenced Yard"],utilities:{internet:false,electric:false},note:"Negotiate 6-12 mo, ~28 mi from Port Everglades"},
+    {id:2,source:"craigslist",price:1400,address:"2211 NW 2nd Ave",city:"Miami, FL",area:"Wynwood",beds:2,baths:1,sqft:850,lat:25.797,lng:-80.199,tags:["Apartment","Near Transit"],utilities:{internet:false,electric:false},note:"Walk to Wynwood Walls"},
+    {id:3,source:"airbnb",price:1800,address:"1450 Brickell Ave",city:"Miami, FL",area:"Brickell",beds:1,baths:1,sqft:650,lat:25.759,lng:-80.191,tags:["Furnished","Pool","Gym"],utilities:{internet:true,electric:true},note:"Monthly discount available"},
+    {id:4,source:"vrbo",price:2200,address:"350 Ocean Dr",city:"Miami, FL",area:"Miami Beach",beds:2,baths:2,sqft:900,lat:25.779,lng:-80.13,tags:["Ocean View","Furnished"],utilities:{internet:true,electric:true},note:"Min 30 night stay"},
+    {id:5,source:"owner",price:1100,address:"1320 NE 4th Ave",city:"Miami, FL",area:"Fort Lauderdale",beds:2,baths:1,sqft:950,lat:26.124,lng:-80.137,tags:["Duplex","Parking"],utilities:{internet:false,electric:true},note:"Owner direct, no deposit with J1 visa"},
+    {id:6,source:"craigslist",price:950,address:"4501 W Flagler St",city:"Miami, FL",area:"Little Havana",beds:1,baths:1,sqft:550,lat:25.767,lng:-80.242,tags:["Efficiency","Utilities Included"],utilities:{internet:true,electric:true},note:"Month-to-month OK"},
+
+    // ORLANDO
+    {id:7,source:"owner",price:1265,address:"Ocoee, FL",city:"Orlando, FL",area:"West Orlando",beds:3,baths:2,sqft:1400,lat:28.569,lng:-81.544,tags:["Unfurnished","Garage","New Appliances"],utilities:{internet:false,electric:false},note:"15 min to airport"},
+    {id:8,source:"airbnb",price:1650,address:"120 S Orange Ave",city:"Orlando, FL",area:"Downtown",beds:1,baths:1,sqft:700,lat:28.539,lng:-81.379,tags:["Furnished","Pool","Concierge"],utilities:{internet:true,electric:true},note:"Monthly rate, walkable downtown"},
+    {id:9,source:"craigslist",price:1100,address:"6325 International Dr",city:"Orlando, FL",area:"International Drive",beds:2,baths:1,sqft:900,lat:28.447,lng:-81.471,tags:["Near Theme Parks","Bus Route"],utilities:{internet:false,electric:false},note:"Close to Universal & SeaWorld"},
+    {id:10,source:"vrbo",price:1450,address:"8800 Kissimmee Blvd",city:"Orlando, FL",area:"Kissimmee",beds:3,baths:2,sqft:1300,lat:28.305,lng:-81.417,tags:["House","Pool","Near Disney"],utilities:{internet:true,electric:true},note:"Min 28 night stay, 10 min to Disney"},
+    {id:11,source:"owner",price:900,address:"460 N Bumby Ave",city:"Orlando, FL",area:"Mills 50",beds:1,baths:1,sqft:600,lat:28.556,lng:-81.348,tags:["Studio","Walkable","Near Restaurants"],utilities:{internet:false,electric:true},note:"Quiet neighborhood, J1 friendly"},
+
+    // DALLAS / DFW
+    {id:12,source:"owner",price:1200,address:"4500 Cedar Springs Rd",city:"Dallas, TX",area:"Uptown",beds:2,baths:1,sqft:900,lat:32.808,lng:-96.811,tags:["Apartment","Walk Score 85"],utilities:{internet:false,electric:false},note:"Near restaurants, J1 workers welcome"},
+    {id:13,source:"craigslist",price:850,address:"2920 Canton St",city:"Dallas, TX",area:"Deep Ellum",beds:1,baths:1,sqft:650,lat:32.783,lng:-96.777,tags:["Loft","Entertainment District"],utilities:{internet:false,electric:false},note:"Above music venue, vibrant area"},
+    {id:14,source:"airbnb",price:1550,address:"3201 McKinney Ave",city:"Dallas, TX",area:"Uptown",beds:1,baths:1,sqft:750,lat:32.806,lng:-96.804,tags:["Furnished","Rooftop","Modern"],utilities:{internet:true,electric:true},note:"Monthly discount, all utilities included"},
+    {id:15,source:"owner",price:1000,address:"350 W Pioneer Pkwy",city:"Dallas, TX",area:"Irving",beds:2,baths:2,sqft:1050,lat:32.828,lng:-96.964,tags:["Near DFW Airport","Parking"],utilities:{internet:false,electric:true},note:"Short drive to Las Colinas employers"},
+    {id:16,source:"vrbo",price:1750,address:"2200 Victory Ave",city:"Dallas, TX",area:"Downtown",beds:2,baths:2,sqft:1100,lat:32.789,lng:-96.809,tags:["Luxury","Furnished","Views"],utilities:{internet:true,electric:true},note:"Min 30 night, near American Airlines Center"},
+
+    // FAYETTEVILLE NY
+    {id:17,source:"owner",price:750,address:"32 Grover St",city:"Fayetteville, NY",area:"East Syracuse",beds:2,baths:1,sqft:1100,lat:43.046,lng:-76.063,tags:["Single Family","Fenced Yard","Garage"],utilities:{internet:false,electric:false},note:"LOWEST PRICE"},
+    {id:18,source:"craigslist",price:825,address:"114 Green St",city:"Fayetteville, NY",area:"Downtown",beds:1,baths:1,sqft:600,lat:43.03,lng:-76.004,tags:["Walk to Village","Updated"],utilities:{internet:false,electric:false},note:"Charming village location"},
+    {id:19,source:"owner",price:950,address:"250 Highbridge St",city:"Fayetteville, NY",area:"Manlius",beds:3,baths:1,sqft:1300,lat:43.0,lng:-75.97,tags:["Single Family","Large Lot"],utilities:{internet:false,electric:true},note:"Great for shared housing"},
+    {id:20,source:"airbnb",price:1100,address:"401 S Salina St",city:"Fayetteville, NY",area:"DeWitt",beds:2,baths:1,sqft:800,lat:43.04,lng:-76.08,tags:["Furnished","Utilities Included"],utilities:{internet:true,electric:true},note:"Monthly rate available"},
+
+    // ADDITIONAL CITIES WITH SAMPLE LISTINGS
+    {id:21,source:"craigslist",price:1300,address:"500 Peachtree St NE",city:"Atlanta, GA",area:"Midtown",beds:1,baths:1,sqft:700,lat:33.769,lng:-84.386,tags:["High Rise","Pool","Transit"],utilities:{internet:false,electric:false},note:"Near MARTA station"},
+    {id:22,source:"airbnb",price:1600,address:"200 Congress Ave",city:"Austin, TX",area:"Downtown",beds:1,baths:1,sqft:650,lat:30.265,lng:-97.744,tags:["Furnished","Rooftop"],utilities:{internet:true,electric:true},note:"Walk to 6th Street, monthly rate"},
+    {id:23,source:"owner",price:1150,address:"45 Fremont St",city:"San Francisco, CA",area:"SOMA",beds:0,baths:1,sqft:450,lat:37.79,lng:-122.4,tags:["Studio","Transit","Near Tech"],utilities:{internet:false,electric:false},note:"Close to BART"},
+    {id:24,source:"vrbo",price:2000,address:"150 E 2nd St",city:"Los Angeles, CA",area:"Downtown",beds:1,baths:1,sqft:750,lat:34.049,lng:-118.243,tags:["Loft","Furnished","Arts District"],utilities:{internet:true,electric:true},note:"Min 30 nights"},
+    {id:25,source:"craigslist",price:900,address:"3100 S Las Vegas Blvd",city:"Las Vegas, NV",area:"The Strip",beds:1,baths:1,sqft:550,lat:36.128,lng:-115.172,tags:["Furnished","Pool"],utilities:{internet:true,electric:true},note:"Extended stay available"},
+    {id:26,source:"owner",price:1050,address:"1800 N Bayshore Dr",city:"Tampa, FL",area:"Downtown",beds:2,baths:1,sqft:850,lat:27.957,lng:-82.454,tags:["Waterfront","Parking"],utilities:{internet:false,electric:true},note:"J1 visa holders welcome"},
+    {id:27,source:"airbnb",price:1400,address:"720 S Michigan Ave",city:"Chicago, IL",area:"Loop",beds:1,baths:1,sqft:650,lat:41.873,lng:-87.624,tags:["Lake View","Furnished","Transit"],utilities:{internet:true,electric:true},note:"Monthly rate, near Grant Park"},
+    {id:28,source:"craigslist",price:800,address:"4200 Magazine St",city:"New Orleans, LA",area:"Garden District",beds:1,baths:1,sqft:600,lat:29.929,lng:-90.091,tags:["Historic","Walkable"],utilities:{internet:false,electric:false},note:"Charming shotgun house"},
+    {id:29,source:"owner",price:975,address:"100 Broadway",city:"Nashville, TN",area:"Downtown",beds:1,baths:1,sqft:550,lat:36.162,lng:-86.777,tags:["Near Music Row","Walkable"],utilities:{internet:false,electric:true},note:"6-month lease, J1 friendly"},
+    {id:30,source:"vrbo",price:1500,address:"2100 4th Ave",city:"Seattle, WA",area:"Belltown",beds:1,baths:1,sqft:600,lat:47.614,lng:-122.348,tags:["Furnished","City View"],utilities:{internet:true,electric:true},note:"Min 30 nights, near Pike Place"},
+    {id:31,source:"craigslist",price:1100,address:"800 F St NW",city:"Washington, DC",area:"Capitol Hill",beds:1,baths:1,sqft:550,lat:38.897,lng:-77.022,tags:["Near Metro","Historic"],utilities:{internet:false,electric:false},note:"Walk to Capitol"},
+    {id:32,source:"owner",price:1250,address:"300 Boylston St",city:"Boston, MA",area:"Back Bay",beds:1,baths:1,sqft:500,lat:42.352,lng:-71.071,tags:["Brownstone","Near T"],utilities:{internet:true,electric:false},note:"Roommate welcome"},
+    {id:33,source:"airbnb",price:1350,address:"1200 16th St",city:"Denver, CO",area:"LoDo",beds:1,baths:1,sqft:680,lat:39.751,lng:-104.999,tags:["Furnished","Modern","Walkable"],utilities:{internet:true,electric:true},note:"Monthly discount, near Union Station"},
+    {id:34,source:"owner",price:850,address:"515 E Grant St",city:"Phoenix, AZ",area:"Downtown",beds:2,baths:1,sqft:800,lat:33.449,lng:-112.065,tags:["Casita","Parking","A/C"],utilities:{internet:false,electric:true},note:"Pool access, J1 friendly"},
+    {id:35,source:"craigslist",price:1150,address:"300 S Tryon St",city:"Charlotte, NC",area:"Uptown",beds:1,baths:1,sqft:650,lat:35.222,lng:-80.844,tags:["High Rise","Gym","Transit"],utilities:{internet:false,electric:false},note:"Near Lynx light rail"}
+];
+
+// ===== STATE =====
+let map, markers = [], workMarker = null, workCoords = null;
+let filteredListings = [...ALL_LISTINGS];
+let activeSource = 'all';
+let selectedListingId = null;
+
+// ===== INIT =====
+function init() {
+    populateCityDropdown();
+    try {
+        initMap();
+    } catch(e) {
+        console.warn('Map init failed (Leaflet may not have loaded):', e.message);
+        document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:0.9rem;padding:2rem;text-align:center;">Map unavailable — check your internet connection and reload.</div>';
+    }
+    applyFilters();
+    updateStats();
+    updateTimestamp();
+    applyStoredTheme();
+    // Ensure Leaflet recalculates map size after layout settles
+    if (map) setTimeout(function() { map.invalidateSize(); }, 200);
+}
+
+function applyStoredTheme() {
+    try {
+        const stored = localStorage.getItem('j1-housing-theme');
+        if (stored) {
+            document.documentElement.setAttribute('data-theme', stored);
+            document.getElementById('theme-toggle').textContent = stored === 'dark' ? '\u263E' : '\u2600';
+            // Sync map tiles with stored theme
+            if (map && stored === 'light') {
+                map.removeLayer(window.__darkTiles);
+                window.__lightTiles.addTo(map);
+            }
+        }
+    } catch(e) { /* localStorage unavailable on file:// in some browsers */ }
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    document.getElementById('theme-toggle').textContent = next === 'dark' ? '\u263E' : '\u2600';
+    try { localStorage.setItem('j1-housing-theme', next); } catch(e) {}
+    // Switch map tiles between dark and light
+    if (map) {
+        if (next === 'light') {
+            map.removeLayer(window.__darkTiles);
+            window.__lightTiles.addTo(map);
+        } else {
+            map.removeLayer(window.__lightTiles);
+            window.__darkTiles.addTo(map);
+        }
+        map.invalidateSize();
+    }
+}
+
+// ===== CITY DROPDOWN =====
+function populateCityDropdown() {
+    const sel = document.getElementById('filter-city');
+    TOP_CITIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        sel.appendChild(opt);
+    });
+}
+
+function onCityChange() {
+    const cityName = document.getElementById('filter-city').value;
+    const areaSel = document.getElementById('filter-area');
+    areaSel.innerHTML = '<option value="">All Areas</option>';
+    if (cityName) {
+        const city = TOP_CITIES.find(c => c.name === cityName);
+        if (city && city.areas) {
+            city.areas.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a;
+                opt.textContent = a;
+                areaSel.appendChild(opt);
+            });
+        }
+        // Pan map to city
+        if (city && map) map.flyTo([city.lat, city.lng], 11, { duration: 1 });
+    }
+    applyFilters();
+}
+
+// ===== MAP =====
+function initMap() {
+    map = L.map('map').setView([37.0902, -95.7129], 4);
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    window.__darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19
+    });
+    window.__lightTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19
+    });
+    if (theme === 'light') {
+        window.__lightTiles.addTo(map);
+    } else {
+        window.__darkTiles.addTo(map);
+    }
+}
+
+function getCityColor(city) {
+    const c = city.toLowerCase();
+    if (c.includes('miami') || c.includes('fort lauderdale') || c.includes('tampa')) return '#3b82f6'; // Blue - FL South
+    if (c.includes('orlando') || c.includes('kissimmee')) return '#22c55e'; // Green - FL Central
+    if (c.includes('dallas') || c.includes('austin') || c.includes('irving')) return '#f97316'; // Orange - TX
+    if (c.includes('fayetteville') || c.includes('syracuse')) return '#a855f7'; // Purple - NY
+    if (c.includes('atlanta')) return '#ec4899'; // Pink
+    if (c.includes('chicago')) return '#06b6d4'; // Cyan
+    if (c.includes('san francisco') || c.includes('los angeles')) return '#eab308'; // Yellow - CA
+    if (c.includes('seattle')) return '#14b8a6'; // Teal
+    if (c.includes('las vegas')) return '#f43f5e'; // Rose
+    if (c.includes('new orleans') || c.includes('nashville')) return '#8b5cf6'; // Violet
+    if (c.includes('washington') || c.includes('boston') || c.includes('charlotte')) return '#64748b'; // Slate
+    if (c.includes('denver') || c.includes('phoenix')) return '#d97706'; // Amber
+    return '#6366f1'; // Default indigo
+}
+
+function updateMapMarkers() {
+    if (!map) return;
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    filteredListings.forEach(listing => {
+        const color = getCityColor(listing.city);
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+
+        const sourceLabel = listing.source === 'owner' ? 'Rent by Owner' : listing.source.charAt(0).toUpperCase() + listing.source.slice(1);
+        const utilInfo = `Internet: ${listing.utilities.internet ? 'Yes' : 'No'} | Electric: ${listing.utilities.electric ? 'Yes' : 'No'}`;
+        const marker = L.marker([listing.lat, listing.lng], { icon })
+            .addTo(map)
+            .bindPopup(`<b>$${listing.price}/mo</b><br>${listing.address}<br><small>${listing.beds}BR/${listing.baths}BA — ${sourceLabel}</small><br><small>${utilInfo}</small>`);
+
+        marker.on('click', () => selectListing(listing.id));
+        markers.push(marker);
+    });
+
+    if (filteredListings.length > 0 && !document.getElementById('filter-city').value) {
+        const group = L.featureGroup(markers);
+        if (markers.length > 1) map.fitBounds(group.getBounds().pad(0.1));
+    }
+}
+
+// ===== FILTERS =====
+function applyFilters() {
+    const city = document.getElementById('filter-city').value;
+    const area = document.getElementById('filter-area').value;
+    const beds = document.getElementById('filter-beds').value;
+    const baths = document.getElementById('filter-baths').value;
+    const maxPrice = document.getElementById('filter-price').value;
+    const internet = document.getElementById('filter-internet').value;
+    const electric = document.getElementById('filter-electric').value;
+    const sort = document.getElementById('sort-select').value;
+
+    filteredListings = ALL_LISTINGS.filter(l => {
+        if (activeSource !== 'all' && l.source !== activeSource) return false;
+        if (city && l.city !== city) return false;
+        if (area && l.area !== area) return false;
+        if (beds !== '') {
+            const b = parseInt(beds);
+            if (b === 4) { if (l.beds < 4) return false; }
+            else { if (l.beds !== b) return false; }
+        }
+        if (baths !== '') {
+            const ba = parseInt(baths);
+            if (ba === 3) { if (l.baths < 3) return false; }
+            else { if (l.baths !== ba) return false; }
+        }
+        if (maxPrice && l.price > parseInt(maxPrice)) return false;
+        if (internet === 'included' && !l.utilities.internet) return false;
+        if (internet === 'not-included' && l.utilities.internet) return false;
+        if (electric === 'included' && !l.utilities.electric) return false;
+        if (electric === 'not-included' && l.utilities.electric) return false;
+        return true;
+    });
+
+    // Sort
+    if (sort === 'price-asc') filteredListings.sort((a, b) => a.price - b.price);
+    else if (sort === 'price-desc') filteredListings.sort((a, b) => b.price - a.price);
+    else if (sort === 'beds-desc') filteredListings.sort((a, b) => b.beds - a.beds);
+    else if (sort === 'distance' && workCoords) {
+        filteredListings.sort((a, b) => getDist(a.lat, a.lng) - getDist(b.lat, b.lng));
+    }
+
+    renderListings();
+    updateMapMarkers();
+    updateStats();
+}
+
+function filterSource(source, btn) {
+    activeSource = source;
+    document.querySelectorAll('.source-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+}
+
+// ===== RENDER LISTINGS =====
+function renderListings() {
+    const container = document.getElementById('listings-container');
+    const countEl = document.getElementById('listings-count');
+
+    if (filteredListings.length === 0) {
+        container.innerHTML = `<div class="no-results"><div class="no-results-icon">🔍</div><h3>No listings found</h3><p>Try adjusting your filters or selecting a different city.</p></div>`;
+        countEl.textContent = '0 listings';
+        return;
+    }
+
+    countEl.textContent = `Showing ${filteredListings.length} listing${filteredListings.length !== 1 ? 's' : ''}`;
+
+    container.innerHTML = filteredListings.map(l => {
+        const distHtml = workCoords
+            ? `<div class="card-distance">📍 ${getDist(l.lat, l.lng).toFixed(1)} mi driving · ~${getTime(l.lat, l.lng)} min</div>`
+            : '';
+        const sourceClass = `badge-${l.source}`;
+        const sourceLabel = l.source === 'owner' ? 'Rent by Owner' : l.source.charAt(0).toUpperCase() + l.source.slice(1);
+        const selected = l.id === selectedListingId ? 'selected' : '';
+        const links = getSourceLinks(l);
+
+        return `
+        <div class="listing-card ${selected}" onclick="selectListing(${l.id})" id="card-${l.id}">
+            <div class="card-top">
+                <span class="source-badge ${sourceClass}">${sourceLabel}</span>
+                <div class="card-price">$${l.price.toLocaleString()}<span>/mo</span></div>
+            </div>
+            <div class="card-address">${l.address}, ${l.city}</div>
+            <div class="card-details">
+                <span class="card-detail">🛏 ${l.beds === 0 ? 'Studio' : l.beds + ' BR'}</span>
+                <span class="card-detail">🚿 ${l.baths} BA</span>
+                ${l.sqft ? `<span class="card-detail">📐 ${l.sqft} sqft</span>` : ''}
+                <span class="card-detail">📍 ${l.area}</span>
+            </div>
+            <div class="card-utilities">
+                <span class="utility-badge ${l.utilities.internet ? 'utility-yes' : 'utility-no'}">📶 Internet ${l.utilities.internet ? 'Included' : 'Not Included'}</span>
+                <span class="utility-badge ${l.utilities.electric ? 'utility-yes' : 'utility-no'}">⚡ Electric ${l.utilities.electric ? 'Included' : 'Not Included'}</span>
+            </div>
+            <div class="card-tags">${l.tags.map(t => `<span class="card-tag">${t}</span>`).join('')}</div>
+            ${l.note ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.4rem;">💡 ${l.note}</div>` : ''}
+            ${distHtml}
+            <div class="card-actions">${links}</div>
+        </div>`;
+    }).join('');
+}
+
+// ===== DEEP LINKS =====
+function getSourceLinks(listing) {
+    const city = encodeURIComponent(listing.city.split(',')[0]);
+    const state = encodeURIComponent(listing.city.split(',')[1]?.trim() || '');
+    const beds = listing.beds;
+    const price = listing.price;
+
+    const clCity = city.toLowerCase().replace(/\s/g, '');
+    const craigslist = `https://${clCity}.craigslist.org/search/apa?min_bedrooms=${beds}&max_price=${price + 200}`;
+    const airbnb = `https://www.airbnb.com/s/${city}--${state}/homes?adults=1&min_bedrooms=${beds}&price_max=${Math.round(price * 1.3 / 30)}&monthly=true`;
+    const vrbo = `https://www.vrbo.com/search?destination=${city}%2C+${state}&adults=1&startDate=&endDate=`;
+    const owner = `https://www.rentbyowner.com/search?location=${city}+${state}`;
+
+    let links = '';
+    links += `<a href="${craigslist}" target="_blank" class="card-link" onclick="event.stopPropagation()">🟣 Craigslist</a>`;
+    links += `<a href="${airbnb}" target="_blank" class="card-link" onclick="event.stopPropagation()">🔴 Airbnb</a>`;
+    links += `<a href="${vrbo}" target="_blank" class="card-link" onclick="event.stopPropagation()">🔵 Vrbo</a>`;
+    links += `<a href="${owner}" target="_blank" class="card-link" onclick="event.stopPropagation()">🟢 RentByOwner</a>`;
+    return links;
+}
+
+// ===== SELECT LISTING =====
+function selectListing(id) {
+    selectedListingId = id;
+    const listing = ALL_LISTINGS.find(l => l.id === id);
+    if (listing && map) {
+        map.flyTo([listing.lat, listing.lng], 14, { duration: 0.8 });
+    }
+    // Re-render to update selection highlight
+    renderListings();
+}
+
+// ===== DISTANCE CALC =====
+function getDist(lat, lng) {
+    if (!workCoords) return 999;
+    const R = 3958.8; // Earth radius in miles
+    const dLat = (lat - workCoords.lat) * Math.PI / 180;
+    const dLng = (lng - workCoords.lng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(workCoords.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.3; // 1.3x for road vs straight line
+}
+
+function getTime(lat, lng) {
+    const miles = getDist(lat, lng);
+    return Math.round(miles * 2.5); // ~24 mph average city driving
+}
+
+function calcDistances() {
+    const address = document.getElementById('work-address').value.trim();
+    if (!address) return;
+
+    // Geocode using Nominatim
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.length === 0) {
+                document.getElementById('distance-result').innerHTML = '<span style="color:var(--danger)">Address not found. Try a more specific address.</span>';
+                return;
+            }
+            workCoords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+
+            // Place work marker on map
+            if (workMarker) map.removeLayer(workMarker);
+            const workIcon = L.divIcon({
+                className: 'work-marker',
+                html: `<div style="font-size:28px;color:#ef4444;text-shadow:0 2px 6px rgba(0,0,0,0.5);line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));">★</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+            workMarker = L.marker([workCoords.lat, workCoords.lng], { icon: workIcon })
+                .addTo(map)
+                .bindPopup(`<b>Host Company</b><br>${address}`)
+                .openPopup();
+
+            document.getElementById('distance-result').innerHTML =
+                `<span class="distance-chip">★ Host Company set</span>` +
+                `<span class="distance-chip">🚗 Distances shown on cards</span>` +
+                `<span class="distance-chip">🚌 ~${Math.round(getTime(filteredListings[0]?.lat || workCoords.lat, filteredListings[0]?.lng || workCoords.lng) * 1.5)} min transit avg</span>`;
+
+            applyFilters(); // Re-render with distances
+        })
+        .catch(() => {
+            document.getElementById('distance-result').innerHTML = '<span style="color:var(--danger)">Geocoding error. Please try again.</span>';
+        });
+}
+
+// ===== STATS =====
+function updateStats() {
+    document.getElementById('stat-listings').textContent = filteredListings.length;
+    const cities = new Set(filteredListings.map(l => l.city));
+    document.getElementById('stat-markets').textContent = cities.size;
+}
+
+function updateTimestamp() {
+    const now = new Date();
+    document.getElementById('updated-time').textContent = `Updated ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+}
+
+function refreshData() {
+    updateTimestamp();
+    applyFilters();
+}
+
+// ===== LAUNCH =====
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poseidon Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.6.0/lib/msal-browser.min.js"></script>
+    <script>
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                fontFamily: { sans: ['Inter','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+                colors: { accent: { DEFAULT:'#6366f1', light:'#818cf8', dark:'#4f46e5' } }
+            }
+        }
+    }
+    </script>
+    <style>
+        body { font-family:'Inter',sans-serif; transition:background-color 0.3s,color 0.3s; }
+        .page.hidden { display:none !important; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        .page:not(.hidden) { animation: fadeIn 0.25s ease-out; }
+        /* Calendar grid specifics */
+        .cal-month-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+        .cal-week-grid-inner { display:grid; grid-template-columns:56px repeat(7,1fr); }
+
+        /* ═══ DARK MODE (default) ═══ */
+        .dark body, html.dark body { background:#09090b; color:#fafafa; }
+        .dark ::-webkit-scrollbar { width:6px; }
+        .dark ::-webkit-scrollbar-track { background:transparent; }
+        .dark ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+        .dark ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.2); }
+
+        /* ═══ LIGHT MODE ═══ */
+        html:not(.dark) body { background:#f8fafc; color:#0f172a; }
+        html:not(.dark) ::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15); border-radius:3px; }
+        html:not(.dark) ::-webkit-scrollbar-thumb:hover { background:rgba(0,0,0,0.25); }
+
+        /* Sidebar */
+        html:not(.dark) .sidebar-bg { background:linear-gradient(180deg,#ffffff,#f1f5f9) !important; border-right-color:#e2e8f0 !important; }
+        html:not(.dark) .sidebar-bg .nav-link { color:#475569; }
+        html:not(.dark) .sidebar-bg .nav-link:hover { background:#e2e8f0; color:#1e293b; }
+
+        /* Cards and panels */
+        html:not(.dark) .lm-card { background:#ffffff !important; border-color:#e2e8f0 !important; }
+        html:not(.dark) .lm-bg { background:#f8fafc !important; }
+
+        /* Text overrides */
+        html:not(.dark) .lm-text-primary { color:#0f172a !important; }
+        html:not(.dark) .lm-text-secondary { color:#475569 !important; }
+        html:not(.dark) .lm-text-muted { color:#94a3b8 !important; }
+
+        /* Borders */
+        html:not(.dark) .lm-border { border-color:#e2e8f0 !important; }
+
+        /* Inputs */
+        html:not(.dark) select, html:not(.dark) input[type="text"], html:not(.dark) input[type="date"],
+        html:not(.dark) input[type="time"], html:not(.dark) input[type="color"] {
+            background:#ffffff !important; border-color:#cbd5e1 !important; color:#0f172a !important;
+        }
+
+        /* Tables */
+        html:not(.dark) table tr { border-color:#e2e8f0 !important; }
+        html:not(.dark) table tr:hover { background:#f1f5f9 !important; }
+
+        /* Global light mode overrides for zinc backgrounds */
+        html:not(.dark) .bg-zinc-950 { background:#f8fafc !important; }
+        html:not(.dark) .bg-zinc-900\/40, html:not(.dark) .bg-zinc-900\/50 { background:#ffffff !important; }
+        html:not(.dark) .bg-zinc-900 { background:#f1f5f9 !important; }
+        html:not(.dark) .bg-zinc-800 { background:#e2e8f0 !important; }
+        html:not(.dark) .bg-zinc-800\/50, html:not(.dark) .bg-zinc-800\/30 { background:rgba(226,232,240,0.5) !important; }
+
+        /* Text colors in light mode */
+        html:not(.dark) .text-zinc-100 { color:#0f172a !important; }
+        html:not(.dark) .text-zinc-200 { color:#1e293b !important; }
+        html:not(.dark) .text-zinc-300 { color:#334155 !important; }
+        html:not(.dark) .text-zinc-400 { color:#475569 !important; }
+        html:not(.dark) .text-zinc-500 { color:#64748b !important; }
+        html:not(.dark) .text-zinc-600 { color:#94a3b8 !important; }
+
+        /* Border colors in light mode */
+        html:not(.dark) .border-zinc-800, html:not(.dark) .border-zinc-800\/50 { border-color:#e2e8f0 !important; }
+        html:not(.dark) .border-zinc-700 { border-color:#cbd5e1 !important; }
+
+        /* Hover states */
+        html:not(.dark) .hover\:bg-zinc-800\/50:hover, html:not(.dark) .hover\:bg-zinc-800\/60:hover,
+        html:not(.dark) .hover\:bg-zinc-800:hover { background:#e2e8f0 !important; }
+        html:not(.dark) .hover\:text-zinc-100:hover, html:not(.dark) .hover\:text-zinc-200:hover { color:#0f172a !important; }
+        html:not(.dark) .hover\:border-zinc-600:hover, html:not(.dark) .hover\:border-zinc-700:hover { border-color:#94a3b8 !important; }
+
+        /* Header area */
+        html:not(.dark) .border-b.border-zinc-800\/60 { border-color:#e2e8f0 !important; }
+
+        /* Media player bar */
+        html:not(.dark) #media-player-bar { background:#ffffff !important; border-color:#e2e8f0 !important; }
+
+        /* Modals backdrop stays the same, inner panel changes */
+        html:not(.dark) .bg-zinc-900 { background:#ffffff !important; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+<div class="flex min-h-screen">
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav class="sidebar-bg fixed left-0 top-0 h-screen w-[220px] border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-xl flex flex-col py-5 px-3 z-50 overflow-y-auto">
+    <div class="flex items-center gap-2 px-3 mb-6">
+        <span class="text-2xl">🔱</span>
+        <span class="font-bold text-lg text-indigo-400 tracking-tight">Poseidon</span>
+        <span class="text-[10px] font-mono text-zinc-600 ml-auto">v5</span>
+    </div>
+    <div class="flex flex-col gap-0.5" id="sidebar-nav">
+        <a class="nav-link active flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-page="dashboard">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="tasks">
+            <i data-lucide="check-square" class="w-4 h-4"></i> Tasks
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="calendar">
+            <i data-lucide="calendar" class="w-4 h-4"></i> Calendar
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="j1division">
+            <i data-lucide="globe" class="w-4 h-4"></i> J1 Division
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="videos">
+            <i data-lucide="film" class="w-4 h-4"></i> Videos
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="projects">
+            <i data-lucide="folder-kanban" class="w-4 h-4"></i> Projects
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="partners">
+            <i data-lucide="handshake" class="w-4 h-4"></i> Partners
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="settings">
+            <i data-lucide="settings" class="w-4 h-4"></i> Settings
+        </a>
+    </div>
+    <div class="mt-auto pt-4 border-t border-zinc-800 px-3">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs font-bold">RU</div>
+            <div class="flex-1 min-w-0">
+                <div class="text-xs font-medium text-zinc-300 truncate">Robert Upchurch</div>
+                <div class="text-[10px] text-zinc-600 truncate">CEO · CTI Group</div>
+            </div>
+        </div>
+        <div id="o365-status" class="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-600">
+            <span class="w-1.5 h-1.5 rounded-full bg-zinc-700"></span> Microsoft 365: Not connected
+        </div>
+    </div>
+</nav>
+
+<!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+<main class="flex-1 ml-[220px] p-6 max-w-[1500px]">
+
+<!-- HEADER -->
+<div class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800/60">
+    <div>
+        <h1 id="page-title" class="text-xl font-bold text-zinc-100 tracking-tight">Dashboard</h1>
+        <p id="page-subtitle" class="text-xs text-zinc-500 mt-0.5">Your daily command center</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <div class="relative">
+            <input type="text" id="global-search" placeholder="Search..." class="w-64 px-3 py-1.5 pl-8 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600"></i>
+        </div>
+        <button id="o365-connect-btn" onclick="o365SignIn()" class="px-3 py-1.5 text-xs font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-600/30 transition-all" title="Connect Microsoft 365">
+            <i data-lucide="cloud" class="w-3.5 h-3.5 inline -mt-0.5"></i> Connect 365
+        </button>
+        <button id="theme-toggle" onclick="toggleTheme()" class="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-all" title="Toggle light/dark mode">
+            <i data-lucide="sun" class="w-4 h-4"></i>
+        </button>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: DASHBOARD ═══════════ -->
+<div id="dashboard" class="page active">
+    <!-- Greeting + Date -->
+    <div class="mb-5">
+        <h2 id="greeting" class="text-2xl font-bold tracking-tight text-zinc-100"></h2>
+        <p id="today-date" class="text-sm text-zinc-500 mt-1"></p>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-indigo-500/40 transition-all cursor-pointer group" onclick="switchPage('tasks')">
+            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Today's Tasks</div>
+            <div class="text-2xl font-bold font-mono text-zinc-100 group-hover:text-indigo-400 transition-colors" id="kpi-today-tasks">0</div>
+        </div>
+        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 border-l-2 border-l-red-500/60 hover:border-red-500/40 transition-all cursor-pointer group" onclick="switchPage('tasks')">
+            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Overdue</div>
+            <div class="text-2xl font-bold font-mono text-red-400 group-hover:text-red-300 transition-colors" id="kpi-overdue">0</div>
+        </div>
+        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-blue-500/40 transition-all cursor-pointer group" onclick="switchPage('tasks')">
+            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">In Progress</div>
+            <div class="text-2xl font-bold font-mono text-blue-400 group-hover:text-blue-300 transition-colors" id="kpi-in-progress">0</div>
+        </div>
+        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-green-500/40 transition-all cursor-pointer group" onclick="switchPage('calendar')">
+            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Meetings Today</div>
+            <div class="text-2xl font-bold font-mono text-green-400 group-hover:text-green-300 transition-colors" id="kpi-meetings">0</div>
+        </div>
+    </div>
+
+    <!-- Daily Client Briefing -->
+    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i> Daily Client Briefing</h3>
+            <button onclick="refreshBriefing()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors">Refresh ↻</button>
+        </div>
+        <div id="daily-briefing-content" class="text-sm text-zinc-400 leading-relaxed">
+            <div class="text-center py-6 text-zinc-600">
+                <p>Connect Microsoft 365 and refresh via Cowork to generate your daily briefing.</p>
+                <p class="text-xs mt-1">Combines CRM activity, client emails, and meeting summaries.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column: Priority Tasks + Today's Schedule -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Priority Tasks</h3>
+                <a href="#" onclick="switchPage('tasks');return false;" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">View all →</a>
+            </div>
+            <div id="priority-tasks-list" class="space-y-2">
+                <p class="text-xs text-zinc-600 py-4 text-center">No priority tasks. Add tasks to get started.</p>
+            </div>
+        </div>
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-blue-400"></i> Today's Schedule</h3>
+                <a href="#" onclick="switchPage('calendar');return false;" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">Full calendar →</a>
+            </div>
+            <div id="today-schedule" class="space-y-2">
+                <p class="text-xs text-zinc-600 py-4 text-center">No events today. <span id="schedule-hint" class="hidden">Connect Microsoft 365 for live calendar.</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+            <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3"><i data-lucide="hard-drive" class="w-4 h-4 text-emerald-400"></i> Google Drive</h3>
+            <div id="drive-links" class="space-y-1"></div>
+        </div>
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+            <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3"><i data-lucide="github" class="w-4 h-4 text-zinc-400"></i> Quick Links</h3>
+            <div id="github-quick-links" class="grid grid-cols-2 gap-2"></div>
+        </div>
+    </div>
+
+    <!-- AI Co-Worker Assistant -->
+    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+        <div id="ai-assistant-panel"></div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3"><i data-lucide="activity" class="w-4 h-4 text-violet-400"></i> Recent Activity</h3>
+        <div id="activity-list" class="space-y-2">
+            <p class="text-xs text-zinc-600 py-2 text-center">Activity will appear as you use the dashboard.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: TASKS ═══════════ -->
+<div id="tasks" class="page hidden">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3 flex-wrap">
+            <select id="priority-filter" class="px-3 py-1.5 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 focus:outline-none focus:border-indigo-500/50">
+                <option value="">All Priorities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+            <select id="status-filter" class="px-3 py-1.5 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 focus:outline-none focus:border-indigo-500/50">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+        </div>
+        <button onclick="openTaskModal()" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Task
+        </button>
+    </div>
+    <div id="task-list" class="space-y-2">
+        <div class="text-center py-12 text-zinc-600">
+            <i data-lucide="check-square" class="w-10 h-10 mx-auto mb-3 text-zinc-700"></i>
+            <p class="text-sm">No tasks yet. Click <strong class="text-indigo-400">+ Add Task</strong> to get started.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: CALENDAR ═══════════ -->
+<div id="calendar" class="page hidden">
+    <div class="flex items-center justify-between mb-4">
+        <button onclick="openNewEvent()" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i> New Event
+        </button>
+        <span class="text-xs text-zinc-600">Click any day to add an event</span>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4">
+        <!-- Calendar Sidebar -->
+        <div class="space-y-4">
+            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <button onclick="miniCalPrev()" class="text-zinc-500 hover:text-zinc-300 text-sm px-1">‹</button>
+                    <span id="mini-cal-title" class="text-sm font-semibold text-zinc-300"></span>
+                    <button onclick="miniCalNext()" class="text-zinc-500 hover:text-zinc-300 text-sm px-1">›</button>
+                </div>
+                <div id="mini-cal-grid" class="grid grid-cols-7 gap-0.5 text-center text-xs"></div>
+            </div>
+            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-zinc-300 mb-3">Upcoming</h3>
+                <div id="upcoming-list" class="space-y-1"></div>
+            </div>
+        </div>
+        <!-- Calendar Main -->
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <button onclick="calPrev()" class="px-2 py-1 text-sm text-zinc-400 hover:text-zinc-100 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all">‹</button>
+                    <button onclick="calGoToday()" class="px-3 py-1 text-sm text-zinc-400 hover:text-zinc-100 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all">Today</button>
+                    <button onclick="calNext()" class="px-2 py-1 text-sm text-zinc-400 hover:text-zinc-100 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all">›</button>
+                    <h3 id="cal-main-title" class="text-base font-semibold text-zinc-200 ml-2"></h3>
+                </div>
+                <div class="flex gap-1">
+                    <button id="view-month" onclick="setCalView('month')" class="cal-view-btn px-3 py-1 text-xs border border-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-all bg-indigo-500/20 text-indigo-300 border-indigo-500/30">Month</button>
+                    <button id="view-week" onclick="setCalView('week')" class="cal-view-btn px-3 py-1 text-xs border border-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-all">Week</button>
+                    <button id="view-day" onclick="setCalView('day')" class="cal-view-btn px-3 py-1 text-xs border border-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-all">Day</button>
+                </div>
+            </div>
+            <!-- Month View -->
+            <div id="cal-month-view">
+                <div class="grid grid-cols-7 mb-1">
+                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Sun</div>
+                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Mon</div>
+                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Tue</div>
+                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Wed</div>
+                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Thu</div>
+                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Fri</div>
+                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Sat</div>
+                </div>
+                <div id="cal-month-grid" class="cal-month-grid"></div>
+            </div>
+            <div id="cal-week-view" style="display:none"></div>
+            <div id="cal-day-view" style="display:none"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: J1 DIVISION ═══════════ -->
+<div id="j1division" class="page hidden">
+    <div class="flex gap-2 mb-4 flex-wrap" id="j1-tab-bar">
+        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-tab="j1-recruiting">Recruiting Work Flow</button>
+        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-housing">J1 Housing Finder</button>
+        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-onboarding">Partner Onboarding</button>
+        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-contracts">J1 Contract Analysis</button>
+    </div>
+    <div class="j1-content active" id="j1-recruiting">
+        <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40">
+            <iframe src="https://eduardoferraz10-prog.github.io/CTI-GROUP-J1-Recruitment-FLOW-/" class="w-full border-none rounded-xl" style="height:calc(100vh - 220px);min-height:600px;" loading="lazy" title="J1 Recruitment Pipeline"></iframe>
+        </div>
+    </div>
+    <div class="j1-content" id="j1-housing" style="display:none">
+        <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40">
+            <iframe src="https://robert-upchurch.github.io/j1-housing-finder/" class="w-full border-none rounded-xl" style="height:calc(100vh - 220px);min-height:600px;" loading="lazy" title="J1 Housing Finder" allow="clipboard-read; clipboard-write"></iframe>
+        </div>
+    </div>
+    <div class="j1-content" id="j1-onboarding" style="display:none">
+        <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40">
+            <iframe src="https://robert-upchurch.github.io/ciee-partner-onboarding/" class="w-full border-none rounded-xl" style="height:calc(100vh - 220px);min-height:600px;" loading="lazy" title="CIEE Partner Onboarding"></iframe>
+        </div>
+    </div>
+    <div class="j1-content" id="j1-contracts" style="display:none">
+        <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40">
+            <iframe src="https://robert-upchurch.github.io/cti-command-center/" class="w-full border-none rounded-xl" style="height:calc(100vh - 220px);min-height:600px;" loading="lazy" title="J1 Contract Analysis"></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: VIDEOS ═══════════ -->
+<div id="videos" class="page hidden">
+    <div id="video-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"></div>
+    <div id="video-categories" class="flex gap-2 mb-5 flex-wrap"></div>
+    <div id="video-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    <!-- Production Studio -->
+    <div class="mt-8 pt-6 border-t border-zinc-800">
+        <h2 class="text-lg font-bold text-zinc-200 flex items-center gap-2 mb-1">🎬 Production Studio</h2>
+        <p class="text-xs text-zinc-500 mb-5">Voiceovers, B-Roll footage, and music library for J-1 recruitment video production.</p>
+        <!-- Voiceovers -->
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-zinc-300">🎙️ Voiceover Files <span class="text-[10px] text-zinc-600 font-normal ml-1">ElevenLabs TTS</span></h3>
+                <a href="https://drive.google.com/drive/folders/1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj" target="_blank" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">Open Drive Folder →</a>
+            </div>
+            <div class="text-[10px] text-zinc-600 mb-3 flex gap-4 flex-wrap">
+                <span>WAV (pcm_s16le, 48kHz)</span><span>loudnorm I=-16, TP=-3, LRA=7</span><span>amix vol=4</span><span>Gap ≥ 0.4s</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm"><thead><tr class="border-b border-zinc-800 text-[11px] text-zinc-500 uppercase"><th class="text-left p-2">File</th><th class="text-left p-2">Scene</th><th class="text-left p-2">Content</th><th class="text-left p-2">Timing</th><th class="text-center p-2">Play</th></tr></thead><tbody id="vo-table"></tbody></table>
+            </div>
+        </div>
+        <!-- B-Roll -->
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-zinc-300">🎬 B-Roll & Source Footage</h3>
+                <a href="https://drive.google.com/drive/folders/1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2" target="_blank" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">Open B-Roll Folder →</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm"><thead><tr class="border-b border-zinc-800 text-[11px] text-zinc-500 uppercase"><th class="text-left p-2">File</th><th class="text-left p-2">Source</th><th class="text-left p-2">Description</th><th class="text-left p-2">Specs</th></tr></thead><tbody id="broll-table"></tbody></table>
+            </div>
+        </div>
+        <!-- Music -->
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-zinc-300">🎵 Music Library <span class="text-[10px] text-zinc-600 font-normal ml-1">Storyblocks</span></h3>
+                <a href="https://drive.google.com/drive/folders/1FxMhy98L0y3Oe04EJ2f7FMRvNj8ITpnO" target="_blank" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">Open Music Folder →</a>
+            </div>
+            <table class="w-full text-sm mb-3"><thead><tr class="border-b border-zinc-800 text-[11px] text-zinc-500 uppercase"><th class="text-left p-2">Segment</th><th class="text-left p-2">Volume</th><th class="text-left p-2">Timing</th><th class="text-left p-2">Notes</th></tr></thead>
+            <tbody>
+                <tr class="border-b border-zinc-800/50"><td class="p-2 font-semibold text-zinc-300">Intro</td><td class="p-2 font-mono text-emerald-400">0.85–0.90</td><td class="p-2 text-zinc-400">0s → VO start</td><td class="p-2 text-zinc-500 text-xs">Full volume, sets the tone</td></tr>
+                <tr class="border-b border-zinc-800/50"><td class="p-2 font-semibold text-zinc-300">Body (under VO)</td><td class="p-2 font-mono text-amber-400">0.60–0.65</td><td class="p-2 text-zinc-400">VO start → last VO</td><td class="p-2 text-zinc-500 text-xs">Sidechain ducking: threshold=0.025, ratio=3</td></tr>
+                <tr><td class="p-2 font-semibold text-zinc-300">Outro</td><td class="p-2 font-mono text-emerald-400">0.85–0.90</td><td class="p-2 text-zinc-400">Last VO → end</td><td class="p-2 text-zinc-500 text-xs">Swell back to full, 3s fade out</td></tr>
+            </tbody></table>
+            <div id="music-tracks"></div>
+        </div>
+        <!-- Pipeline -->
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
+            <div class="flex items-center justify-between cursor-pointer" onclick="document.getElementById('pipeline-content').classList.toggle('hidden')">
+                <h3 class="text-sm font-semibold text-zinc-300">🔧 9-Phase Production Pipeline</h3>
+                <span class="text-xs text-zinc-600">Click to expand ▾</span>
+            </div>
+            <div id="pipeline-content" class="hidden mt-3"><div id="pipeline-phases"></div></div>
+        </div>
+        <!-- Tools & Branding -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-zinc-300 mb-3">🛠️ Tools & Software</h3>
+                <div id="tools-list"></div>
+            </div>
+            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-zinc-300 mb-3">🏷️ CTI Branding Assets</h3>
+                <div id="branding-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: PROJECTS ═══════════ -->
+<div id="projects" class="page hidden">
+    <div class="bg-gradient-to-r from-indigo-500/10 to-violet-500/5 border border-zinc-800 rounded-xl p-5 mb-6 flex justify-between items-center flex-wrap gap-4">
+        <div>
+            <h2 class="text-base font-bold text-zinc-200">Weekly Progress</h2>
+            <p class="text-xs text-zinc-500 mt-0.5">Computed from active project completion rates</p>
+        </div>
+        <div class="flex gap-6 items-center">
+            <div class="text-center">
+                <div id="progress-score" class="text-3xl font-bold font-mono bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">0%</div>
+                <div class="text-[10px] text-zinc-500">Overall</div>
+            </div>
+        </div>
+    </div>
+    <h3 class="text-sm font-semibold text-zinc-300 mb-3">Active Projects</h3>
+    <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-8"></div>
+    <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-6">AI Tools & LLM Stack</h3>
+    <div id="ai-tools-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+</div>
+
+<!-- ═══════════ PAGE: PARTNERS ═══════════ -->
+<div id="partners" class="page hidden">
+    <div class="flex gap-2 mb-4" id="partners-tab-bar">
+        <button class="partner-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-tab="pt-unobaron">UNO-Baron</button>
+        <button class="partner-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="pt-cruiselines">Cruise Lines</button>
+    </div>
+    <div class="partner-content active" id="pt-unobaron">
+        <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40">
+            <iframe src="https://robert-upchurch.github.io/uno-baron-competitive-analysis/" class="w-full border-none rounded-xl" style="height:calc(100vh - 220px);min-height:600px;" loading="lazy" title="UNO-Baron Finance"></iframe>
+        </div>
+    </div>
+    <div class="partner-content" id="pt-cruiselines" style="display:none">
+        <div id="cruise-line-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: SETTINGS ═══════════ -->
+<div id="settings" class="page hidden">
+    <div class="flex gap-2 mb-5" id="settings-tab-bar">
+        <button class="settings-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-tab="st-display">Display</button>
+        <button class="settings-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800" data-tab="st-files">File Registry</button>
+        <button class="settings-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800" data-tab="st-github">GitHub Links</button>
+        <button class="settings-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800" data-tab="st-data">Data & System</button>
+    </div>
+    <!-- Display -->
+    <div class="settings-content" id="st-display">
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 max-w-lg">
+            <h3 class="text-sm font-semibold text-zinc-300 mb-4">Display Settings</h3>
+            <div class="flex items-center justify-between py-3 border-b border-zinc-800">
+                <span class="text-sm text-zinc-300">Dark Mode</span>
+                <div id="dark-mode-toggle" class="w-10 h-5 bg-indigo-500 rounded-full cursor-pointer relative transition-colors" onclick="toggleTheme()">
+                    <div class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-5 transition-all shadow-sm"></div>
+                </div>
+            </div>
+            <div class="py-3">
+                <h4 class="text-sm text-zinc-300 mb-2">Microsoft 365</h4>
+                <div id="o365-settings-status" class="text-xs text-zinc-500 mb-2">Not connected</div>
+                <button onclick="o365SignIn()" class="px-3 py-1.5 text-xs font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-600/30 transition-all">Connect Microsoft 365</button>
+                <button onclick="o365SignOut()" class="px-3 py-1.5 text-xs font-medium bg-red-600/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-600/30 transition-all hidden" id="o365-signout-btn">Sign Out</button>
+            </div>
+        </div>
+    </div>
+    <!-- File Registry -->
+    <div class="settings-content hidden" id="st-files">
+        <div class="flex gap-3 mb-3 flex-wrap">
+            <select id="category-filter" class="px-3 py-1.5 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
+                <option value="">All Categories</option>
+                <option value="Dashboard">Dashboard</option><option value="Video">Video</option><option value="Brief">Brief</option>
+                <option value="Contract">Contract</option><option value="Media">Media</option><option value="Config">Config</option>
+            </select>
+            <select id="type-filter" class="px-3 py-1.5 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
+                <option value="">All Types</option>
+                <option value="html">HTML</option><option value="pdf">PDF</option><option value="xlsx">Excel</option>
+                <option value="docx">Word</option><option value="mp4">Video</option><option value="json">JSON</option>
+            </select>
+        </div>
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl overflow-hidden">
+            <table class="w-full text-sm"><thead class="bg-zinc-800/30"><tr>
+                <th class="text-left p-3 text-xs text-zinc-500 font-semibold">Name</th>
+                <th class="text-left p-3 text-xs text-zinc-500 font-semibold">Category</th>
+                <th class="text-left p-3 text-xs text-zinc-500 font-semibold">Folder</th>
+                <th class="text-left p-3 text-xs text-zinc-500 font-semibold">Size</th>
+                <th class="text-left p-3 text-xs text-zinc-500 font-semibold">Modified</th>
+                <th class="text-left p-3 text-xs text-zinc-500 font-semibold">Type</th>
+            </tr></thead><tbody id="file-table-body"></tbody></table>
+        </div>
+    </div>
+    <!-- GitHub -->
+    <div class="settings-content hidden" id="st-github">
+        <div id="github-links-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+    </div>
+    <!-- Data & System -->
+    <div class="settings-content hidden" id="st-data">
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 max-w-lg mb-4">
+            <h3 class="text-sm font-semibold text-zinc-300 mb-3">Data Management</h3>
+            <div class="flex gap-3">
+                <button onclick="exportData()" class="px-4 py-1.5 text-sm font-medium bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-lg hover:bg-zinc-700 transition-all">Export JSON</button>
+                <button onclick="clearAllData()" class="px-4 py-1.5 text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-all">Clear All Data</button>
+            </div>
+        </div>
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 max-w-lg">
+            <h3 class="text-sm font-semibold text-zinc-300 mb-3">System Information</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between py-1 border-b border-zinc-800/50"><span class="text-zinc-500">Version</span><span class="text-zinc-300 font-mono">5.0.0</span></div>
+                <div class="flex justify-between py-1 border-b border-zinc-800/50"><span class="text-zinc-500">Build Date</span><span class="text-zinc-300">April 11, 2026</span></div>
+                <div class="flex justify-between py-1 border-b border-zinc-800/50"><span class="text-zinc-500">Environment</span><span class="text-zinc-300">Production</span></div>
+                <div class="flex justify-between py-1"><span class="text-zinc-500">Theme</span><span id="theme-info" class="text-zinc-300">Dark</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</main>
+</div>
+
+<!-- ═══════════ TASK MODAL ═══════════ -->
+<div id="task-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4" onclick="if(event.target===this)closeTaskModal()">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="task-modal-title" class="text-base font-bold text-zinc-200">New Task</h3>
+            <button onclick="closeTaskModal()" class="text-zinc-500 hover:text-zinc-300 text-lg">✕</button>
+        </div>
+        <div class="space-y-3">
+            <div><label class="block text-xs font-medium text-zinc-500 mb-1">Title *</label><input id="task-title" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50" placeholder="Task title"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Priority</label><select id="task-priority" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="medium">Medium</option><option value="critical">Critical</option><option value="high">High</option><option value="low">Low</option></select></div>
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Status</label><select id="task-status" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="completed">Completed</option></select></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Category</label><input id="task-category" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="e.g. CRM, Marketing"></div>
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Due Date</label><input id="task-due" type="date" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
+            </div>
+            <div><label class="block text-xs font-medium text-zinc-500 mb-1">Description</label><textarea id="task-desc" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 resize-none h-16" placeholder="Optional details"></textarea></div>
+        </div>
+        <div class="flex gap-3 mt-5">
+            <button onclick="saveTask()" class="flex-1 py-2 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all">Save Task</button>
+            <button onclick="deleteTaskFromModal()" id="task-delete-btn" class="py-2 px-4 text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-all hidden">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ EVENT MODAL ═══════════ -->
+<div id="event-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4" onclick="if(event.target===this)closeEventModal()">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="event-modal-title" class="text-base font-bold text-zinc-200">New Event</h3>
+            <button onclick="closeEventModal()" class="text-zinc-500 hover:text-zinc-300 text-lg">✕</button>
+        </div>
+        <div class="space-y-3">
+            <div><label class="block text-xs font-medium text-zinc-500 mb-1">Title *</label><input id="ev-title" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Date</label><input id="ev-date" type="date" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">End Date</label><input id="ev-end-date" type="date" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Start Time</label><input id="ev-start-time" type="time" value="09:00" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">End Time</label><input id="ev-end-time" type="time" value="10:00" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Type</label><select id="ev-type" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="meeting">Meeting</option><option value="deadline">Deadline</option><option value="task">Task</option><option value="personal">Personal</option><option value="reminder">Reminder</option></select></div>
+                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Recurrence</label><select id="ev-recurrence" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="none">None</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option></select></div>
+            </div>
+            <div><label class="block text-xs font-medium text-zinc-500 mb-1">Location</label><input id="ev-location" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="Zoom, Office, etc."></div>
+            <div><label class="block text-xs font-medium text-zinc-500 mb-1">Participants</label><input id="ev-participants" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="Names separated by commas"></div>
+            <div><label class="block text-xs font-medium text-zinc-500 mb-1">Description</label><textarea id="ev-description" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 resize-none h-16"></textarea></div>
+            <div><label class="block text-xs font-medium text-zinc-500 mb-1">Color</label>
+                <div class="flex gap-2 mt-1" id="ev-color-picker">
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-indigo-500 selected ring-2 ring-white/30" data-color="#6366f1" onclick="selectEvColor(this)"></div>
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-red-500" data-color="#ef4444" onclick="selectEvColor(this)"></div>
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-amber-500" data-color="#f59e0b" onclick="selectEvColor(this)"></div>
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-emerald-500" data-color="#10b981" onclick="selectEvColor(this)"></div>
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-violet-500" data-color="#8b5cf6" onclick="selectEvColor(this)"></div>
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-blue-500" data-color="#3b82f6" onclick="selectEvColor(this)"></div>
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-pink-500" data-color="#ec4899" onclick="selectEvColor(this)"></div>
+                    <div class="w-7 h-7 rounded-full cursor-pointer border-2 border-transparent hover:scale-110 transition-transform bg-cyan-500" data-color="#06b6d4" onclick="selectEvColor(this)"></div>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-5">
+            <button onclick="saveEvent()" class="flex-1 py-2 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all">Save Event</button>
+            <button onclick="deleteEvent()" id="ev-delete-btn" class="py-2 px-4 text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-all hidden">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ EVENT DETAIL MODAL ═══════════ -->
+<div id="event-detail-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000] hidden items-center justify-center p-4" onclick="if(event.target===this)closeDetailModal()">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+        <div class="flex items-center justify-between mb-3">
+            <h3 id="detail-title" class="text-base font-bold text-zinc-200 flex-1"></h3>
+            <div class="flex gap-1.5">
+                <button onclick="editEventFromDetail()" class="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-400 hover:text-zinc-200">Edit</button>
+                <button onclick="deleteEventFromDetail()" class="px-2 py-1 text-xs bg-red-500/10 border border-red-500/30 rounded text-red-400 hover:bg-red-500/20">Delete</button>
+                <button onclick="closeDetailModal()" class="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-400 hover:text-zinc-200">✕</button>
+            </div>
+        </div>
+        <div class="space-y-2 text-sm text-zinc-400">
+            <div class="flex items-center gap-2"><span>📅</span><span id="detail-date"></span></div>
+            <div class="flex items-center gap-2"><span>🕐</span><span id="detail-time"></span></div>
+            <div class="flex items-center gap-2 hidden" id="detail-location-row"><span>📍</span><span id="detail-location"></span></div>
+            <div class="flex items-center gap-2 hidden" id="detail-participants-row"><span>👥</span><span id="detail-participants"></span></div>
+            <div class="flex items-center gap-2 hidden" id="detail-recurrence-row"><span>🔁</span><span id="detail-recurrence"></span></div>
+        </div>
+        <div id="detail-description-section" class="hidden mt-3 pt-3 border-t border-zinc-800">
+            <div class="text-xs font-medium text-zinc-500 mb-1">Notes</div>
+            <div id="detail-description" class="text-sm text-zinc-400 leading-relaxed"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ MEDIA PLAYER BAR ═══════════ -->
+<div id="media-player-bar" class="fixed bottom-0 left-0 right-0 h-16 bg-zinc-900/95 border-t border-zinc-800 backdrop-blur-xl z-[999] px-4 hidden">
+    <div class="flex items-center h-full max-w-[1500px] mx-auto gap-3">
+        <div class="flex items-center gap-2 min-w-[160px] max-w-[220px]">
+            <div id="player-icon" class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-sm shrink-0">🎙️</div>
+            <div class="min-w-0"><div id="player-title" class="text-xs font-medium text-zinc-300 truncate">No track</div><div id="player-subtitle" class="text-[10px] text-zinc-600 truncate">—</div></div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <button onclick="playerPrev()" class="text-zinc-500 hover:text-zinc-300 text-sm">⏮</button>
+            <button id="player-play-btn" onclick="playerToggle()" class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm hover:bg-indigo-600 transition-colors">▶</button>
+            <button onclick="playerNext()" class="text-zinc-500 hover:text-zinc-300 text-sm">⏭</button>
+        </div>
+        <div class="flex-1 flex items-center gap-2">
+            <span id="player-current-time" class="text-[10px] font-mono text-zinc-600 min-w-[32px] text-right">0:00</span>
+            <div id="player-progress-container" class="flex-1 h-1 bg-zinc-800 rounded cursor-pointer relative" onclick="playerSeek(event)">
+                <div id="player-progress" class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded transition-[width] duration-100" style="width:0%"></div>
+            </div>
+            <span id="player-duration" class="text-[10px] font-mono text-zinc-600 min-w-[32px]">0:00</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="playerMute()" id="player-vol-icon" class="text-zinc-500 hover:text-zinc-300 text-sm">🔊</button>
+            <input type="range" id="player-volume" min="0" max="100" value="80" class="w-16 accent-indigo-500" oninput="playerSetVolume(this.value)">
+        </div>
+        <button onclick="playerClose()" class="text-zinc-600 hover:text-zinc-400 text-sm">✕</button>
+    </div>
+</div>
+
+<!-- ═══════════ JARVIS AI MODAL ═══════════ -->
+<div id="jarvis-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center" onclick="if(event.target===this)closeJarvis()">
+    <div class="w-[420px] h-[620px] rounded-2xl overflow-hidden shadow-2xl relative bg-zinc-900">
+        <button onclick="closeJarvis()" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-red-500/80 transition-colors">✕</button>
+        <div id="jarvis-widget-container" class="w-full h-full flex items-center justify-center"></div>
+    </div>
+</div>
+<script src="https://elevenlabs.io/convai-widget/index.js" async></script>
+
+
+<script>
+// ═══════════════════════════════════════════════════
+// POSEIDON DASHBOARD v5 — JavaScript Engine
+// ═══════════════════════════════════════════════════
+
+// ───── DATA ARRAYS ─────
+
+const videos = [
+    { id:1, title:'Beemok Hospitality J1 (FINAL)', category:'Partner Recruitment', synopsis:'Beemok Hospitality J-1 recruitment video — 1080p final version', duration:'3:45', tags:['Beemok','Hospitality','Partner'], dateAdded:'2026-04-01', driveFolder:'J1 Visa Project', status:'published', fileId:'1wt18v80RN03o-YBvlRdqp3xtcbk0kb-u' },
+    { id:2, title:'Grand Hyatt Vale', category:'Partner Recruitment', synopsis:'Grand Hyatt Vale hospitality partner recruitment', duration:'4:10', tags:['Grand Hyatt','Hotels','Hospitality'], dateAdded:'2026-03-20', driveFolder:'J1 Visa Project', status:'published', fileId:'1JNPoPN-V5Uuhw5gqv0mx0qxIYaoYjDk0' },
+    { id:3, title:'La Quinta Resort J1 (FINAL)', category:'Partner Recruitment', synopsis:'La Quinta Resort J-1 recruitment video — 1080p final version', duration:'3:50', tags:['La Quinta','Resort','Hospitality'], dateAdded:'2026-04-02', driveFolder:'J1 Visa Project', status:'published', fileId:'113GBTsdAcd21iY85_7X_GRhTdl0goayN' },
+    { id:4, title:'RDG Riviera Dining Group J1', category:'Partner Recruitment', synopsis:'Riviera Dining Group recruitment — fine dining J-1 placements', duration:'4:30', tags:['RDG','Dining','Restaurant'], dateAdded:'2026-04-03', driveFolder:'J1 Visa Project', status:'published', fileId:'1WnTvXBICcBwX9uIpm5hPRXy-VRS64fQC' },
+    { id:5, title:'Premier Pool Management — BridgeUSA', category:'Partner Recruitment', synopsis:'Premier Pool Management summer lifeguard experience', duration:'3:20', tags:['Premier Pool','Lifeguard','Summer'], dateAdded:'2026-04-04', driveFolder:'J1 Visa Project', status:'published', fileId:'10UCKdEWevSwDVG-gbPp2Xwbo_gvxmLjC' },
+    { id:6, title:'Joining the CTI Group J1 Visa Program (FINAL v5)', category:'Onboarding', synopsis:'Official CTI Group J-1 onboarding video — final production version', duration:'5:20', tags:['CTI','Onboarding','J1 Program'], dateAdded:'2026-04-01', driveFolder:'J1 Visa Project', status:'published', fileId:'11c6P5L0yuKh_5gEZ1XWHkcNFrF-yFB3X' },
+    { id:7, title:'Partner Onboarding — The Compliance Mandate (FINAL)', category:'Onboarding', synopsis:'Compliance-focused partner onboarding for distribution', duration:'6:00', tags:['Compliance','Partners','Onboarding'], dateAdded:'2026-04-05', driveFolder:'J1 Visa Project', status:'published', fileId:'1tGPpp2aZpsP3swUfNWwYRCSOOKKhAlln' },
+    { id:8, title:'The Blueprint of Compliance', category:'Compliance Training', synopsis:'Training Video 0 — Navigating the AAG Agreement', duration:'7:00', tags:['Compliance','AAG','Training'], dateAdded:'2026-03-28', driveFolder:'J1 Videos Compliance', status:'published', fileId:'1XYReTjFxJCT6Pz-TccyOxLgWft6qqoFD' },
+    { id:9, title:'2026 J1 Visa Compliance Protocol', category:'Compliance Training', synopsis:'Training Video 1 — Annual compliance protocol update', duration:'6:30', tags:['Compliance','Protocol','2026'], dateAdded:'2026-03-29', driveFolder:'J1 Videos Compliance', status:'published', fileId:'135lT1bo9awGJIUhs3dwoVW8Bmlag4rw3' },
+    { id:10, title:'Gatekeepers of the Exchange', category:'Compliance Training', synopsis:'Training Video 2 — The screening mandate for J-1 participants', duration:'5:45', tags:['Screening','Gatekeepers','Compliance'], dateAdded:'2026-03-30', driveFolder:'J1 Videos Compliance', status:'published', fileId:'14TFBmgtR1Cz-lDEBJbLaWl5gqSZYoMrq' },
+    { id:11, title:'The Arrival Sequence — Securing J1', category:'Compliance Training', synopsis:'Training Video 3 — Arrival procedures and documentation', duration:'6:15', tags:['Arrival','Securing','Documentation'], dateAdded:'2026-03-31', driveFolder:'J1 Videos Compliance', status:'published', fileId:'1nv5dNXsqxMSFvTwXJm2PhGW5BBqGlgG8' },
+    { id:12, title:'Financial Obligations & The DPP', category:'Compliance Training', synopsis:'Training Video 4 — Financial obligations and participant protection', duration:'5:50', tags:['Financial','DPP','Obligations'], dateAdded:'2026-04-01', driveFolder:'J1 Videos Compliance', status:'published', fileId:'13fV8JDLL-A6z5FdmkxT4WfO17NKlCoPs' },
+    { id:13, title:'Building Bridges', category:'Cultural Exchange', synopsis:'The cultural exchange mission — building international bridges', duration:'5:10', tags:['Culture','Exchange','Bridges'], dateAdded:'2026-03-25', driveFolder:'J1 Visa Project', status:'published', fileId:'1nYHnsS8ioO1shGHl6r_QDsH6l44HwOI5' },
+    { id:14, title:'From the Kitchen to the Capitol', category:'Cultural Exchange', synopsis:'The anatomy of soul diplomacy through food and culture', duration:'6:20', tags:['Diplomacy','Food','Capitol'], dateAdded:'2026-03-26', driveFolder:'J1 Visa Project', status:'published', fileId:'1H709NvAwv6pOtamBFH8a-FLOJwZNriJ9' },
+    { id:15, title:'The Two Tracks of the American Exchange', category:'Cultural Exchange', synopsis:'Dual pathways of the American cultural exchange experience', duration:'5:30', tags:['Exchange','Tracks','America'], dateAdded:'2026-03-27', driveFolder:'J1 Visa Project', status:'published', fileId:'1wAZkyB4reQUS9qFe0I5xnm98Kcdh-1xu' },
+    { id:16, title:'The Two-Way Street of Global Exchange', category:'Cultural Exchange', synopsis:'How global exchange benefits both participants and host communities', duration:'5:45', tags:['Global','Two-Way','Exchange'], dateAdded:'2026-03-28', driveFolder:'J1 Visa Project', status:'published', fileId:'1v-47osUOTAA3AqD9m_CUL_Z4wLh34ABQ' },
+    { id:17, title:'Beyond the Summer Job', category:'Work & Travel', synopsis:'The strategic utility of the J-1 visa beyond seasonal employment', duration:'5:00', tags:['Summer','Work','Strategy'], dateAdded:'2026-03-22', driveFolder:'J1 Visa Project', status:'published', fileId:'1MIrGp8pqXhVCVX4yMBJVxtVLkbBPHym2' },
+    { id:18, title:'The Hidden Engine of US Hospitality', category:'Work & Travel', synopsis:'How J-1 workers power the American hospitality industry', duration:'6:30', tags:['Hospitality','US','Engine'], dateAdded:'2026-03-24', driveFolder:'J1 Visa Project', status:'published', fileId:'1DwDx2IZJ0WVsziX6umNKqZ0JbhcOYmlz' },
+    { id:19, title:'The Lifecycle of an American Summer', category:'Work & Travel', synopsis:'Complete summer work-travel journey from application to completion', duration:'5:15', tags:['Summer','Lifecycle','Journey'], dateAdded:'2026-03-25', driveFolder:'J1 Visa Project', status:'published', fileId:'1PWKcVUsovi4dB4ws-E50F3aLQE52v18o' },
+    { id:20, title:'Selling Paradise', category:'Work & Travel', synopsis:'Marketing the J-1 summer work experience in the US', duration:'4:45', tags:['Paradise','Marketing','Summer'], dateAdded:'2026-03-26', driveFolder:'J1 Visa Project', status:'published', fileId:'13UdDoN-LhKHj08dtdwgEGYzzNGJQE_fR' },
+    { id:21, title:'Points of America Condo', category:'Work & Travel', synopsis:'Points of America condominium partner placement video', duration:'3:50', tags:['Condo','Housing','Placement'], dateAdded:'2026-04-01', driveFolder:'J1 Visa Project', status:'published', fileId:'1ARSAVTiaEeE7URrcpcC1k0Yw8wE3HssY' },
+    { id:22, title:'The Soft Power Ecosystem', category:'Soft Power & Diplomacy', synopsis:'How cultural exchange creates lasting soft power networks', duration:'5:30', tags:['Soft Power','Ecosystem','Diplomacy'], dateAdded:'2026-03-20', driveFolder:'J1 Visa Project', status:'published', fileId:'1-pzxWWDAG_lm8T7HbYwJFHZkY_yRgizi' },
+    { id:23, title:'The Soft Power Equation', category:'Soft Power & Diplomacy', synopsis:'Calculating the diplomatic value of exchange programs', duration:'5:45', tags:['Equation','Diplomacy','Value'], dateAdded:'2026-03-21', driveFolder:'J1 Visa Project', status:'published', fileId:'1-aKR_AprO5sOSl88lBN0nAcfAapuIN2w' },
+    { id:24, title:'The Soft Power Multiplier', category:'Soft Power & Diplomacy', synopsis:'How exchange programs amplify diplomatic impact', duration:'5:00', tags:['Multiplier','Impact','Diplomacy'], dateAdded:'2026-03-22', driveFolder:'J1 Visa Project', status:'published', fileId:'12_7XkH-1xjQLdj1aHe5gk6BN1KzGA1Xy' },
+    { id:25, title:'The Hidden Innovation Engine', category:'Soft Power & Diplomacy', synopsis:'J-1 programs as drivers of innovation and knowledge transfer', duration:'6:10', tags:['Innovation','Engine','Knowledge'], dateAdded:'2026-03-23', driveFolder:'J1 Visa Project', status:'published', fileId:'1APZp9mKJ0b0_3tT6BfOJLj206OGqxruR' },
+    { id:26, title:'The Mechanics of Access — CIEE', category:'Soft Power & Diplomacy', synopsis:'How CIEE funds and facilitates global exchange access', duration:'5:20', tags:['CIEE','Access','Mechanics'], dateAdded:'2026-03-24', driveFolder:'CTI-CIEE Videos', status:'published', fileId:'1CNLHDMi1bHTz4ABpz1gsZXo76VEV5o_d' },
+    { id:27, title:'The CTI Placement Engine', category:'CTI Operations', synopsis:'How the CTI placement system matches candidates to host organizations', duration:'6:00', tags:['CTI','Placement','Operations'], dateAdded:'2026-04-02', driveFolder:'J1 Visa Project', status:'published', fileId:'1aKYzPtlsvCNe7njkeFn-UGEJ6k01-pJd' },
+    { id:28, title:'Intern & Trainee Programs — Accelerate Your Global Career', category:'Intern & Trainee', synopsis:'J-1 intern and trainee pathways for career acceleration', duration:'5:30', tags:['Intern','Trainee','Career'], dateAdded:'2026-03-29', driveFolder:'J1 Visa Project', status:'published', fileId:'1y9w8r0o6NIWLs5LKprDHohPgrL_vWWYI' },
+    { id:29, title:'Iconic American Destinations Documentary', category:'Promotional', synopsis:'Documentary showcasing iconic American destinations for J-1 participants', duration:'4:30', tags:['Documentary','Destinations','America'], dateAdded:'2026-04-05', driveFolder:'J1 Visa Project', status:'published', fileId:'1AlnLCVksHuWsaIMrw4GXy_6UtFyAkOpS' },
+    { id:30, title:'J1 Program at Star Resorts', category:'Promotional', synopsis:'J-1 program experience at premier star resort properties', duration:'3:15', tags:['Resorts','Stars','J1'], dateAdded:'2026-04-06', driveFolder:'J1 Visa Project', status:'published', fileId:'1hBGQbFqY7DEZW5-F_B8m0hVjL7kfIZkm' },
+    { id:31, title:'J1 Event Promotion Video', category:'Promotional', synopsis:'Event promotional video for J-1 recruitment events', duration:'2:45', tags:['Event','Promotion','Recruitment'], dateAdded:'2026-04-06', driveFolder:'J1 Visa Project', status:'published', fileId:'1GKD1BaZ98fYzMUKgC9AzLAjg-mUp3jQI' },
+    { id:32, title:'Waiter Video on Cruise Ship', category:'Promotional', synopsis:'Day in the life — cruise ship waiter recruitment', duration:'3:00', tags:['Cruise','Waiter','Day-in-Life'], dateAdded:'2026-04-07', driveFolder:'J1 Visa Project', status:'published', fileId:'1eqIOWPy1f-JlqonQf2VtZ7wYA6mEs-n7' },
+    { id:33, title:'2025 Thailand CIEE Interviews', category:'B-Roll & Interviews', synopsis:'Thailand CIEE interview footage — 5 segments', duration:'12:00', tags:['Thailand','CIEE','Interviews'], dateAdded:'2026-04-01', driveFolder:'CTI THAILAND', status:'published', fileId:'1KoDGdhqnBE03yWUguUTLHiu5pZhhzwW2' },
+    { id:34, title:'Casa Neos Partner Videos (5 clips)', category:'B-Roll & Interviews', synopsis:'Casa Neos hospitality partner footage — 5 video segments', duration:'8:00', tags:['Casa Neos','Partner','B-Roll'], dateAdded:'2026-04-01', driveFolder:'J1 Visa Project', status:'published', fileId:'1pJha_BOYG2oZUaMSW9oVFAbClP0M_49t' },
+    { id:35, title:'Premier Pool Lifeguard Reel', category:'Social Media', synopsis:'Instagram reel — Premier Pool lifeguard recruitment', duration:'0:30', tags:['Instagram','Reel','Lifeguard'], dateAdded:'2026-04-04', driveFolder:'For Instagram', status:'published', fileId:'1rt-XV30ReX6LP0QDIesoOvf98VM6qqmc' },
+    { id:36, title:'Premier Pool TikTok', category:'Social Media', synopsis:'TikTok short — Premier Pool summer experience', duration:'0:15', tags:['TikTok','Pool','Summer'], dateAdded:'2026-04-04', driveFolder:'For Instagram', status:'published', fileId:'18IWccBrpavs4RPqHu4kOb1snlGhD5bvR' },
+];
+
+const driveFolderMap = {
+    'J1 Visa Project':'12VlA7B40s86L-tvZS_xKxWYZJO7ScFZK','J1-Interview Videos':'1M04j6hR1iQ1fWvFf-PHY2-866dRL4iMn',
+    'CTI THAILAND':'1l5F5qx9L6IF5OiUfn5ixyq6lcx7VfhFP','Video-Potential Participants & Host Org':'1AFq_4z5WRHdnrsQ19IY-dlPG6CGwwhVv',
+    'CTI-CIEE Videos':'1q1vTn2pNNyTqMsuEkdeS-aCToOMaLOWu','J1 Info for University Students':'1cepobCupsx71xTjZDw2sMBi7TffsOVb-',
+    'J1 Videos Compliance':'1zfdhTA1AqVg4_0eLBnDkJclcvzOhjVnY','J1 Experienced Cruise Ship Workers':'11hZylYj4fq4tOOictH-7DsfzP9wMIcKR',
+    'For Instagram':'1kSBBxwYaes0RYKsrWBkeBod1D670MaTW','Cruise Ship Candidate Info Videos':'1mNwMa6OoZnDeMsEiUCfGzSh7EyUeOs7x',
+    'J1 Who Would Qualify or Not Qualify':'1yePBcNdeArqqhV3lfBoE4wP_LFv8sw2c','H2B Video':'1yiDvk4uoLUGt7DSFlKz7xjkkxNZ3k8gA',
+    'CTI MILLENIUM':'16OOBA-i6tgIl32weZcOYUbKSraaE0OJa','CTI ASIA':'1jTZB_L7gtRCt043jy8kJ8VlaSOmdCy5A',
+    'City Unity College':'1rpfJSMkqqsKhAz4vwUMwHQMSZK26vq9J','J1 Meeting Videos':'1bn6Veta1M3s8IS5emLoIfBO3nqOxVhZx',
+    'Teleferic Barcelona':'17Q-WfY2yc4NNfj8OTPMrm92cJS9ICbcb','J1 Video and Adverts':'1qiduoGz0f5SpMOPqJh8udO-fKbbDSXvV',
+    'J1 Scripts-Video-Marketing':'1hMNOg2ZoGh46GuBVPbYQDkYhfUmNfcM3'
+};
+
+const departments = [
+    { name:'J-1 Visa Program', count:12, folders:[
+        {name:'J1 Visa Project',id:'12VlA7B40s86L-tvZS_xKxWYZJO7ScFZK'},{name:'J1-Interview Videos',id:'1M04j6hR1iQ1fWvFf-PHY2-866dRL4iMn'},
+        {name:'CTI THAILAND',id:'1l5F5qx9L6IF5OiUfn5ixyq6lcx7VfhFP'},{name:'CTI MILLENIUM',id:'16OOBA-i6tgIl32weZcOYUbKSraaE0OJa'},
+        {name:'CTI ASIA',id:'1jTZB_L7gtRCt043jy8kJ8VlaSOmdCy5A'},{name:'City Unity College',id:'1rpfJSMkqqsKhAz4vwUMwHQMSZK26vq9J'},
+        {name:'J1 Meeting Videos',id:'1bn6Veta1M3s8IS5emLoIfBO3nqOxVhZx'},{name:'Teleferic Barcelona',id:'17Q-WfY2yc4NNfj8OTPMrm92cJS9ICbcb'},
+        {name:'J1 Video and Adverts',id:'1qiduoGz0f5SpMOPqJh8udO-fKbbDSXvV'},{name:'J1 Scripts-Video-Marketing',id:'1hMNOg2ZoGh46GuBVPbYQDkYhfUmNfcM3'},
+        {name:'For Instagram',id:'1kSBBxwYaes0RYKsrWBkeBod1D670MaTW'},{name:'J1 Videos Compliance',id:'1zfdhTA1AqVg4_0eLBnDkJclcvzOhjVnY'}
+    ]},
+    { name:'Marketing & Media', count:7, folders:[
+        {name:'Video-Potential Participants & Host Org',id:'1AFq_4z5WRHdnrsQ19IY-dlPG6CGwwhVv'},{name:'CTI-CIEE Videos',id:'1q1vTn2pNNyTqMsuEkdeS-aCToOMaLOWu'},
+        {name:'H2B Video',id:'1yiDvk4uoLUGt7DSFlKz7xjkkxNZ3k8gA'},{name:'J1 Experienced Cruise Ship Workers',id:'11hZylYj4fq4tOOictH-7DsfzP9wMIcKR'},
+        {name:'J1 Info for University Students',id:'1cepobCupsx71xTjZDw2sMBi7TffsOVb-'},{name:'Cruise Ship Candidate Info Videos',id:'1mNwMa6OoZnDeMsEiUCfGzSh7EyUeOs7x'},
+        {name:'J1 Who Would Qualify or Not Qualify',id:'1yePBcNdeArqqhV3lfBoE4wP_LFv8sw2c'}
+    ]},
+    { name:'Operations & Infrastructure', count:4, folders:[
+        {name:'poseidon-morning-briefing',id:'folder20'},{name:'CTI Group Chat',id:'folder21'},{name:'CTI Group (B2B)',id:'folder22'},{name:'laquinta-web-assets',id:'folder23'}
+    ]},
+    { name:'Finance & Contracts', count:2, folders:[{name:'CTI Group Contracts',id:'folder24'},{name:'CTI Contract Comparison',id:'folder25'}]},
+    { name:'Compliance & Legal', count:1, folders:[{name:'Duration of Status',id:'folder26'}]},
+    { name:'Human Resources', count:1, folders:[{name:'CTI Group HR',id:'folder27'}]},
+    { name:'Partner Relations', count:2, folders:[{name:'CTI Partner Offices',id:'folder28'},{name:'CTI Group Partners',id:'folder29'}]},
+    { name:'Media Assets', count:4, folders:[
+        {name:'B-Roll',id:'1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2'},{name:'Music',id:'1FxMhy98L0y3Oe04EJ2f7FMRvNj8ITpnO'},
+        {name:'Photos',id:'1Efxf4Xc18B9NaTrQkK5VX_TCi5xWDZzj'},{name:'J1-Visa-Photos',id:'1Efxf4Xc18B9NaTrQkK5VX_TCi5xWDZzj'}
+    ]}
+];
+
+const files = [
+    {name:'CUK Dashboard v2',category:'Dashboard',folder:'CUK Dashboard',size:'2.4MB',modified:'Mar 28',type:'html'},
+    {name:'CTI Rebirth 2026',category:'Dashboard',folder:'CTI Rebirth',size:'1.8MB',modified:'Mar 30',type:'html'},
+    {name:'Master Dashboard v4',category:'Dashboard',folder:'Master Dashboard',size:'3.1MB',modified:'Apr 6',type:'html'},
+    {name:'J-1 Visa Program Overview',category:'Brief',folder:'Briefings',size:'340KB',modified:'Mar 30',type:'pdf'},
+    {name:'CUK Re-engagement Strategy',category:'Brief',folder:'Briefings',size:'280KB',modified:'Apr 1',type:'pdf'},
+    {name:'CTI Monthly Report Mar 2026',category:'Brief',folder:'Briefings',size:'560KB',modified:'Apr 2',type:'pdf'},
+    {name:'J-1 Grand Hyatt Vail Script',category:'Video',folder:'J1 Videos',size:'125KB',modified:'Apr 3',type:'docx'},
+    {name:'Cruise Ship Recruitment Reel',category:'Video',folder:'J1 Videos',size:'450MB',modified:'Apr 4',type:'mp4'},
+    {name:'J-1 Interview Footage - Set A',category:'Video',folder:'J1 Videos',size:'820MB',modified:'Mar 29',type:'mp4'},
+    {name:'CTI Group Contracts Master',category:'Contract',folder:'Contracts',size:'2.1MB',modified:'Mar 25',type:'xlsx'},
+    {name:'CTI-CIEE Partnership Agreement',category:'Contract',folder:'Contracts',size:'340KB',modified:'Mar 20',type:'pdf'},
+    {name:'J-1 Sponsorship Letter',category:'Contract',folder:'Contracts',size:'85KB',modified:'Mar 15',type:'pdf'},
+    {name:'B-Roll Library Index',category:'Media',folder:'Media Assets',size:'450KB',modified:'Apr 5',type:'xlsx'},
+    {name:'Brand Guidelines 2026',category:'Media',folder:'Media Assets',size:'12MB',modified:'Jan 10',type:'pdf'},
+    {name:'Logo Package',category:'Media',folder:'Media Assets',size:'45MB',modified:'Jan 5',type:'zip'},
+    {name:'Dashboard Config',category:'Config',folder:'Technical',size:'25KB',modified:'Apr 6',type:'json'},
+    {name:'API Endpoints Reference',category:'Config',folder:'Technical',size:'45KB',modified:'Apr 1',type:'json'},
+    {name:'Fireflies Integration Guide',category:'Config',folder:'Technical',size:'320KB',modified:'Mar 28',type:'pdf'},
+    {name:'CTI Thailand Documentation',category:'Brief',folder:'CTI Partners',size:'680KB',modified:'Mar 31',type:'pdf'},
+    {name:'SEVIS Compliance Checklist',category:'Brief',folder:'Compliance',size:'145KB',modified:'Apr 2',type:'xlsx'},
+    {name:'H2B Program Details',category:'Video',folder:'Programs',size:'235KB',modified:'Mar 27',type:'docx'},
+    {name:'Financial Dashboard Prototype',category:'Dashboard',folder:'Master Dashboard',size:'1.4MB',modified:'Apr 5',type:'html'},
+    {name:'Crew Readiness System',category:'Dashboard',folder:'Master Dashboard',size:'980KB',modified:'Apr 4',type:'html'},
+    {name:'Contract Comparison Tool',category:'Dashboard',folder:'Master Dashboard',size:'650KB',modified:'Apr 3',type:'html'},
+    {name:'WordPress Security Audit',category:'Brief',folder:'Infrastructure',size:'425KB',modified:'Apr 6',type:'pdf'},
+    {name:'Music Library Catalog',category:'Media',folder:'Audio Assets',size:'8.5MB',modified:'Apr 1',type:'xlsx'},
+    {name:'Voiceover Scripts Master',category:'Media',folder:'Audio Assets',size:'210KB',modified:'Mar 30',type:'docx'},
+    {name:'Marketing Strategy Q2 2026',category:'Brief',folder:'Marketing',size:'1.2MB',modified:'Mar 25',type:'pdf'},
+    {name:'Social Media Calendar',category:'Config',folder:'Marketing',size:'145KB',modified:'Apr 1',type:'xlsx'},
+    {name:'HR Handbook 2026',category:'Brief',folder:'HR',size:'680KB',modified:'Jan 15',type:'pdf'},
+    {name:'Employee Directory',category:'Config',folder:'HR',size:'85KB',modified:'Apr 1',type:'xlsx'},
+    {name:'Duration of Status Documentation',category:'Brief',folder:'Compliance',size:'520KB',modified:'Apr 2',type:'pdf'},
+    {name:'J-1 Photo Archive',category:'Media',folder:'Photo Assets',size:'2.3GB',modified:'Mar 31',type:'zip'},
+];
+
+const voiceovers = [
+    {file:'vo-01.wav',scene:'Scene 1',content:'Partner name, location intro',timing:'Start 1s after scene, gap >= 0.4s',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+    {file:'vo-02.wav',scene:'Scene 2',content:'Resort/venue overview',timing:'Scene dur = VO dur + 1s',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+    {file:'vo-03.wav',scene:'Scene 3',content:'Position A — title, pay rate',timing:'Normalize: loudnorm I=-16, TP=-3, LRA=7',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+    {file:'vo-04.wav',scene:'Scene 4',content:'Position B — title, pay rate',timing:'amix volume=4 (not 8)',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+    {file:'vo-05.wav',scene:'Scene 5',content:'Lifestyle / location benefits',timing:'Convert MP3>WAV: pcm_s16le 48kHz',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+    {file:'vo-06.wav',scene:'Scene 6',content:'Housing details, cost, amenities',timing:'Text overlay at y=860, enable after 1.5s',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+    {file:'vo-07.wav',scene:'Scene 7',content:'Program duration, options',timing:'adelay placement per cumulative offset',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+    {file:'vo-08.wav',scene:'Scene 8',content:'Call to action / outro',timing:'Final segment before CTI outro',driveId:'1-w4978ePOc_mNLbr5WvI-6T2FjpZFWKj'},
+];
+
+const brollClips = [
+    {file:'ghv-kitchen.mp4',source:'Storyblocks',desc:'Chef cooking — flambe, steak, food prep',specs:'1920x1080, 30fps',driveId:'1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2'},
+    {file:'ghv-skiing.mp4',source:'Storyblocks',desc:'Vail resort, skiing, winter mountain sports',specs:'1920x1080, 30fps',driveId:'1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2'},
+    {file:'ghv-housing.mp4',source:'Storyblocks',desc:'Modern apartment interior — J-1 housing',specs:'1920x1080, 30fps',driveId:'1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2'},
+    {file:'ghv-diverse-people.mp4',source:'Storyblocks',desc:'Diverse young professionals montage',specs:'1920x1080, 30fps',driveId:'1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2'},
+    {file:'partner-website-capture',source:'Wondershare',desc:'Partner website screen recording',specs:'1920x1080',driveId:'1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2'},
+    {file:'ken-burns-stills',source:'Partner/Web',desc:'Static images with Ken Burns effect via ffmpeg',specs:'Variable > 1920x1080',driveId:'1c1tUx14YYbvKtzllg4l7gBmuLuCf1rB2'},
+];
+
+const musicTracks = [
+    {title:'Uplifting Corporate — Intro Track',source:'Storyblocks / ElevenLabs',mood:'Bright, optimistic',duration:'1:00',driveId:'1FxMhy98L0y3Oe04EJ2f7FMRvNj8ITpnO'},
+    {title:'Warm Acoustic — Body Background',source:'Storyblocks',mood:'Supportive, non-intrusive',duration:'3:45',driveId:'1FxMhy98L0y3Oe04EJ2f7FMRvNj8ITpnO'},
+    {title:'Inspirational Piano — Outro',source:'Storyblocks',mood:'Emotional, closing feel',duration:'1:30',driveId:'1FxMhy98L0y3Oe04EJ2f7FMRvNj8ITpnO'},
+];
+
+const pipelinePhases = [
+    {num:1,title:'Source Capture',desc:'Record partner website with Wondershare Capture',output:'partner-website.mp4'},
+    {num:2,title:'Clip Extraction',desc:'Download Storyblocks clips, rename per spec',output:'ghv-kitchen/skiing/housing/diverse.mp4'},
+    {num:3,title:'Ken Burns Effect',desc:'Apply pan/zoom to still images via ffmpeg zoompan',output:'kb-*.mp4 (1920x1080)'},
+    {num:4,title:'VO Script & TTS',desc:'Write 8-scene script, generate with ElevenLabs',output:'vo-01 thru vo-08.wav'},
+    {num:5,title:'Scene Assembly',desc:'Concat clips per scene order, set durations',output:'scenes-concat.mp4'},
+    {num:6,title:'VO Track Build',desc:'Merge VO segments with adelay offsets',output:'vo-track.wav'},
+    {num:7,title:'Audio Mix',desc:'VO + music with sidechain ducking, limiter',output:'final-audio.wav'},
+    {num:8,title:'Video + Audio Merge',desc:'Combine scene video with final audio, add overlays',output:'final-draft.mp4'},
+    {num:9,title:'Branding & Export',desc:'Add CTI intro (7s) + outro (8s), render 1080p H.264',output:'CTI-J1-[Partner]-Final.mp4'},
+];
+
+const productionTools = [
+    {name:'ffmpeg',desc:'Video/audio processing, concat, filters, Ken Burns',icon:'🎞️'},
+    {name:'ElevenLabs',desc:'AI TTS voiceover generation (vo-01 thru vo-08)',icon:'🗣️'},
+    {name:'Remotion 4.0',desc:'React-based video rendering pipeline',icon:'⚛️'},
+    {name:'Storyblocks',desc:'Stock video B-roll library',icon:'🎬'},
+    {name:'Wondershare Capture',desc:'Screen recording for website captures',icon:'📹'},
+    {name:'Chrome MCP',desc:'Automated browser capture and navigation',icon:'🌐'},
+];
+
+const brandingAssets = [
+    {name:'CTI Intro',spec:'7 seconds, logo animation',icon:'🎬'},
+    {name:'CTI Outro',spec:'8 seconds, contact info + CTA',icon:'🎬'},
+    {name:'Logo',spec:'PNG with transparency, min 400px',icon:'🏷️'},
+    {name:'Primary Font',spec:'Poppins (headings)',icon:'🔤'},
+    {name:'Body Font',spec:'Inter (body text overlays)',icon:'🔤'},
+    {name:'Brand Colors',spec:'#6366f1 (primary), #ec4899 (accent)',icon:'🎨'},
+];
+
+const activeProjects = [
+    {name:'Poseidon Dashboard v5',status:'In Progress',progress:80,priority:'critical',deadline:'2026-04-15',lead:'Robert Upchurch',actions:[
+        {item:'Merge v3 + v2.0 dashboards',done:true},{item:'Add Google Drive folder directory',done:true},{item:'Add calendar with scheduling',done:true},
+        {item:'Add Production Studio with audio playback',done:true},{item:'Add Projects & Progress page',done:true},{item:'Tailwind + Lucide redesign',done:true},
+        {item:'Connect Microsoft 365 / Outlook',done:false},{item:'Deploy to GitHub Pages',done:false}
+    ]},
+    {name:'CTI Website Rebuild (cti-usa.com)',status:'Blocked',progress:20,priority:'critical',deadline:'2026-05-15',lead:'Robert Upchurch',actions:[
+        {item:'Resolve WordPress hosting crisis',done:false},{item:'ODI website rebuild RFP submission',done:false},{item:'Select vendor from RFP responses',done:false},
+        {item:'Design new site architecture',done:false},{item:'Build landing pages for J-1 programs',done:false},{item:'Launch and DNS cutover',done:false}
+    ]},
+    {name:'Zoho CRM Sprint 1',status:'In Progress',progress:40,priority:'critical',deadline:'2026-04-15',lead:'CRM Team',actions:[
+        {item:'Module 1 — Leads setup',done:true},{item:'Module 2 — Contacts + Deals',done:false},{item:'Import existing client data',done:false},
+        {item:'Configure automation rules',done:false},{item:'Team training session',done:false}
+    ]},
+    {name:'J-1 Grand Hyatt Vail Video',status:'In Progress',progress:55,priority:'high',deadline:'2026-04-10',lead:'Marketing Team',actions:[
+        {item:'Write 8-scene VO script',done:true},{item:'Generate ElevenLabs TTS voiceovers',done:true},{item:'Source Storyblocks B-roll clips',done:true},
+        {item:'Apply Ken Burns effects',done:false},{item:'Assemble scenes in Remotion',done:false},{item:'Audio mix with sidechain ducking',done:false},
+        {item:'Add CTI intro/outro branding',done:false},{item:'Final render and review',done:false}
+    ]},
+    {name:'CUK Partnership Re-engagement',status:'Pending',progress:15,priority:'critical',deadline:'2026-04-07',lead:'Robert Upchurch',actions:[
+        {item:'Prepare meeting agenda',done:true},{item:'Address 444 unassigned crew',done:false},{item:'Draft revised partnership terms',done:false},{item:'Weekly sync established',done:false}
+    ]},
+    {name:'SEVIS & Compliance',status:'In Progress',progress:30,priority:'high',deadline:'2026-04-20',lead:'Compliance Team',actions:[
+        {item:'SEVIS batch upload automation',done:false},{item:'Duration of Status monitoring',done:false},{item:'CUK 444 crew compliance audit',done:false},{item:'Embassy letter sent',done:false}
+    ]},
+    {name:'Master Dashboard (React/Vite)',status:'Planning',progress:10,priority:'medium',deadline:'2026-04-30',lead:'Dev Team',actions:[
+        {item:'Architecture review completed',done:true},{item:'Supabase database schema defined',done:true},{item:'Build component library',done:false},
+        {item:'Implement authentication',done:false},{item:'Deploy to GitHub Pages',done:false}
+    ]},
+    {name:'CTI Thailand Partner Onboarding',status:'Pending',progress:10,priority:'medium',deadline:'2026-04-12',lead:'Robert Upchurch',actions:[
+        {item:'Prepare onboarding docs',done:false},{item:'Schedule intro meeting',done:false},{item:'Set up partner access',done:false}
+    ]},
+];
+
+const aiTools = [
+    {name:'Claude (Anthropic)',type:'LLM',use:'Primary AI — code gen, analysis, dashboard dev, video scripting. Powers Cowork mode.',status:'Active',icon:'🧠',models:'Opus 4, Sonnet 4, Haiku 3.5'},
+    {name:'Claude Code',type:'Dev Tool',use:'CLI agentic coding — dashboards, HTML/CSS/JS, Git, shell commands.',status:'Active',icon:'💻',models:'Opus 4'},
+    {name:'ElevenLabs',type:'Audio AI',use:'TTS voiceover for J-1 recruitment videos. Music generation. Voice cloning.',status:'Active',icon:'🎙️',models:'eleven_v3'},
+    {name:'Google Gemini / NotebookLM',type:'LLM / Research',use:'Research sessions, audio overviews, document analysis.',status:'Active',icon:'📓',models:'Gemini 2.5 Pro'},
+    {name:'Zoho CRM + Zoho One',type:'CRM Platform',use:'CRM for J-1 clients, host orgs, partner offices.',status:'Setup',icon:'📊',models:'N/A'},
+    {name:'Fireflies.ai',type:'Meeting AI',use:'Meeting transcription, action items, summaries.',status:'Pending',icon:'🔥',models:'N/A'},
+    {name:'Remotion',type:'Video Tool',use:'React-based programmatic video rendering. v4.0.',status:'Active',icon:'🎬',models:'N/A'},
+    {name:'Storyblocks',type:'Stock Media',use:'B-roll video clips and background music.',status:'Active',icon:'📹',models:'N/A'},
+    {name:'Figma',type:'Design',use:'UI/UX design for dashboards and brand assets. MCP connected.',status:'Active',icon:'🎨',models:'N/A'},
+    {name:'ffmpeg',type:'Media Processing',use:'Video/audio encoding, Ken Burns, sidechain ducking.',status:'Active',icon:'🎞️',models:'N/A'},
+    {name:'Chrome MCP',type:'Browser Automation',use:'Automated browser tasks, captures, form filling.',status:'Active',icon:'🌐',models:'N/A'},
+    {name:'Spotify',type:'Music',use:'Background music reference and mood boards.',status:'Connected',icon:'🎵',models:'N/A'},
+    {name:'PDF Tools',type:'Document',use:'PDF form filling, extraction, analysis, merging.',status:'Active',icon:'📄',models:'N/A'},
+    {name:'Wondershare Capture',type:'Screen Recording',use:'Website recordings for partner intro scenes.',status:'Active',icon:'📸',models:'N/A'},
+];
+
+const cruiseLines = [
+    {name:'ALL (Accor Live Limitless)',code:'ALL',color:'#1e3a5f',desc:'Global hospitality group — luxury to economy brands',ships:0,website:'https://all.accor.com'},
+    {name:'Apollo Ship Chandlers',code:'Apollo',color:'#c0392b',desc:'Ship supply & chandlery services worldwide',ships:0,website:'#'},
+    {name:'Carnival Cruise Line (CCL USA)',code:'CCL USA',color:'#0054a6',desc:"World's largest cruise line — Fun Ships fleet",ships:24,website:'https://www.carnival.com'},
+    {name:'CUK (Carnival UK)',code:'CUK',color:'#003366',desc:'UK cruise division — P&O Cruises & Cunard parent',ships:10,website:'https://www.carnivalukcareers.co.uk'},
+    {name:'Cunard Line',code:'Cunard',color:'#8b0000',desc:'Iconic luxury ocean liner heritage — Queen Mary 2',ships:4,website:'https://www.cunard.com'},
+    {name:'Heinemann Duty Free',code:'Heineman',color:'#e67e22',desc:'Global travel retail & duty-free operations',ships:0,website:'https://www.heinemann.eu'},
+    {name:'Margaritaville at Sea',code:'Margaritaville',color:'#2ecc71',desc:'Island-themed casual cruise experience',ships:2,website:'https://www.margaritavilleatsea.com'},
+    {name:'Norwegian Cruise Line (NCL)',code:'NCL',color:'#004b87',desc:'Freestyle cruising — innovative onboard experiences',ships:19,website:'https://www.ncl.com'},
+    {name:'P&O Cruises',code:'P&O',color:'#ffd700',desc:"Britain's favourite cruise line — family & adult-only ships",ships:7,website:'https://www.pocruises.com'},
+    {name:'Royal Caribbean (RCCL)',code:'RCCL',color:'#00205b',desc:"World's largest cruise ships — Icon & Oasis class",ships:28,website:'https://www.royalcaribbean.com'},
+    {name:'Virgin Voyages',code:'Virgin Voyages',color:'#e60000',desc:'Adults-only — modern luxury by Richard Branson',ships:4,website:'https://www.virginvoyages.com'},
+];
+
+const repos = [
+    {name:'Poseidon Dashboard',desc:'Central command dashboard for CTI operations',url:'https://github.com/Robert-Upchurch/poseidon-dashboard',liveUrl:'https://robert-upchurch.github.io/poseidon-dashboard/',icon:'⚡',lang:'HTML/JS'},
+    {name:'POA Sale Dashboard',desc:'POA Units 1801-2 Sale Analysis Dashboard',url:'https://github.com/Robert-Upchurch/poa-sale-dashboard',liveUrl:'https://robert-upchurch.github.io/poa-sale-dashboard/',icon:'💰',lang:'HTML'},
+    {name:'CTI Dashboards',desc:'CTI Group consolidated dashboards collection',url:'https://github.com/Robert-Upchurch/cti-dashboards',liveUrl:'https://robert-upchurch.github.io/cti-dashboards/',icon:'📊',lang:'HTML'},
+    {name:'CTI Events Dashboard',desc:'CTI J1 Events Dashboard — recruiters & partners',url:'https://github.com/Robert-Upchurch/cti-events-dashboard',liveUrl:'https://robert-upchurch.github.io/cti-events-dashboard/',icon:'📅',lang:'HTML'},
+    {name:'CTI Client Dashboard',desc:'CTI J1 Client Dashboard — Executive Team',url:'https://github.com/Robert-Upchurch/cti-client-dashboard',liveUrl:'https://robert-upchurch.github.io/cti-client-dashboard/',icon:'👔',lang:'HTML'},
+    {name:'CTI Bali Dashboard',desc:'CTI-USA Bali Operations Dashboard 2026',url:'https://github.com/Robert-Upchurch/cti-bali-dashboard',liveUrl:'https://robert-upchurch.github.io/cti-bali-dashboard/',icon:'🌴',lang:'HTML'},
+    {name:'CTI Command Center',desc:'Competitive Intelligence Command Center V2',url:'https://github.com/Robert-Upchurch/cti-command-center',liveUrl:'https://robert-upchurch.github.io/cti-command-center/',icon:'🎯',lang:'HTML'},
+    {name:'Cruise Positions Dashboard',desc:'Cruise, Yacht & Ferry Shipboard Positions',url:'https://github.com/Robert-Upchurch/cruise-positions-dashboard',liveUrl:'https://robert-upchurch.github.io/cruise-positions-dashboard/',icon:'🚢',lang:'HTML'},
+    {name:'Rent vs Buy Calculator',desc:'Rent vs. Buy with Monte Carlo Simulation',url:'https://github.com/Robert-Upchurch/rent-vs-buy-calculator',liveUrl:'https://robert-upchurch.github.io/rent-vs-buy-calculator/',icon:'🏠',lang:'HTML/JS'},
+    {name:'CIEE Partner Onboarding',desc:'CIEE Partner Onboarding Portal',url:'https://github.com/Robert-Upchurch/ciee-partner-onboarding',liveUrl:'https://robert-upchurch.github.io/ciee-partner-onboarding/',icon:'🤝',lang:'HTML'},
+    {name:'Poseidon Website',desc:'Poseidon website — main public-facing site',url:'https://github.com/Robert-Upchurch/poseidon-website',liveUrl:'https://robert-upchurch.github.io/poseidon-website/',icon:'🌐',lang:'HTML'},
+    {name:'CTI Mobile',desc:'CTI mobile application — testing file',url:'https://github.com/Robert-Upchurch/CTI-Mobile',icon:'📱',lang:'Mobile'},
+    {name:'CTI Mobile 1',desc:'CTI mobile application variant',url:'https://github.com/Robert-Upchurch/CTI-Mobile1',icon:'📲',lang:'Mobile'},
+    {name:'CTI Dashboard (Legacy)',desc:'Legacy CTI dashboard — test',url:'https://github.com/Robert-Upchurch/-cti-dashboard',icon:'🗂️',lang:'HTML'},
+    {name:'Desktop Tutorial',desc:'GitHub Desktop tutorial repository',url:'https://github.com/Robert-Upchurch/desktop-tutorial',icon:'📝',lang:'Docs'},
+    {name:'GitHub Slideshow',desc:'A robot powered training repository',url:'https://github.com/Robert-Upchurch/github-slideshow',icon:'🎓',lang:'Public'},
+];
+
+// ───── LIVE STATE (localStorage-backed) ─────
+let tasks = JSON.parse(localStorage.getItem('poseidon-tasks') || '[]');
+let calEvents = JSON.parse(localStorage.getItem('poseidon-events') || '[]');
+let currentPage = 'dashboard';
+let calView = 'month';
+let calDate = new Date();
+let taskIdCounter = tasks.length ? Math.max(...tasks.map(t=>t.id)) + 1 : 1;
+let eventIdCounter = calEvents.length ? Math.max(...calEvents.map(e=>e.id)) + 1 : 1;
+
+function saveTasks() { localStorage.setItem('poseidon-tasks', JSON.stringify(tasks)); }
+function saveEvents() { localStorage.setItem('poseidon-events', JSON.stringify(calEvents)); }
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION & CORE UI
+// ═══════════════════════════════════════════════════
+
+function switchPage(page) {
+    currentPage = page;
+    document.querySelectorAll('.page').forEach(p => { p.classList.add('hidden'); p.classList.remove('active'); });
+    const el = document.getElementById(page);
+    if (el) el.classList.remove('hidden');
+    // Update nav active states
+    document.querySelectorAll('[data-page]').forEach(link => {
+        const isActive = link.dataset.page === page;
+        if (isActive) {
+            link.classList.add('bg-zinc-800/80','text-white');
+            link.classList.remove('text-zinc-400');
+        } else {
+            link.classList.remove('bg-zinc-800/80','text-white');
+            link.classList.add('text-zinc-400');
+        }
+    });
+    // Page-specific init
+    if (page === 'dashboard') renderDashboardHome();
+    if (page === 'tasks') renderTasks();
+    if (page === 'calendar') renderCalendar();
+    if (page === 'videos') renderVideos();
+    if (page === 'projects') renderProjects();
+    if (page === 'partners') renderPartners();
+    if (page === 'settings') renderSettings();
+}
+
+function $(id) { return document.getElementById(id); }
+function h(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ───── GREETING & TIME ─────
+function getGreeting() {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Good Morning';
+    if (hr < 17) return 'Good Afternoon';
+    return 'Good Evening';
+}
+
+function formatDate(d) {
+    return d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD HOME
+// ═══════════════════════════════════════════════════
+
+function renderDashboardHome() {
+    const g = $('greeting');
+    if (g) g.textContent = getGreeting() + ', Robert';
+    const td = $('today-date');
+    if (td) td.textContent = formatDate(new Date());
+
+    // KPIs
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayTasks = tasks.filter(t => t.dueDate === todayStr && t.status !== 'completed').length;
+    const overdue = tasks.filter(t => t.dueDate < todayStr && t.status !== 'completed').length;
+    const inProg = tasks.filter(t => t.status === 'in-progress').length;
+    const todayEvents = calEvents.filter(e => e.date === todayStr).length;
+
+    if ($('kpi-today-tasks')) $('kpi-today-tasks').textContent = todayTasks;
+    if ($('kpi-overdue')) $('kpi-overdue').textContent = overdue;
+    if ($('kpi-in-progress')) $('kpi-in-progress').textContent = inProg;
+    if ($('kpi-meetings')) $('kpi-meetings').textContent = todayEvents;
+
+    // Priority Tasks
+    const ptl = $('priority-tasks-list');
+    if (ptl) {
+        const pri = tasks.filter(t => (t.priority === 'critical' || t.priority === 'high') && t.status !== 'completed')
+            .sort((a,b) => (a.priority==='critical'?0:1) - (b.priority==='critical'?0:1)).slice(0, 8);
+        const pColors = {critical:'#ef4444',high:'#f59e0b',medium:'#3b82f6',low:'#10b981'};
+        const sIcons = {'pending':'○','in-progress':'◐','completed':'●'};
+        ptl.innerHTML = pri.length ? pri.map(t => `
+            <div class="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-0">
+                <span style="color:${pColors[t.priority]}">${sIcons[t.status]||'○'}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm text-zinc-200 truncate">${h(t.title)}</div>
+                    <div class="flex gap-2 mt-0.5">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold" style="background:${pColors[t.priority]}22;color:${pColors[t.priority]}">${t.priority}</span>
+                        <span class="text-[10px] text-zinc-500">${t.category||''}</span>
+                    </div>
+                </div>
+                <span class="text-[10px] text-zinc-600 shrink-0">${t.dueDate||''}</span>
+            </div>
+        `).join('') : '<p class="text-zinc-500 text-sm py-4">No priority tasks. Add tasks from the Tasks page or connect Microsoft To-Do.</p>';
+    }
+
+    // Today's Schedule
+    const ts = $('today-schedule');
+    if (ts) {
+        const todayEvts = calEvents.filter(e => e.date === todayStr).sort((a,b) => (a.time||'').localeCompare(b.time||''));
+        ts.innerHTML = todayEvts.length ? todayEvts.map(e => `
+            <div class="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-0">
+                <div class="w-1 h-8 rounded-full" style="background:${e.color||'#6366f1'}"></div>
+                <div class="flex-1">
+                    <div class="text-sm text-zinc-200">${h(e.title)}</div>
+                    <div class="text-[10px] text-zinc-500">${e.time||'All day'}${e.location?' · '+h(e.location):''}</div>
+                </div>
+            </div>
+        `).join('') : '<p class="text-zinc-500 text-sm py-4">No events today. Add events from the Calendar page or connect Outlook.</p>';
+    }
+
+    // Drive Links
+    const dl = $('drive-links');
+    if (dl) {
+        dl.innerHTML = departments.slice(0,6).map(d => `
+            <a href="https://drive.google.com/drive/folders/${d.folders[0]?.id||''}" target="_blank" class="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800/50 transition-colors">
+                <span class="text-lg">📁</span>
+                <div class="min-w-0">
+                    <div class="text-xs text-zinc-300 truncate">${d.name}</div>
+                    <div class="text-[10px] text-zinc-600">${d.count} folders</div>
+                </div>
+            </a>
+        `).join('');
+    }
+
+    // GitHub Quick Links
+    const gl = $('github-quick-links');
+    if (gl) {
+        gl.innerHTML = repos.filter(r=>r.liveUrl).slice(0,6).map(r => `
+            <a href="${r.liveUrl}" target="_blank" class="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800/50 transition-colors">
+                <span class="text-lg">${r.icon}</span>
+                <div class="text-xs text-zinc-300 truncate">${r.name}</div>
+            </a>
+        `).join('');
+    }
+
+    // Daily Briefing placeholder
+    const dbc = $('daily-briefing-content');
+    if (dbc && !dbc.dataset.loaded) {
+        dbc.innerHTML = `
+            <p class="text-zinc-400 text-sm">Daily briefing combines data from Zoho CRM, Outlook email, and Fireflies meetings.</p>
+            <p class="text-zinc-500 text-xs mt-2">Connect Microsoft 365 in Settings to enable live briefings, or refresh via Cowork session.</p>
+        `;
+    }
+
+    // AI Co-Worker Suggestions
+    renderAIAssistant();
+
+    // Activity
+    renderActivityFeed();
+}
+
+function renderActivityFeed() {
+    const al = $('activity-list');
+    if (!al) return;
+    const activities = [
+        {icon:'📊',text:'Dashboard v5 rebuild in progress',time:'Now',color:'#6366f1'},
+        {icon:'🎬',text:`${videos.length} videos in library`,time:'Updated',color:'#f59e0b'},
+        {icon:'📁',text:`${departments.reduce((s,d)=>s+d.count,0)} Drive folders indexed`,time:'Synced',color:'#10b981'},
+        {icon:'🚀',text:`${repos.length} GitHub repositories tracked`,time:'Active',color:'#06b6d4'},
+        {icon:'📋',text:`${tasks.length} tasks tracked`,time:'Live',color:'#8b5cf6'},
+        {icon:'📅',text:`${calEvents.length} calendar events`,time:'Live',color:'#ec4899'},
+    ];
+    al.innerHTML = activities.map(a => `
+        <div class="flex items-center gap-3 py-2 border-b border-zinc-800/50 last:border-0">
+            <span class="text-sm">${a.icon}</span>
+            <span class="text-sm text-zinc-300 flex-1">${a.text}</span>
+            <span class="text-[10px] text-zinc-600">${a.time}</span>
+        </div>
+    `).join('');
+}
+
+// ───── AI CO-WORKER ASSISTANT PANEL ─────
+function renderAIAssistant() {
+    const panel = $('ai-assistant-panel');
+    if (!panel) return;
+
+    const suggestions = [
+        {task:'Draft daily client briefing from Outlook + CRM data',llm:'Claude (Cowork)',icon:'📝',auto:true},
+        {task:'Review and prioritize incoming emails',llm:'Claude (Cowork)',icon:'📧',auto:true},
+        {task:'Generate weekly status report from project data',llm:'Claude (Cowork)',icon:'📊',auto:true},
+        {task:'Transcribe and summarize today\'s meetings',llm:'Fireflies.ai',icon:'🎙️',auto:true},
+        {task:'Research competitor pricing updates',llm:'Gemini 2.5 Pro',icon:'🔍',auto:false},
+        {task:'Create social media posts from latest video',llm:'Claude (Cowork)',icon:'📱',auto:true},
+        {task:'Update CRM records from meeting notes',llm:'Claude (Cowork)',icon:'💼',auto:true},
+        {task:'Audit SEVIS compliance documentation',llm:'Claude (Cowork)',icon:'📋',auto:false},
+    ];
+
+    // Show top 5 relevant suggestions
+    const todayDay = new Date().getDay();
+    const relevantSugs = suggestions.slice(0, 5);
+
+    panel.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-sm">🤖</div>
+                <div>
+                    <div class="text-sm font-semibold text-zinc-200">AI Co-Worker</div>
+                    <div class="text-[10px] text-zinc-500">Tasks I can handle for you today</div>
+                </div>
+            </div>
+            <button onclick="openJarvis()" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors font-medium">Talk to Jarvis</button>
+        </div>
+        <div class="space-y-1.5">
+            ${relevantSugs.map((s,i) => `
+                <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/50 transition-colors group cursor-pointer" onclick="handleAISuggestion(${i})">
+                    <span class="text-sm">${s.icon}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs text-zinc-300 group-hover:text-zinc-100">${s.task}</div>
+                        <div class="text-[10px] text-zinc-600 mt-0.5">Assign to: <span class="text-indigo-400">${s.llm}</span></div>
+                    </div>
+                    ${s.auto ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium shrink-0">Auto</span>' : '<span class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-400 font-medium shrink-0">Manual</span>'}
+                </div>
+            `).join('')}
+        </div>
+        <div class="mt-3 pt-3 border-t border-zinc-800/50">
+            <p class="text-[10px] text-zinc-600 italic">Jarvis analyzes your calendar, emails, and projects daily to suggest tasks AI can handle — lightening your load so you focus on what matters.</p>
+        </div>
+    `;
+}
+
+function handleAISuggestion(idx) {
+    // In a Cowork session, this would trigger the actual task
+    // For now, show a notification
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-20 right-6 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm shadow-xl z-50 animate-pulse';
+    toast.textContent = 'Task queued for next Cowork session';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════════════
+// TASK MANAGEMENT
+// ═══════════════════════════════════════════════════
+
+function renderTasks() {
+    const list = $('task-list');
+    if (!list) return;
+
+    const pFilter = $('priority-filter')?.value || 'all';
+    const sFilter = $('status-filter')?.value || 'all';
+
+    let filtered = [...tasks];
+    if (pFilter !== 'all') filtered = filtered.filter(t => t.priority === pFilter);
+    if (sFilter !== 'all') filtered = filtered.filter(t => t.status === sFilter);
+
+    filtered.sort((a,b) => {
+        const po = {critical:0,high:1,medium:2,low:3};
+        return (po[a.priority]||4) - (po[b.priority]||4);
+    });
+
+    const pColors = {critical:'#ef4444',high:'#f59e0b',medium:'#3b82f6',low:'#10b981'};
+    const sColors = {'pending':'bg-zinc-700 text-zinc-300','in-progress':'bg-indigo-500/20 text-indigo-400','completed':'bg-emerald-500/20 text-emerald-400'};
+
+    list.innerHTML = filtered.length ? filtered.map(t => `
+        <div class="flex items-center gap-3 p-3 rounded-xl border border-zinc-800/50 hover:border-zinc-700 transition-colors group ${t.status==='completed'?'opacity-50':''}">
+            <button onclick="toggleTaskStatus(${t.id})" class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${t.status==='completed'?'border-emerald-500 bg-emerald-500 text-white':'border-zinc-600 hover:border-indigo-500'}" style="${t.status!=='completed'?'border-color:'+pColors[t.priority]:''}">
+                ${t.status==='completed'?'<span class="text-[10px]">✓</span>':''}
+            </button>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm ${t.status==='completed'?'line-through text-zinc-500':'text-zinc-200'}">${h(t.title)}</div>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold" style="background:${pColors[t.priority]}22;color:${pColors[t.priority]}">${t.priority}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded ${sColors[t.status]||''}">${t.status}</span>
+                    ${t.category?'<span class="text-[10px] text-zinc-600">'+h(t.category)+'</span>':''}
+                </div>
+            </div>
+            <span class="text-[10px] text-zinc-600 shrink-0">${t.dueDate||''}</span>
+            <button onclick="deleteTask(${t.id})" class="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-sm">✕</button>
+        </div>
+    `).join('') : '<div class="text-center py-12"><p class="text-zinc-500 text-sm">No tasks yet.</p><p class="text-zinc-600 text-xs mt-1">Add tasks manually or connect Microsoft To-Do in Settings.</p></div>';
+}
+
+function toggleTaskStatus(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    if (t.status === 'completed') t.status = 'pending';
+    else if (t.status === 'pending') t.status = 'in-progress';
+    else t.status = 'completed';
+    saveTasks();
+    renderTasks();
+    if (currentPage === 'dashboard') renderDashboardHome();
+}
+
+function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    renderTasks();
+    if (currentPage === 'dashboard') renderDashboardHome();
+}
+
+function openTaskModal() {
+    const m = $('task-modal');
+    if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+}
+
+function closeTaskModal() {
+    const m = $('task-modal');
+    if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    // Reset form
+    if ($('task-title')) $('task-title').value = '';
+    if ($('task-priority')) $('task-priority').value = 'medium';
+    if ($('task-category')) $('task-category').value = '';
+    if ($('task-due')) $('task-due').value = '';
+}
+
+function saveTask() {
+    const title = $('task-title')?.value?.trim();
+    if (!title) return;
+    tasks.push({
+        id: taskIdCounter++,
+        title,
+        priority: $('task-priority')?.value || 'medium',
+        status: 'pending',
+        category: $('task-category')?.value || '',
+        dueDate: $('task-due')?.value || ''
+    });
+    saveTasks();
+    closeTaskModal();
+    renderTasks();
+    if (currentPage === 'dashboard') renderDashboardHome();
+}
+
+// ═══════════════════════════════════════════════════
+// CALENDAR ENGINE
+// ═══════════════════════════════════════════════════
+
+function renderCalendar() {
+    renderMiniCal();
+    renderMainCal();
+    renderUpcomingEvents();
+}
+
+function renderMiniCal() {
+    const grid = $('mini-cal-grid');
+    const title = $('mini-cal-title');
+    if (!grid || !title) return;
+
+    const y = calDate.getFullYear(), m = calDate.getMonth();
+    title.textContent = calDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="text-[10px] text-zinc-600 text-center font-medium">${d}</div>`).join('');
+
+    for (let i = 0; i < firstDay; i++) html += '<div></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday = dateStr === todayStr;
+        const hasEvent = calEvents.some(e => e.date === dateStr);
+        html += `<div class="text-center text-xs cursor-pointer rounded-full w-7 h-7 flex items-center justify-center mx-auto transition-colors
+            ${isToday ? 'bg-indigo-500 text-white font-bold' : 'text-zinc-400 hover:bg-zinc-800'}
+            ${hasEvent && !isToday ? 'ring-1 ring-indigo-500/50' : ''}"
+            onclick="calDate=new Date(${y},${m},${d});renderCalendar()">${d}</div>`;
+    }
+    grid.innerHTML = html;
+}
+
+function renderMainCal() {
+    const monthGrid = $('cal-month-grid');
+    const weekView = $('cal-week-view');
+    const dayView = $('cal-day-view');
+    const mainTitle = $('cal-main-title');
+
+    if (monthGrid) monthGrid.classList.toggle('hidden', calView !== 'month');
+    if (weekView) weekView.classList.toggle('hidden', calView !== 'week');
+    if (dayView) dayView.classList.toggle('hidden', calView !== 'day');
+
+    if (calView === 'month') renderMonthView();
+    else if (calView === 'week') renderWeekView();
+    else renderDayView();
+
+    if (mainTitle) {
+        if (calView === 'month') mainTitle.textContent = calDate.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+        else if (calView === 'week') mainTitle.textContent = 'Week of ' + calDate.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        else mainTitle.textContent = calDate.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+    }
+}
+
+function renderMonthView() {
+    const grid = $('cal-month-grid');
+    if (!grid) return;
+    const y = calDate.getFullYear(), m = calDate.getMonth();
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="text-xs text-zinc-500 text-center font-semibold py-2">${d}</div>`).join('');
+
+    for (let i = 0; i < firstDay; i++) html += '<div class="border border-zinc-800/30 rounded-lg p-1 min-h-[80px]"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday = dateStr === todayStr;
+        const dayEvents = calEvents.filter(e => e.date === dateStr);
+        html += `<div class="border ${isToday?'border-indigo-500/50 bg-indigo-500/5':'border-zinc-800/30'} rounded-lg p-1.5 min-h-[80px] cursor-pointer hover:border-zinc-600 transition-colors" onclick="calDate=new Date(${y},${m},${d});calView='day';renderCalendar()">
+            <div class="text-xs ${isToday?'text-indigo-400 font-bold':'text-zinc-500'} mb-1">${d}</div>
+            ${dayEvents.slice(0,3).map(e => `<div class="text-[10px] px-1 py-0.5 rounded mb-0.5 truncate" style="background:${e.color||'#6366f1'}22;color:${e.color||'#6366f1'}">${e.time?e.time+' ':''}${h(e.title)}</div>`).join('')}
+            ${dayEvents.length > 3 ? `<div class="text-[10px] text-zinc-600">+${dayEvents.length-3} more</div>` : ''}
+        </div>`;
+    }
+    grid.innerHTML = html;
+}
+
+function renderWeekView() {
+    const view = $('cal-week-view');
+    if (!view) return;
+    const startOfWeek = new Date(calDate);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let html = '<div class="space-y-1">';
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(startOfWeek);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        const isToday = dateStr === todayStr;
+        const dayEvents = calEvents.filter(e => e.date === dateStr);
+
+        html += `<div class="flex gap-3 p-2 rounded-lg ${isToday?'bg-indigo-500/5 border border-indigo-500/20':''}">
+            <div class="w-16 shrink-0 text-center">
+                <div class="text-[10px] text-zinc-500 uppercase">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
+                <div class="text-lg ${isToday?'text-indigo-400 font-bold':'text-zinc-300'}">${d.getDate()}</div>
+            </div>
+            <div class="flex-1 space-y-1">
+                ${dayEvents.length ? dayEvents.map(e => `
+                    <div class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-zinc-800/50 cursor-pointer" onclick="showEventDetail(${e.id})">
+                        <div class="w-1 h-6 rounded-full" style="background:${e.color||'#6366f1'}"></div>
+                        <div>
+                            <div class="text-xs text-zinc-300">${h(e.title)}</div>
+                            <div class="text-[10px] text-zinc-600">${e.time||'All day'}</div>
+                        </div>
+                    </div>
+                `).join('') : '<div class="text-xs text-zinc-700 py-2">No events</div>'}
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    view.innerHTML = html;
+}
+
+function renderDayView() {
+    const view = $('cal-day-view');
+    if (!view) return;
+    const dateStr = calDate.toISOString().split('T')[0];
+    const dayEvents = calEvents.filter(e => e.date === dateStr).sort((a,b) => (a.time||'').localeCompare(b.time||''));
+
+    let html = '<div class="space-y-2">';
+    // Hour slots from 7am to 9pm
+    for (let hr = 7; hr <= 21; hr++) {
+        const hrStr = String(hr).padStart(2,'0');
+        const hrEvents = dayEvents.filter(e => e.time && e.time.startsWith(hrStr));
+        html += `<div class="flex gap-3 ${hrEvents.length?'':'opacity-50'}">
+            <div class="w-14 text-right text-[10px] text-zinc-600 pt-1 shrink-0">${hr>12?hr-12:hr}:00 ${hr>=12?'PM':'AM'}</div>
+            <div class="flex-1 border-t border-zinc-800/50 pt-1 min-h-[32px]">
+                ${hrEvents.map(e => `
+                    <div class="flex items-center gap-2 p-1.5 rounded-lg cursor-pointer hover:bg-zinc-800/50" style="background:${e.color||'#6366f1'}11" onclick="showEventDetail(${e.id})">
+                        <div class="w-1 h-5 rounded-full" style="background:${e.color||'#6366f1'}"></div>
+                        <div class="text-xs text-zinc-300">${h(e.title)}</div>
+                        ${e.location?'<div class="text-[10px] text-zinc-600">'+h(e.location)+'</div>':''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    if (!dayEvents.length) html = '<div class="text-center py-8"><p class="text-zinc-500 text-sm">No events this day.</p></div>';
+    view.innerHTML = html;
+}
+
+function renderUpcomingEvents() {
+    const list = $('upcoming-list');
+    if (!list) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const upcoming = calEvents.filter(e => e.date >= todayStr).sort((a,b) => a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||'')).slice(0, 10);
+
+    list.innerHTML = upcoming.length ? upcoming.map(e => `
+        <div class="flex items-center gap-2 py-2 border-b border-zinc-800/50 last:border-0 cursor-pointer hover:bg-zinc-800/30 rounded px-1 transition-colors" onclick="showEventDetail(${e.id})">
+            <div class="w-1 h-8 rounded-full shrink-0" style="background:${e.color||'#6366f1'}"></div>
+            <div class="min-w-0 flex-1">
+                <div class="text-xs text-zinc-300 truncate">${h(e.title)}</div>
+                <div class="text-[10px] text-zinc-600">${e.date} ${e.time||''}</div>
+            </div>
+        </div>
+    `).join('') : '<p class="text-zinc-600 text-xs py-2">No upcoming events</p>';
+}
+
+function calPrev() {
+    if (calView === 'month') calDate.setMonth(calDate.getMonth() - 1);
+    else if (calView === 'week') calDate.setDate(calDate.getDate() - 7);
+    else calDate.setDate(calDate.getDate() - 1);
+    renderCalendar();
+}
+
+function calNext() {
+    if (calView === 'month') calDate.setMonth(calDate.getMonth() + 1);
+    else if (calView === 'week') calDate.setDate(calDate.getDate() + 7);
+    else calDate.setDate(calDate.getDate() + 1);
+    renderCalendar();
+}
+
+function calToday() {
+    calDate = new Date();
+    renderCalendar();
+}
+
+function setCalView(v) {
+    calView = v;
+    document.querySelectorAll('[data-calview]').forEach(btn => {
+        btn.classList.toggle('bg-indigo-500', btn.dataset.calview === v);
+        btn.classList.toggle('text-white', btn.dataset.calview === v);
+        btn.classList.toggle('bg-zinc-800', btn.dataset.calview !== v);
+        btn.classList.toggle('text-zinc-400', btn.dataset.calview !== v);
+    });
+    renderCalendar();
+}
+
+// Event CRUD
+function openEventModal(dateStr) {
+    const m = $('event-modal');
+    if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+    if ($('event-date') && dateStr) $('event-date').value = dateStr;
+}
+
+function closeEventModal() {
+    const m = $('event-modal');
+    if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    if ($('event-title-input')) $('event-title-input').value = '';
+    if ($('event-date')) $('event-date').value = '';
+    if ($('event-time')) $('event-time').value = '';
+    if ($('event-location')) $('event-location').value = '';
+    if ($('event-color')) $('event-color').value = '#6366f1';
+}
+
+function saveEvent() {
+    const title = $('event-title-input')?.value?.trim();
+    const date = $('event-date')?.value;
+    if (!title || !date) return;
+    calEvents.push({
+        id: eventIdCounter++,
+        title,
+        date,
+        time: $('event-time')?.value || '',
+        location: $('event-location')?.value || '',
+        color: $('event-color')?.value || '#6366f1',
+        source: 'manual'
+    });
+    saveEvents();
+    closeEventModal();
+    renderCalendar();
+    if (currentPage === 'dashboard') renderDashboardHome();
+}
+
+function showEventDetail(id) {
+    const e = calEvents.find(ev => ev.id === id);
+    if (!e) return;
+    const m = $('event-detail-modal');
+    if (!m) return;
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+    const c = $('event-detail-content');
+    if (c) {
+        c.innerHTML = `
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-3 h-3 rounded-full" style="background:${e.color||'#6366f1'}"></div>
+                <h3 class="text-lg font-semibold text-zinc-100">${h(e.title)}</h3>
+            </div>
+            <div class="space-y-2 text-sm text-zinc-400">
+                <div>📅 ${e.date}</div>
+                ${e.time ? '<div>🕐 '+e.time+'</div>' : ''}
+                ${e.location ? '<div>📍 '+h(e.location)+'</div>' : ''}
+                ${e.source ? '<div class="text-[10px] text-zinc-600 mt-2">Source: '+e.source+'</div>' : ''}
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="deleteEvent(${e.id})" class="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30 transition-colors">Delete</button>
+                <button onclick="closeDetailModal()" class="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-xs hover:bg-zinc-700 transition-colors">Close</button>
+            </div>
+        `;
+    }
+}
+
+function closeDetailModal() {
+    const m = $('event-detail-modal');
+    if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+}
+
+function deleteEvent(id) {
+    calEvents = calEvents.filter(e => e.id !== id);
+    saveEvents();
+    closeDetailModal();
+    renderCalendar();
+    if (currentPage === 'dashboard') renderDashboardHome();
+}
+
+// ═══════════════════════════════════════════════════
+// VIDEOS PAGE
+// ═══════════════════════════════════════════════════
+
+function renderVideos() {
+    const grid = $('video-grid');
+    const catDiv = $('video-categories');
+    const statsDiv = $('video-stats');
+    if (!grid) return;
+
+    // Stats
+    if (statsDiv) {
+        statsDiv.innerHTML = `
+            <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-zinc-100">${videos.length}</div><div class="text-xs text-zinc-500">Total Videos</div>
+            </div>
+            <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-emerald-400">${videos.filter(v=>v.status==='published').length}</div><div class="text-xs text-zinc-500">Published</div>
+            </div>
+            <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-amber-400">${videos.filter(v=>v.status==='in-edit'||v.status==='in-review').length}</div><div class="text-xs text-zinc-500">In Progress</div>
+            </div>
+            <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-zinc-400">${new Set(videos.map(v=>v.category)).size}</div><div class="text-xs text-zinc-500">Categories</div>
+            </div>
+        `;
+    }
+
+    // Categories
+    const categories = ['All', ...new Set(videos.map(v => v.category))];
+    if (catDiv && !catDiv.dataset.init) {
+        catDiv.dataset.init = '1';
+        catDiv.innerHTML = categories.map(cat => `
+            <button onclick="filterVideos('${cat}')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${cat==='All'?'bg-indigo-500 text-white':'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}" data-vidcat="${cat}">${cat}</button>
+        `).join('');
+    }
+
+    displayVideos('All');
+}
+
+function filterVideos(cat) {
+    document.querySelectorAll('[data-vidcat]').forEach(b => {
+        b.classList.toggle('bg-indigo-500', b.dataset.vidcat === cat);
+        b.classList.toggle('text-white', b.dataset.vidcat === cat);
+        b.classList.toggle('bg-zinc-800', b.dataset.vidcat !== cat);
+        b.classList.toggle('text-zinc-400', b.dataset.vidcat !== cat);
+    });
+    displayVideos(cat);
+}
+
+function displayVideos(cat) {
+    const grid = $('video-grid');
+    if (!grid) return;
+    const filtered = cat === 'All' ? videos : videos.filter(v => v.category === cat);
+    const catColors = {'Partner Recruitment':'#ef4444','Onboarding':'#6366f1','Compliance Training':'#10b981','Cultural Exchange':'#f59e0b','Work & Travel':'#06b6d4','Soft Power & Diplomacy':'#8b5cf6','CTI Operations':'#ec4899','Intern & Trainee':'#14b8a6','Promotional':'#f97316','B-Roll & Interviews':'#64748b','Social Media':'#e879f9'};
+
+    grid.innerHTML = filtered.map(v => {
+        const color = catColors[v.category] || '#6366f1';
+        const folderId = driveFolderMap[v.driveFolder] || '12VlA7B40s86L-tvZS_xKxWYZJO7ScFZK';
+        const videoUrl = `https://drive.google.com/file/d/${v.fileId}/view`;
+        return `
+        <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl overflow-hidden hover:border-zinc-600 transition-all group cursor-pointer" onclick="window.open('${videoUrl}','_blank')">
+            <div class="h-32 flex items-center justify-center relative" style="background:${color}22">
+                <span class="text-3xl group-hover:scale-110 transition-transform">▶</span>
+                <div class="absolute bottom-2 right-2 text-[10px] bg-black/70 text-white px-1.5 py-0.5 rounded">${v.duration}</div>
+                <div class="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded font-semibold" style="background:${color}33;color:${color}">${v.category}</div>
+            </div>
+            <div class="p-3">
+                <div class="text-sm font-medium text-zinc-200 truncate">${h(v.title)}</div>
+                <div class="text-[10px] text-zinc-500 mt-1 line-clamp-2">${v.synopsis}</div>
+                <div class="flex items-center justify-between mt-2">
+                    <div class="flex gap-1">${v.tags.slice(0,2).map(t=>'<span class="text-[9px] px-1 py-0.5 rounded bg-zinc-800 text-zinc-500">'+t+'</span>').join('')}</div>
+                    <span class="text-[10px] text-zinc-600">${v.dateAdded}</span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Production Studio
+    renderProductionStudio();
+}
+
+function renderProductionStudio() {
+    // VO Table
+    const voT = $('vo-table');
+    if (voT) {
+        voT.innerHTML = voiceovers.map(vo => `
+            <tr class="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                <td class="py-2 px-3"><a href="https://drive.google.com/drive/folders/${vo.driveId}" target="_blank" class="font-mono text-xs text-indigo-400 hover:underline">${vo.file}</a></td>
+                <td class="py-2 px-3 text-xs text-zinc-400">${vo.scene}</td>
+                <td class="py-2 px-3 text-xs text-zinc-400">${vo.content}</td>
+                <td class="py-2 px-3 text-[10px] text-zinc-600 font-mono">${vo.timing}</td>
+                <td class="py-2 px-3 text-center"><button onclick="playStudioAsset('vo','${vo.file}')" class="px-2 py-1 rounded bg-violet-500/20 text-violet-400 text-[10px] font-semibold hover:bg-violet-500/30 transition-colors">▶ Play</button></td>
+            </tr>
+        `).join('');
+    }
+
+    // B-Roll Table
+    const bT = $('broll-table');
+    if (bT) {
+        bT.innerHTML = brollClips.map(c => `
+            <tr class="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                <td class="py-2 px-3"><a href="https://drive.google.com/drive/folders/${c.driveId}" target="_blank" class="font-mono text-xs text-indigo-400 hover:underline">${c.file}</a></td>
+                <td class="py-2 px-3"><span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">${c.source}</span></td>
+                <td class="py-2 px-3 text-xs text-zinc-400">${c.desc}</td>
+                <td class="py-2 px-3 text-[10px] text-zinc-600 font-mono">${c.specs}</td>
+                <td class="py-2 px-3 text-center"><button onclick="playStudioAsset('broll','${c.file}')" class="px-2 py-1 rounded bg-indigo-500/20 text-indigo-400 text-[10px] font-semibold hover:bg-indigo-500/30 transition-colors">▶ Preview</button></td>
+            </tr>
+        `).join('');
+    }
+
+    // Music Tracks
+    const mL = $('music-tracks');
+    if (mL) {
+        mL.innerHTML = musicTracks.map(t => `
+            <div class="flex items-center gap-3 p-2.5 border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                <button onclick="playStudioAsset('music','${t.title}')" class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-xs shrink-0 hover:scale-105 transition-transform">▶</button>
+                <div class="flex-1 min-w-0">
+                    <a href="https://drive.google.com/drive/folders/${t.driveId}" target="_blank" class="text-sm text-zinc-200 hover:text-indigo-400">${t.title}</a>
+                    <div class="text-[10px] text-zinc-600 mt-0.5">${t.source} · ${t.mood}</div>
+                </div>
+                <span class="text-xs text-zinc-600 font-mono">${t.duration}</span>
+            </div>
+        `).join('');
+    }
+
+    // Pipeline
+    const pL = $('pipeline-phases');
+    if (pL) {
+        pL.innerHTML = pipelinePhases.map(p => `
+            <div class="flex gap-3 items-start py-2.5 border-b border-zinc-800/50">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0">${p.num}</div>
+                <div>
+                    <div class="text-sm font-semibold text-zinc-200">${p.title}</div>
+                    <div class="text-xs text-zinc-500">${p.desc}</div>
+                    <div class="text-[10px] text-zinc-600 font-mono mt-0.5">→ ${p.output}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Tools
+    const tL = $('tools-list');
+    if (tL) {
+        tL.innerHTML = productionTools.map(t => `
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 transition-colors">
+                <span class="text-xl">${t.icon}</span>
+                <div><div class="text-sm font-medium text-zinc-200">${t.name}</div><div class="text-[10px] text-zinc-500">${t.desc}</div></div>
+            </div>
+        `).join('');
+    }
+
+    // Branding
+    const bL = $('branding-list');
+    if (bL) {
+        bL.innerHTML = brandingAssets.map(b => `
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/30 transition-colors">
+                <span class="text-xl">${b.icon}</span>
+                <div><div class="text-sm font-medium text-zinc-200">${b.name}</div><div class="text-[10px] text-zinc-500">${b.spec}</div></div>
+            </div>
+        `).join('');
+    }
+}
+
+function playStudioAsset(type, name) {
+    // Show in media player bar
+    const bar = $('media-player-bar');
+    if (bar) bar.classList.remove('hidden');
+    if ($('player-title')) $('player-title').textContent = name;
+    if ($('player-subtitle')) $('player-subtitle').textContent = type === 'vo' ? 'Voiceover' : type === 'broll' ? 'B-Roll' : 'Music';
+    // Visual feedback
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-20 right-6 bg-violet-600 text-white px-4 py-2 rounded-lg text-sm shadow-xl z-50';
+    toast.textContent = `Now playing: ${name}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+}
+
+// ═══════════════════════════════════════════════════
+// PROJECTS PAGE
+// ═══════════════════════════════════════════════════
+
+function renderProjects() {
+    const grid = $('projects-grid');
+    const scoreEl = $('progress-score');
+    const aiGrid = $('ai-tools-grid');
+
+    if (grid) {
+        const pColors = {critical:'#ef4444',high:'#f59e0b',medium:'#3b82f6',low:'#10b981'};
+        const sColors = {'In Progress':'bg-indigo-500/20 text-indigo-400','Blocked':'bg-red-500/20 text-red-400','Pending':'bg-amber-500/20 text-amber-400','Planning':'bg-zinc-700 text-zinc-400'};
+
+        grid.innerHTML = activeProjects.map(p => `
+            <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 hover:border-zinc-600 transition-colors">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-zinc-200">${h(p.name)}</h3>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${sColors[p.status]||''}">${p.status}</span>
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all" style="width:${p.progress}%;background:${pColors[p.priority]||'#6366f1'}"></div>
+                    </div>
+                    <span class="text-xs font-mono text-zinc-400">${p.progress}%</span>
+                </div>
+                <div class="space-y-1 mb-3">
+                    ${p.actions.map(a => `
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <span class="${a.done?'text-emerald-500':'text-zinc-700'}">${a.done?'●':'○'}</span>
+                            <span class="${a.done?'text-zinc-500 line-through':'text-zinc-400'}">${a.item}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-zinc-600 pt-2 border-t border-zinc-800/50">
+                    <span>${p.lead}</span>
+                    <span style="color:${pColors[p.priority]}">${p.priority}</span>
+                    <span>${p.deadline}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Progress Score
+    if (scoreEl) {
+        const totalActions = activeProjects.reduce((s,p) => s + p.actions.length, 0);
+        const doneActions = activeProjects.reduce((s,p) => s + p.actions.filter(a=>a.done).length, 0);
+        const score = totalActions ? Math.round((doneActions / totalActions) * 100) : 0;
+        scoreEl.textContent = score + '%';
+    }
+
+    // AI Tools
+    if (aiGrid) {
+        const statusColors = {'Active':'bg-emerald-500/20 text-emerald-400','Setup':'bg-amber-500/20 text-amber-400','Pending':'bg-zinc-700 text-zinc-400','Connected':'bg-indigo-500/20 text-indigo-400'};
+        aiGrid.innerHTML = aiTools.map(t => `
+            <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 hover:border-zinc-600 transition-colors">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="text-2xl">${t.icon}</span>
+                    <div>
+                        <div class="text-sm font-semibold text-zinc-200">${h(t.name)}</div>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded ${statusColors[t.status]||''} font-medium">${t.status}</span>
+                    </div>
+                </div>
+                <div class="text-xs text-zinc-500 mb-2">${t.use}</div>
+                <div class="flex items-center justify-between text-[10px] text-zinc-600">
+                    <span>${t.type}</span>
+                    <span class="font-mono">${t.models}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// PARTNERS PAGE
+// ═══════════════════════════════════════════════════
+
+function renderPartners() {
+    const grid = $('cruise-line-grid');
+    if (!grid) return;
+
+    grid.innerHTML = cruiseLines.map(cl => `
+        <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 cursor-pointer hover:border-zinc-600 transition-all relative overflow-hidden group" ${cl.website!=='#'?`onclick="window.open('${cl.website}','_blank')"`  :''}>
+            <div class="absolute top-0 right-0 w-16 h-16 rounded-bl-[40px]" style="background:${cl.color}15"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-bold shrink-0" style="background:${cl.color}">🚢</div>
+                <div>
+                    <div class="text-sm font-semibold text-zinc-200">${h(cl.name)}</div>
+                    <div class="text-[10px] text-zinc-500">${cl.code}</div>
+                </div>
+            </div>
+            <div class="text-xs text-zinc-400 mb-3 leading-relaxed">${cl.desc}</div>
+            <div class="flex items-center justify-between">
+                ${cl.ships > 0 ? `<span class="text-[10px] text-zinc-500">${cl.ships} ships</span>` : `<span class="text-[10px] text-zinc-500">Partner</span>`}
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// SETTINGS PAGE
+// ═══════════════════════════════════════════════════
+
+function renderSettings() {
+    // File Registry
+    const tbody = $('file-table-body');
+    if (tbody) {
+        const typeIcons = {html:'🌐',pdf:'📄',xlsx:'📊',docx:'📝',mp4:'🎬',json:'⚙️',zip:'📦'};
+        tbody.innerHTML = files.map(f => `
+            <tr class="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                <td class="py-2 px-3 text-sm text-zinc-200">${typeIcons[f.type]||'📁'} ${h(f.name)}</td>
+                <td class="py-2 px-3"><span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">${f.category}</span></td>
+                <td class="py-2 px-3 text-xs text-zinc-500">${f.folder}</td>
+                <td class="py-2 px-3 text-xs text-zinc-600 font-mono">${f.size}</td>
+                <td class="py-2 px-3 text-xs text-zinc-600">${f.modified}</td>
+            </tr>
+        `).join('');
+    }
+
+    // GitHub Links
+    const ghGrid = $('github-links-grid');
+    if (ghGrid) {
+        ghGrid.innerHTML = repos.map(r => `
+            <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 hover:border-indigo-500/50 transition-all">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xl">${r.icon}</span>
+                    <div>
+                        <div class="text-sm font-semibold text-zinc-200">${h(r.name)}</div>
+                        <span class="text-[10px] font-mono px-1 py-0.5 rounded bg-indigo-500/20 text-indigo-400">${r.lang}</span>
+                    </div>
+                </div>
+                <p class="text-xs text-zinc-500 mb-3">${r.desc}</p>
+                <div class="flex gap-2 flex-wrap">
+                    ${r.liveUrl ? `<a href="${r.liveUrl}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-500 text-white rounded-md text-[10px] font-semibold hover:bg-indigo-600 transition-colors">🔗 Open</a>` : ''}
+                    <a href="${r.url}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-800 text-zinc-400 rounded-md text-[10px] font-medium hover:text-zinc-200 transition-colors">📂 Source</a>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// MSAL / OFFICE 365 INTEGRATION
+// ═══════════════════════════════════════════════════
+
+const msalConfig = {
+    auth: {
+        clientId: 'aff2df6d-cd54-48f3-bd24-3584fd9ea3de',
+        authority: 'https://login.microsoftonline.com/common',
+        redirectUri: window.location.origin + window.location.pathname
+    },
+    cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+};
+const o365Scopes = ['User.Read','Mail.Read','Calendars.Read','Tasks.Read','Files.Read'];
+let msalInstance = null;
+let o365Account = null;
+
+function o365Init() {
+    if (typeof msal === 'undefined') { console.warn('MSAL not loaded'); return; }
+    msalInstance = new msal.PublicClientApplication(msalConfig);
+    msalInstance.initialize().then(() => msalInstance.handleRedirectPromise()).then(resp => {
+        if (resp && resp.account) {
+            o365Account = resp.account;
+            o365UpdateUI(true);
+            o365LoadAll();
+        } else {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                o365Account = accounts[0];
+                o365UpdateUI(true);
+            }
+        }
+    }).catch(e => console.error('MSAL init error:', e));
+}
+
+function o365SignIn() {
+    if (!msalInstance) return;
+    msalInstance.loginRedirect({ scopes: o365Scopes });
+}
+
+function o365SignOut() {
+    if (!msalInstance) return;
+    msalInstance.logoutRedirect();
+}
+
+function o365UpdateUI(connected) {
+    const btn = $('o365-connect-btn');
+    const status = $('o365-status');
+    if (btn) {
+        if (connected) {
+            btn.textContent = 'Disconnect';
+            btn.onclick = o365SignOut;
+            btn.className = 'px-4 py-2 rounded-lg bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors';
+        } else {
+            btn.textContent = 'Connect Microsoft 365';
+            btn.onclick = o365SignIn;
+            btn.className = 'px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-colors';
+        }
+    }
+    if (status) {
+        status.innerHTML = connected
+            ? `<span class="flex items-center gap-2 text-emerald-400 text-sm"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Connected as ${o365Account?.username||'User'}</span>`
+            : '<span class="text-zinc-500 text-sm">Not connected</span>';
+    }
+}
+
+async function o365GetToken() {
+    if (!msalInstance || !o365Account) return null;
+    try {
+        const resp = await msalInstance.acquireTokenSilent({ scopes: o365Scopes, account: o365Account });
+        return resp.accessToken;
+    } catch (e) {
+        console.error('Token error:', e);
+        return null;
+    }
+}
+
+async function o365Fetch(url) {
+    const token = await o365GetToken();
+    if (!token) return null;
+    const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+    return resp.ok ? resp.json() : null;
+}
+
+async function o365LoadAll() {
+    await Promise.all([o365LoadMail(), o365LoadCalendar(), o365LoadTasks(), o365LoadFiles()]);
+}
+
+async function o365LoadMail() {
+    const data = await o365Fetch('https://graph.microsoft.com/v1.0/me/messages?$top=10&$orderby=receivedDateTime desc&$select=subject,from,receivedDateTime,isRead,bodyPreview');
+    if (!data || !data.value) return;
+    // Update briefing with latest emails
+    const dbc = $('daily-briefing-content');
+    if (dbc) {
+        dbc.dataset.loaded = '1';
+        dbc.innerHTML = `
+            <div class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Latest Emails</div>
+            ${data.value.slice(0,5).map(m => `
+                <div class="flex items-start gap-2 py-2 border-b border-zinc-800/50 last:border-0">
+                    <span class="text-sm mt-0.5">${m.isRead?'📧':'📬'}</span>
+                    <div class="min-w-0">
+                        <div class="text-xs text-zinc-300 truncate">${h(m.subject||'(no subject)')}</div>
+                        <div class="text-[10px] text-zinc-600">${m.from?.emailAddress?.name||''} · ${new Date(m.receivedDateTime).toLocaleString()}</div>
+                    </div>
+                </div>
+            `).join('')}
+        `;
+    }
+}
+
+async function o365LoadCalendar() {
+    const now = new Date();
+    const start = now.toISOString();
+    const end = new Date(now.getTime() + 14*86400000).toISOString();
+    const data = await o365Fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=subject,start,end,location,isAllDay`);
+    if (!data || !data.value) return;
+
+    // Merge into calEvents
+    const outlookEvents = data.value.map((e, i) => ({
+        id: 90000 + i,
+        title: e.subject || '(no title)',
+        date: e.start.dateTime.split('T')[0],
+        time: e.isAllDay ? '' : e.start.dateTime.split('T')[1].substring(0,5),
+        location: e.location?.displayName || '',
+        color: '#0078d4',
+        source: 'Outlook'
+    }));
+
+    // Remove old Outlook events, add fresh ones
+    calEvents = calEvents.filter(e => e.source !== 'Outlook');
+    calEvents.push(...outlookEvents);
+    saveEvents();
+    if (currentPage === 'calendar') renderCalendar();
+    if (currentPage === 'dashboard') renderDashboardHome();
+}
+
+async function o365LoadTasks() {
+    // Get task lists first
+    const lists = await o365Fetch('https://graph.microsoft.com/v1.0/me/todo/lists');
+    if (!lists || !lists.value) return;
+
+    for (const list of lists.value) {
+        const taskData = await o365Fetch(`https://graph.microsoft.com/v1.0/me/todo/lists/${list.id}/tasks?$filter=status ne 'completed'&$top=50`);
+        if (!taskData || !taskData.value) continue;
+
+        const newTasks = taskData.value.map((t, i) => ({
+            id: 80000 + i,
+            title: t.title || '(no title)',
+            priority: t.importance === 'high' ? 'high' : t.importance === 'low' ? 'low' : 'medium',
+            status: t.status === 'completed' ? 'completed' : t.status === 'inProgress' ? 'in-progress' : 'pending',
+            category: 'Microsoft To-Do',
+            dueDate: t.dueDateTime?.dateTime?.split('T')[0] || '',
+            source: 'microsoft-todo'
+        }));
+
+        // Remove old MS tasks, add fresh
+        tasks = tasks.filter(t => t.source !== 'microsoft-todo');
+        tasks.push(...newTasks);
+        taskIdCounter = Math.max(taskIdCounter, ...tasks.map(t=>t.id)) + 1;
+        saveTasks();
+    }
+
+    if (currentPage === 'tasks') renderTasks();
+    if (currentPage === 'dashboard') renderDashboardHome();
+}
+
+async function o365LoadFiles() {
+    const data = await o365Fetch('https://graph.microsoft.com/v1.0/me/drive/root/children?$top=20&$select=name,size,lastModifiedDateTime,webUrl,file');
+    if (!data || !data.value) return;
+    // Could populate a OneDrive section — for now log it
+    console.log('OneDrive files loaded:', data.value.length);
+}
+
+// ═══════════════════════════════════════════════════
+// MEDIA PLAYER ENGINE
+// ═══════════════════════════════════════════════════
+
+let playerAudio = null;
+let playerPlaying = false;
+let playerQueue = [];
+let playerIdx = 0;
+
+function playerToggle() {
+    if (!playerAudio) return;
+    if (playerPlaying) { playerAudio.pause(); playerPlaying = false; }
+    else { playerAudio.play(); playerPlaying = true; }
+    updatePlayerBtn();
+}
+
+function updatePlayerBtn() {
+    const btn = $('player-play-btn');
+    if (btn) btn.textContent = playerPlaying ? '⏸' : '▶';
+}
+
+function playerPrev() { if (playerIdx > 0) { playerIdx--; loadPlayerTrack(); } }
+function playerNext() { if (playerIdx < playerQueue.length - 1) { playerIdx++; loadPlayerTrack(); } }
+
+function loadPlayerTrack() {
+    if (!playerQueue.length) return;
+    const track = playerQueue[playerIdx];
+    if ($('player-title')) $('player-title').textContent = track.title || 'Track';
+    if ($('player-subtitle')) $('player-subtitle').textContent = track.artist || '';
+}
+
+function playerSeek(e) {
+    if (!playerAudio) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    playerAudio.currentTime = pct * playerAudio.duration;
+}
+
+function playerMute() {
+    if (!playerAudio) return;
+    playerAudio.muted = !playerAudio.muted;
+    const icon = $('player-vol-icon');
+    if (icon) icon.textContent = playerAudio.muted ? '🔇' : '🔊';
+}
+
+function playerSetVolume(v) {
+    if (playerAudio) playerAudio.volume = v / 100;
+}
+
+function playerClose() {
+    if (playerAudio) { playerAudio.pause(); playerAudio = null; }
+    playerPlaying = false;
+    const bar = $('media-player-bar');
+    if (bar) bar.classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════
+// JARVIS AI MODAL
+// ═══════════════════════════════════════════════════
+
+let jarvisLoaded = false;
+
+function openJarvis() {
+    const modal = $('jarvis-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+    if (!jarvisLoaded) {
+        const container = $('jarvis-widget-container');
+        if (container) {
+            container.innerHTML = '<elevenlabs-convai agent-id="agent_2401knj1whdcepxrp744rkf8ap06"></elevenlabs-convai>';
+            jarvisLoaded = true;
+        }
+    }
+}
+
+function closeJarvis() {
+    const modal = $('jarvis-modal');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+}
+
+// ═══════════════════════════════════════════════════
+// J-1 DIVISION TABS
+// ═══════════════════════════════════════════════════
+
+function setupJ1Tabs() {
+    document.querySelectorAll('[data-j1tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.j1tab;
+            document.querySelectorAll('[data-j1tab]').forEach(b => {
+                b.classList.toggle('bg-indigo-500', b.dataset.j1tab === target);
+                b.classList.toggle('text-white', b.dataset.j1tab === target);
+                b.classList.toggle('bg-zinc-800', b.dataset.j1tab !== target);
+                b.classList.toggle('text-zinc-400', b.dataset.j1tab !== target);
+            });
+            document.querySelectorAll('[data-j1panel]').forEach(p => {
+                p.classList.toggle('hidden', p.dataset.j1panel !== target);
+            });
+        });
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// VIDEO PRODUCTION TABS
+// ═══════════════════════════════════════════════════
+
+function setupVideoTabs() {
+    document.querySelectorAll('[data-vidtab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.vidtab;
+            document.querySelectorAll('[data-vidtab]').forEach(b => {
+                b.classList.toggle('bg-indigo-500', b.dataset.vidtab === target);
+                b.classList.toggle('text-white', b.dataset.vidtab === target);
+                b.classList.toggle('bg-zinc-800', b.dataset.vidtab !== target);
+                b.classList.toggle('text-zinc-400', b.dataset.vidtab !== target);
+            });
+            document.querySelectorAll('[data-vidpanel]').forEach(p => {
+                p.classList.toggle('hidden', p.dataset.vidpanel !== target);
+            });
+        });
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// PARTNER TABS (Cruise/Hospitality)
+// ═══════════════════════════════════════════════════
+
+function setupPartnerTabs() {
+    document.querySelectorAll('[data-partnertab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.partnertab;
+            document.querySelectorAll('[data-partnertab]').forEach(b => {
+                b.classList.toggle('bg-indigo-500', b.dataset.partnertab === target);
+                b.classList.toggle('text-white', b.dataset.partnertab === target);
+                b.classList.toggle('bg-zinc-800', b.dataset.partnertab !== target);
+                b.classList.toggle('text-zinc-400', b.dataset.partnertab !== target);
+            });
+            document.querySelectorAll('[data-partnerpanel]').forEach(p => {
+                p.classList.toggle('hidden', p.dataset.partnerpanel !== target);
+            });
+        });
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// SETTINGS TABS
+// ═══════════════════════════════════════════════════
+
+function setupSettingsTabs() {
+    document.querySelectorAll('[data-settab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.settab;
+            document.querySelectorAll('[data-settab]').forEach(b => {
+                b.classList.toggle('bg-indigo-500', b.dataset.settab === target);
+                b.classList.toggle('text-white', b.dataset.settab === target);
+                b.classList.toggle('bg-zinc-800', b.dataset.settab !== target);
+                b.classList.toggle('text-zinc-400', b.dataset.settab !== target);
+            });
+            document.querySelectorAll('[data-setpanel]').forEach(p => {
+                p.classList.toggle('hidden', p.dataset.setpanel !== target);
+            });
+        });
+    });
+}
+
+// ═══════════════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════════════
+
+let isDark = localStorage.getItem('poseidon-theme') !== 'light';
+
+function toggleTheme() {
+    isDark = !isDark;
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('poseidon-theme', isDark ? 'dark' : 'light');
+    // Update all theme toggle buttons
+    document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+        btn.innerHTML = isDark
+            ? '<i data-lucide="sun" class="w-4 h-4"></i> Light Mode'
+            : '<i data-lucide="moon" class="w-4 h-4"></i> Dark Mode';
+    });
+    if (window.lucide) lucide.createIcons();
+}
+
+function applyThemeOnLoad() {
+    const saved = localStorage.getItem('poseidon-theme');
+    isDark = saved !== 'light';
+    document.documentElement.classList.toggle('dark', isDark);
+}
+
+// ═══════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════
+
+// Apply theme immediately (before DOMContentLoaded to prevent flash)
+applyThemeOnLoad();
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply theme toggle icon
+    const tBtn = $('theme-toggle');
+    if (tBtn) tBtn.innerHTML = isDark ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>';
+
+    // Setup navigation click handlers
+    document.querySelectorAll('[data-page]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchPage(link.dataset.page);
+        });
+    });
+
+    // Setup tab systems
+    setupJ1Tabs();
+    setupVideoTabs();
+    setupPartnerTabs();
+    setupSettingsTabs();
+
+    // Task filters
+    const pf = $('priority-filter');
+    const sf = $('status-filter');
+    if (pf) pf.addEventListener('change', renderTasks);
+    if (sf) sf.addEventListener('change', renderTasks);
+
+    // Calendar view buttons
+    document.querySelectorAll('[data-calview]').forEach(btn => {
+        btn.addEventListener('click', () => setCalView(btn.dataset.calview));
+    });
+
+    // Modal close on backdrop click
+    ['task-modal','event-modal','event-detail-modal'].forEach(id => {
+        const m = $(id);
+        if (m) m.addEventListener('click', e => { if (e.target === m) { m.classList.add('hidden'); m.classList.remove('flex'); } });
+    });
+
+    // Initialize MSAL
+    o365Init();
+
+    // Initialize Lucide icons
+    if (window.lucide) lucide.createIcons();
+
+    // Render initial page
+    switchPage('dashboard');
+
+    // Update clock every minute
+    setInterval(() => {
+        if (currentPage === 'dashboard') {
+            const td = $('today-date');
+            if (td) td.textContent = formatDate(new Date());
+        }
+    }, 60000);
+
+    console.log('🔱 Poseidon Dashboard v5 initialized');
+});
+
+</script>
+</body>
+</html>

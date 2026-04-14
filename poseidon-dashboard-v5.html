@@ -2301,6 +2301,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 60000);
 
+    // J1 Division tab switching
+    document.querySelectorAll('.j1-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-tab');
+        document.querySelectorAll('.j1-tab').forEach(t => {
+          t.classList.remove('bg-indigo-500', 'text-white');
+          t.classList.add('bg-zinc-900', 'text-zinc-400', 'border', 'border-zinc-800', 'hover:border-zinc-700');
+        });
+        tab.classList.remove('bg-zinc-900', 'text-zinc-400', 'border', 'border-zinc-800', 'hover:border-zinc-700');
+        tab.classList.add('bg-indigo-500', 'text-white');
+        document.querySelectorAll('.j1-content').forEach(c => {
+          c.style.display = c.id === target ? 'block' : 'none';
+        });
+      });
+    });
+
     console.log('🔱 Poseidon Dashboard v5 initialized');
 });
 

@@ -1114,13 +1114,10 @@ function renderDashboardHome() {
         `).join('');
     }
 
-    // Daily Briefing placeholder
+    // Daily Briefing — auto-load from ./briefings/latest.json (generated daily by Cowork)
     const dbc = $('daily-briefing-content');
     if (dbc && !dbc.dataset.loaded) {
-        dbc.innerHTML = `
-            <p class="text-zinc-400 text-sm">Daily briefing combines data from Zoho CRM, Outlook email, and Fireflies meetings.</p>
-            <p class="text-zinc-500 text-xs mt-2">Connect Microsoft 365 in Settings to enable live briefings, or refresh via Cowork session.</p>
-        `;
+        refreshBriefing();
     }
 
     // AI Co-Worker Suggestions
@@ -2226,6 +2223,74 @@ function setupSettingsTabs() {
             });
         });
     });
+}
+
+// ═══════════════════════════════════════════════════
+// DAILY CLIENT BRIEFING — fetches ./briefings/latest.json
+// Generated daily by the Cowork scheduled task at 7 AM
+// ═══════════════════════════════════════════════════
+
+async function refreshBriefing() {
+    const dbc = $('daily-briefing-content');
+    if (!dbc) return;
+    dbc.innerHTML = '<div class="text-center py-4 text-zinc-500 text-xs">Loading latest briefing…</div>';
+    try {
+        const resp = await fetch('./briefings/latest.json?v=' + Date.now(), { cache: 'no-store' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const b = await resp.json();
+        renderBriefing(b);
+        dbc.dataset.loaded = '1';
+    } catch (e) {
+        dbc.innerHTML = `
+            <div class="text-center py-4">
+                <p class="text-zinc-400 text-sm">No briefing available yet.</p>
+                <p class="text-zinc-500 text-xs mt-2">Next auto-refresh: 7:00 AM tomorrow. Error: ${e.message}</p>
+            </div>`;
+    }
+}
+
+function renderBriefing(b) {
+    const dbc = $('daily-briefing-content');
+    if (!dbc) return;
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const h = [];
+    h.push(`<div class="flex items-center justify-between mb-3">
+        <div class="text-[11px] text-zinc-500">Generated ${esc(b.generatedAt || b.date)}</div>
+        <div class="text-[11px] text-indigo-400">${esc(b.date)}</div>
+    </div>`);
+    if (b.summary) h.push(`<p class="text-sm text-zinc-300 mb-3 leading-relaxed">${esc(b.summary)}</p>`);
+    if (b.meetings?.length) {
+        h.push(`<div class="mb-3"><div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Meetings Today</div><ul class="space-y-1 text-xs text-zinc-300">`);
+        b.meetings.forEach(m => h.push(`<li>• <span class="text-zinc-500">${esc(m.time)}</span> ${esc(m.title)}${m.status?` <span class="text-[10px] text-zinc-600">(${esc(m.status)})</span>`:''}</li>`));
+        h.push(`</ul></div>`);
+    }
+    if (b.partnerships?.length) {
+        h.push(`<div class="mb-3"><div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Active Partnerships</div><div class="flex flex-wrap gap-1.5">`);
+        const color = s => ({active:'bg-emerald-900/40 text-emerald-300',followup:'bg-amber-900/40 text-amber-300',expanding:'bg-indigo-900/40 text-indigo-300'}[(s||'').toLowerCase().replace(/\s/g,'')] || 'bg-zinc-800 text-zinc-400');
+        b.partnerships.forEach(p => h.push(`<span class="text-[11px] px-2 py-0.5 rounded ${color(p.status)}">${esc(p.name)}</span>`));
+        h.push(`</div></div>`);
+    }
+    if (b.emails?.length) {
+        h.push(`<div class="mb-3"><div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Emails Requiring Action</div><ul class="space-y-1 text-xs text-zinc-300">`);
+        b.emails.forEach(e => h.push(`<li>• <span class="text-zinc-500">${esc(e.sender)}:</span> ${esc(e.subject)}${e.action?` <span class="text-[10px] text-indigo-400">— ${esc(e.action)}</span>`:''}</li>`));
+        h.push(`</ul></div>`);
+    }
+    if (b.actionItems?.length) {
+        h.push(`<div class="mb-3"><div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Action Items</div><ul class="space-y-1 text-xs text-zinc-300">`);
+        b.actionItems.forEach(a => h.push(`<li>• <span class="text-indigo-400 font-medium">${esc(a.owner)}:</span> ${esc(a.task)}</li>`));
+        h.push(`</ul></div>`);
+    }
+    if (b.metrics && Object.keys(b.metrics).length) {
+        h.push(`<div class="mb-3"><div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Pipeline & Metrics</div><div class="grid grid-cols-2 gap-1.5">`);
+        Object.entries(b.metrics).forEach(([k,v]) => h.push(`<div class="text-xs text-zinc-400"><span class="text-zinc-500">${esc(k)}:</span> <span class="text-zinc-200 font-medium">${esc(v)}</span></div>`));
+        h.push(`</div></div>`);
+    }
+    if (b.tomorrow?.length) {
+        h.push(`<div><div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Tomorrow</div><ul class="space-y-1 text-xs text-zinc-300">`);
+        b.tomorrow.forEach(t => h.push(`<li>• <span class="text-zinc-500">${esc(t.time)}</span> ${esc(t.title)}</li>`));
+        h.push(`</ul></div>`);
+    }
+    dbc.innerHTML = h.join('');
 }
 
 // ═══════════════════════════════════════════════════

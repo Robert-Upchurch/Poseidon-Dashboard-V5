@@ -1,0 +1,45 @@
+{
+  "date": "2026-04-14",
+  "generatedAt": "2026-04-14T18:15:00-04:00",
+  "summary": "Major pilot partnership secured with a government university for J1 candidates (20 students starting June, path to 800+ J1 openings). Exec team met 8:25 AM to prep for upcoming US Embassy meeting. CIEE actively reviewing J1 Visa Status materials.",
+  "meetings": [
+    {"time": "8:00 AM", "title": "Recruiting Meeting (Eduardo Ferraz)", "status": "Held"},
+    {"time": "8:25 AM", "title": "CTI Exec — 94 min, Fireflies recap available", "status": "Held"},
+    {"time": "8:30 AM", "title": "Executive Team Meeting (CEO)", "status": "Held"}
+  ],
+  "partnerships": [
+    {"name": "Government University (J1)", "status": "Active"},
+    {"name": "CIEE", "status": "Active"},
+    {"name": "Virgin Voyages", "status": "Active"},
+    {"name": "TUI / Palece", "status": "Follow-up"},
+    {"name": "Greenheart CAP", "status": "Active"},
+    {"name": "OTC Maribali", "status": "Expanding"}
+  ],
+  "emails": [
+    {"sender": "PPennoyer@ciee.org", "subject": "RE: J1 VISA STATUS 2026_CTI", "action": "Monitor for Andrew's feedback"},
+    {"sender": "mxhobiso80@gmail.com", "subject": "Cruise ship enquiry (S. Korea)", "action": "Reply / screen"},
+    {"sender": "hichamboudik9@gmail.com", "subject": "Cruise ship interest (Morocco)", "action": "Reply / screen"},
+    {"sender": "Laremy.Griffis@regions.com", "subject": "South Marion Office", "action": "Review"},
+    {"sender": "s.pretto@select-comm.com", "subject": "Follow Up - Call Later Today", "action": "Return call"}
+  ],
+  "actionItems": [
+    {"owner": "Putu Astra", "task": "Follow up persistently with TUI contacts; ensure Zoho CRM/Recruit entries"},
+    {"owner": "Robert Upchurch", "task": "Escalate TUI/Palece candidate data issues; send post-embassy follow-up"},
+    {"owner": "Eduardo Ferraz", "task": "Lead US embassy meeting intros; coordinate digital business cards"},
+    {"owner": "Leo Sastra", "task": "Lead embassy presentation and Q&A"},
+    {"owner": "Jiva & Ratna", "task": "Refine candidate documentation (bank statements, support evidence)"},
+    {"owner": "Rowena (Myanmar)", "task": "Weekly reports on departures, ship placements, visa appointments"},
+    {"owner": "Eduardo & Leo", "task": "Prepare list of CTI candidates (approved/denied/pending) for embassy"}
+  ],
+  "metrics": {
+    "Candidates deployed (early April)": "87",
+    "J1 campaign responses": "40 / 1,000",
+    "Virgin Voyages interview attendance": "70 / 80",
+    "University pilot candidates (June)": "20",
+    "Potential J1 openings pipeline": "800+"
+  },
+  "tomorrow": [
+    {"time": "10:00 AM", "title": "US/CTI and CIEE Check-in (Pennoyer, Gorny, Rosenberg)"},
+    {"time": "11:30 AM", "title": "Greenheart CAP 2026 Monthly Meeting"}
+  ]
+}

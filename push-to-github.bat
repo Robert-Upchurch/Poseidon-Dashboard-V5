@@ -1,9 +1,9 @@
 @echo off
 REM ================================================================
-REM  Poseidon Dashboard — push all dashboard files to GitHub
+REM  Poseidon Dashboard — sync local work with GitHub
 REM  Repo: https://github.com/Robert-Upchurch/Poseidon-Dashboard-V5
 REM
-REM  Ships: landing page (index.html), V5 (frozen), V6 (in progress)
+REM  Handles diverged branches: fetch + rebase + push.
 REM  Double-click this file, or run from a command prompt.
 REM ================================================================
 
@@ -16,20 +16,40 @@ if exist ".git\index.lock" del /F /Q ".git\index.lock"
 if exist ".git\HEAD.lock"  del /F /Q ".git\HEAD.lock"
 
 echo.
-echo === Current status ===
-git status
+echo === Staging any new/changed dashboard files ===
+git add index.html poseidon-dashboard-v5.html poseidon-dashboard-v6.html push-to-github.bat
 
 echo.
-echo === Staging dashboard files ===
-git add index.html poseidon-dashboard-v5.html poseidon-dashboard-v6.html push-to-github.bat
+echo === Committing (will skip if nothing changed) ===
+git -c user.email=ceo@cti-usa.com -c user.name="Robert Upchurch" commit -m "V6 Phase 3 + iframe fixes"
+if errorlevel 1 (
+    echo No new working-tree changes to commit. Continuing.
+)
+
+echo.
+echo === Fetching remote state ===
+git fetch origin
 if errorlevel 1 goto :fail
 
 echo.
-echo === Committing ===
-git -c user.email=ceo@cti-usa.com -c user.name="Robert Upchurch" commit -m "Poseidon V6 scaffold: clone V5, add version selector landing page"
+echo === Rebasing local commits on top of origin/main ===
+git rebase origin/main
 if errorlevel 1 (
     echo.
-    echo No changes to commit ^(already committed^). Continuing to push...
+    echo ================================================================
+    echo  REBASE CONFLICT
+    echo  Git paused because a file was changed on both sides.
+    echo  To resolve:
+    echo    1. Open the conflicting file(s) listed above
+    echo    2. Search for lines starting with ^<^<^<^<^<^<^< and fix them
+    echo    3. Run:   git add ^<file^>
+    echo    4. Then:  git rebase --continue
+    echo    5. Re-run this script.
+    echo  OR, to abandon the rebase and try again:
+    echo    git rebase --abort
+    echo ================================================================
+    pause
+    exit /b 1
 )
 
 echo.
@@ -53,10 +73,10 @@ exit /b 0
 echo.
 echo ================================================================
 echo  FAILED. See messages above.
-echo  Most common cause: Git prompted for credentials and you canceled,
-echo  or your Personal Access Token expired. Run:
-echo      git push origin main
-echo  in a terminal and authenticate, then re-run this script.
+echo  If Git prompted for credentials and you canceled, retry this file.
+echo  If your Personal Access Token expired, generate a new one at:
+echo    https://github.com/settings/tokens (scope: repo)
+echo  Then re-run this script.
 echo ================================================================
 pause
 exit /b 1

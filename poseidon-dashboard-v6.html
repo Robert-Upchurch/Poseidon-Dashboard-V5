@@ -339,6 +339,64 @@
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     POSEIDON PASSWORD GATE (v6.1 Jarvis Release)
+     Session-scoped access lock. Password is a convenience gate only —
+     not cryptographic security. For real auth, proxy behind SSO.
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="poseidon-gate" style="position:fixed;inset:0;z-index:2147483647;background:linear-gradient(160deg,#0a1628,#0a2d42 60%,#0a1628);display:flex;align-items:center;justify-content:center;padding:24px;flex-direction:column;font-family:Inter,-apple-system,'Segoe UI',sans-serif;">
+  <div style="max-width:380px;width:100%;text-align:center;">
+    <div style="font-size:56px;margin-bottom:12px;line-height:1;">🔱</div>
+    <h1 style="font-size:1.55rem;font-weight:800;color:#f1f5f9;letter-spacing:-0.02em;margin:0 0 6px;">Poseidon Dashboard</h1>
+    <p style="font-size:13px;color:#94a3b8;margin:0 0 28px;">CTI Group &middot; Internal Access</p>
+    <form id="poseidon-gate-form" style="display:flex;flex-direction:column;gap:12px;" autocomplete="on" novalidate>
+      <input type="password" id="poseidon-gate-input" placeholder="Enter password" autocomplete="current-password" inputmode="numeric" aria-label="Dashboard password" style="padding:14px 18px;border-radius:10px;border:1px solid rgba(148,163,184,0.25);background:rgba(255,255,255,0.07);color:#f1f5f9;font-family:inherit;font-size:15px;letter-spacing:0.22em;text-align:center;outline:none;transition:border-color 0.15s, box-shadow 0.15s;" />
+      <button type="submit" style="padding:14px;border-radius:10px;background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff;border:0;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.04em;box-shadow:0 4px 14px rgba(13,148,136,0.4);">Unlock Dashboard</button>
+      <span id="poseidon-gate-err" style="color:#fca5a5;font-size:12px;min-height:16px;display:block;"></span>
+    </form>
+    <p style="font-size:11px;color:#475569;margin-top:28px;">CTI Group World Wide Services Inc &middot; Project Poseidon 2026</p>
+  </div>
+</div>
+<script>
+(function () {
+  var GATE_KEY = 'poseidon_auth_v1';
+  var PASS = '1234';
+  var gate = document.getElementById('poseidon-gate');
+  if (!gate) return;
+  try {
+    if (sessionStorage.getItem(GATE_KEY) === '1') { gate.remove(); return; }
+  } catch (_) {}
+  var form = document.getElementById('poseidon-gate-form');
+  var input = document.getElementById('poseidon-gate-input');
+  var err = document.getElementById('poseidon-gate-err');
+  input.addEventListener('focus', function () {
+    input.style.borderColor = 'rgba(20,184,166,0.55)';
+    input.style.boxShadow = '0 0 0 3px rgba(20,184,166,0.18)';
+  });
+  input.addEventListener('blur', function () {
+    input.style.borderColor = 'rgba(148,163,184,0.25)';
+    input.style.boxShadow = 'none';
+  });
+  setTimeout(function () { try { input.focus(); } catch (_) {} }, 60);
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (input.value === PASS) {
+      try { sessionStorage.setItem(GATE_KEY, '1'); } catch (_) {}
+      gate.style.transition = 'opacity 0.3s ease';
+      gate.style.opacity = '0';
+      setTimeout(function () { gate.remove(); }, 320);
+    } else {
+      err.textContent = 'Incorrect password. Please try again.';
+      input.value = '';
+      input.focus();
+      input.style.borderColor = 'rgba(244,114,182,0.6)';
+      setTimeout(function () { input.style.borderColor = 'rgba(148,163,184,0.25)'; err.textContent = ''; }, 2000);
+    }
+  });
+})();
+</script>
+
 <div class="flex min-h-screen">
 
 <!-- Mobile drawer overlay -->

@@ -22,8 +22,8 @@
   'use strict';
 
   const GROK_WS_URL   = 'wss://api.x.ai/v1/realtime';
-  const GROK_MODEL    = 'grok-voice-realtime';
-  const GROK_VOICE    = 'ember';          // Professional, warm, mid-register.
+  const GROK_MODEL    = 'grok-voice-think-fast-1.0';  // xAI canonical realtime model
+  const GROK_VOICE    = 'eve';                        // xAI realtime voice
   const SAMPLE_RATE   = 24000;
   const LS_API_KEY    = 'poseidon_grok_api_key';
   const LS_VOICE      = 'poseidon_grok_voice';
@@ -579,16 +579,24 @@
     await initAudio();
 
     // Browser WebSocket cannot add Authorization headers directly.
-    // Grok accepts the API key as a query parameter during the handshake,
-    // or a signed-URL token minted by a backend. If your backend exposes
-    // a minting endpoint, override PoseidonJarvis.getWsUrl().
+    // xAI realtime accepts auth via the Sec-WebSocket-Protocol subprotocol
+    // header using the OpenAI-compatible pattern. Verified live:
+    //   ['realtime', 'openai-insecure-api-key.<KEY>', 'openai-beta.realtime-v1']
+    // The name "openai-insecure-api-key" is the OpenAI convention — xAI's
+    // realtime layer is OpenAI-compatible at the protocol level.
+    // For production you should proxy through a backend that can set
+    // Authorization headers and mint short-lived signed URLs; override
+    // window.Poseidon_getJarvisWsUrl() to do that.
     const url = typeof window.Poseidon_getJarvisWsUrl === 'function'
       ? await window.Poseidon_getJarvisWsUrl()
-      : `${GROK_WS_URL}?api_key=${encodeURIComponent(key)}&model=${encodeURIComponent(GROK_MODEL)}`;
+      : `${GROK_WS_URL}?model=${encodeURIComponent(GROK_MODEL)}`;
+    const protocols = typeof window.Poseidon_getJarvisProtocols === 'function'
+      ? await window.Poseidon_getJarvisProtocols(key)
+      : ['realtime', `openai-insecure-api-key.${key}`, 'openai-beta.realtime-v1'];
 
     return new Promise((resolve) => {
       try {
-        state.ws = new WebSocket(url, ['grok-realtime', `bearer.${key}`]);
+        state.ws = new WebSocket(url, protocols);
       } catch (e) {
         pushLog('error', 'WebSocket creation failed: ' + e.message);
         return resolve(false);
@@ -661,13 +669,25 @@
         if (msg.transcript) pushLog('user', msg.transcript);
         break;
 
+      // Audio playback — xAI uses "output_audio" prefix; OpenAI uses "audio"
+      case 'response.output_audio.delta':
       case 'response.audio.delta':
         if (msg.delta) enqueuePcm(msg.delta);
         break;
 
+      case 'response.output_audio.done':
+      case 'response.audio.done':
+        // Marker only; playback is driven by queued buffers
+        break;
+
+      // Assistant text transcript (streamed alongside audio)
+      case 'response.output_audio_transcript.delta':
       case 'response.audio_transcript.delta':
+      case 'response.output_text.delta':
         state.lastAssistantText = (state.lastAssistantText || '') + (msg.delta || '');
         break;
+
+      case 'response.output_audio_transcript.done':
       case 'response.audio_transcript.done':
       case 'response.output_text.done':
         if (msg.transcript || state.lastAssistantText) {
@@ -676,6 +696,7 @@
         state.lastAssistantText = '';
         break;
 
+      // Tool calls
       case 'response.function_call_arguments.done':
       case 'response.tool_calls.delta':
       case 'response.function_call':
@@ -685,6 +706,19 @@
       case 'response.done':
         log('response.done');
         if (state.lastAssistantText) { pushLog('assistant', state.lastAssistantText); state.lastAssistantText = ''; }
+        break;
+
+      case 'conversation.item.added':
+      case 'conversation.item.created':
+      case 'response.created':
+      case 'response.output_item.added':
+      case 'response.output_item.done':
+      case 'response.content_part.added':
+      case 'response.content_part.done':
+      case 'response.function_call_arguments.delta':
+      case 'ping':
+      case 'rate_limits.updated':
+        /* silently consumed — informational envelope events */
         break;
 
       case 'error':

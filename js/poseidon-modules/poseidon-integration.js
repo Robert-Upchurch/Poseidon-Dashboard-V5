@@ -114,12 +114,12 @@
 
           <label class="block text-xs font-semibold text-zinc-400 mb-2 mt-4">🎵 Grok Realtime Voice (WebSocket only)</label>
           <select id="pe-grok-voice" class="px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300">
-            <option value="ember">Ember — warm, confident (recommended)</option>
-            <option value="onyx">Onyx — deep, professional</option>
-            <option value="nova">Nova — bright, articulate</option>
-            <option value="shimmer">Shimmer — smooth, polished</option>
-            <option value="alloy">Alloy — neutral</option>
+            <option value="eve">Eve — xAI default</option>
           </select>
+          <p class="text-[11px] text-zinc-600 mt-1">
+            xAI realtime uses model <code class="text-teal-400">grok-voice-think-fast-1.0</code>.
+            Voice catalog may expand; "eve" is the current documented option.
+          </p>
 
           <label class="block text-xs font-semibold text-zinc-400 mb-2 mt-4">🤖 Text Model (Browser mode)</label>
           <select id="pe-text-model" class="px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 w-full">

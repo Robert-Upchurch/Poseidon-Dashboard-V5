@@ -103,8 +103,9 @@
             const safeUrl = escapeHtml(e.url || '#');
             const isExternal = /^https?:\/\//i.test(e.url || '');
             const tgt = isExternal ? 'target="_blank" rel="noopener"' : '';
+            const dataOrigin = !isExternal ? ' data-poseidon-internal="1"' : '';
             return `
-              <a class="pd-card" href="${safeUrl}" ${tgt}>
+              <a class="pd-card" href="${safeUrl}" ${tgt}${dataOrigin}>
                 <div class="pd-card-top">
                   <div class="pd-name">${escapeHtml(e.name)}</div>
                 </div>
@@ -166,6 +167,22 @@
     modalEl.addEventListener('click', (e) => {
       if (e.target.dataset.action === 'close') close();
     });
+
+    // Intercept internal-dashboard links so we stash V6 origin + append
+    // a return-to query param. External links open in a new tab (no change).
+    modalEl.addEventListener('click', (e) => {
+      const card = e.target.closest('a.pd-card[data-poseidon-internal="1"]');
+      if (!card) return;
+      try {
+        const v6Url = location.origin + location.pathname + location.search + location.hash;
+        sessionStorage.setItem('poseidon_v6_origin', v6Url);
+        const href = card.getAttribute('href') || '';
+        if (href && !/[?&]poseidon_return_to=/.test(href)) {
+          const sep = href.includes('?') ? '&' : '?';
+          card.setAttribute('href', href + sep + 'poseidon_return_to=' + encodeURIComponent(v6Url));
+        }
+      } catch (_) { /* non-fatal */ }
+    }, true);
     modalEl.querySelector('.pd-search').addEventListener('input', e => { searchQuery = e.target.value; render(); });
     modalEl.querySelectorAll('.pd-tab').forEach(t => t.addEventListener('click', () => {
       modalEl.querySelectorAll('.pd-tab').forEach(x => x.classList.remove('active'));

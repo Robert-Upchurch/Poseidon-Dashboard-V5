@@ -722,16 +722,222 @@
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // Mic toggle & briefing triggers
+  // VOICE ENGINE SELECTION — realtime WebSocket OR browser-speech
+  // fallback (chat completions + SpeechRecognition + SpeechSynthesis).
+  // The fallback always works as long as the Grok text API is usable.
+  // ══════════════════════════════════════════════════════════════════
+  const LS_VOICE_ENGINE = 'poseidon_voice_engine';         // auto | websocket | browser
+  const LS_TEXT_MODEL   = 'poseidon_text_model';
+  const DEFAULT_TEXT_MODEL = 'grok-4.20-0309-reasoning';   // xAI canonical id
+  const CHAT_ENDPOINT   = 'https://api.x.ai/v1/chat/completions';
+
+  function getVoiceEngine() { try { return localStorage.getItem(LS_VOICE_ENGINE) || 'auto'; } catch (_) { return 'auto'; } }
+  function setVoiceEngine(v) { try { localStorage.setItem(LS_VOICE_ENGINE, v); } catch (_) {} }
+  function getTextModel()   { try { return localStorage.getItem(LS_TEXT_MODEL) || DEFAULT_TEXT_MODEL; } catch (_) { return DEFAULT_TEXT_MODEL; } }
+  function setTextModel(m)  { try { localStorage.setItem(LS_TEXT_MODEL, m); } catch (_) {} }
+
+  const browserState = {
+    recognition: null,
+    speaking: false,
+    listening: false,
+    chosenVoice: null,
+    busy: false
+  };
+
+  function supportsBrowserSpeech() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    return !!(SR && window.speechSynthesis);
+  }
+
+  function pickBrowserVoice() {
+    try {
+      const voices = speechSynthesis.getVoices();
+      if (!voices.length) return null;
+      // Preferred English male voices in order of availability on Win/Mac/Chrome
+      const pref = [
+        /Microsoft\s+(Guy|Eric|Davis|Tony|Steffan|Christopher|Brandon)/i,
+        /Google US English/i,
+        /Alex|Daniel|Fred|Jamie|Aaron|Arthur|Eddy|Reed|Rocko/i,
+        /en-US/i, /en-GB/i, /en/i
+      ];
+      for (const rx of pref) {
+        const v = voices.find(x => rx.test(x.name) || rx.test(x.lang));
+        if (v) return v;
+      }
+      return voices[0];
+    } catch (_) { return null; }
+  }
+
+  function speak(text, opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      if (!('speechSynthesis' in window)) { resolve(); return; }
+      try { speechSynthesis.cancel(); } catch (_) {}
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = opts.rate ?? 1.04;
+      utter.pitch = opts.pitch ?? 0.95;
+      utter.volume = opts.volume ?? 1.0;
+      if (!browserState.chosenVoice) browserState.chosenVoice = pickBrowserVoice();
+      if (browserState.chosenVoice) utter.voice = browserState.chosenVoice;
+      utter.onstart = () => { browserState.speaking = true; setStatusClass('state-speaking'); };
+      utter.onend = () => { browserState.speaking = false; setStatusClass(browserState.listening ? 'state-listening' : 'state-connected'); resolve(); };
+      utter.onerror = () => { browserState.speaking = false; resolve(); };
+      speechSynthesis.speak(utter);
+    });
+  }
+
+  // Ensure voices are loaded (Chrome fires voiceschanged asynchronously)
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => { browserState.chosenVoice = pickBrowserVoice(); };
+  }
+
+  function listenOnce() {
+    return new Promise((resolve, reject) => {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { reject(new Error('SpeechRecognition not available in this browser')); return; }
+      const rec = new SR();
+      rec.lang = 'en-US';
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      browserState.recognition = rec;
+      browserState.listening = true;
+      setStatusClass('state-listening');
+      let finalTranscript = '';
+      rec.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+        }
+      };
+      rec.onerror = (e) => {
+        browserState.listening = false;
+        setStatusClass('state-connected');
+        reject(new Error('Speech recognition error: ' + (e.error || 'unknown')));
+      };
+      rec.onend = () => {
+        browserState.listening = false;
+        setStatusClass('state-connected');
+        resolve(finalTranscript.trim());
+      };
+      try { rec.start(); } catch (e) { reject(e); }
+    });
+  }
+
+  function stopListening() {
+    try { browserState.recognition && browserState.recognition.stop(); } catch (_) {}
+    browserState.listening = false;
+  }
+
+  // Convert our TOOLS schema → OpenAI-style function tools for chat completions
+  function chatTools() {
+    return TOOLS.map(t => ({
+      type: 'function',
+      function: { name: t.name, description: t.description, parameters: t.parameters }
+    }));
+  }
+
+  // Multi-turn tool execution loop against /v1/chat/completions
+  async function runChatWithTools(userText) {
+    const key = getApiKey();
+    if (!key) throw new Error('No Grok API key configured');
+    const model = getTextModel();
+    const history = state.transcript
+      .filter(t => t.role === 'user' || t.role === 'assistant')
+      .slice(-10)
+      .map(t => ({ role: t.role, content: t.text }));
+    const messages = [
+      { role: 'system', content: buildSystemInstructions() },
+      ...history,
+      { role: 'user', content: userText }
+    ];
+
+    for (let iter = 0; iter < 5; iter++) {
+      const res = await fetch(CHAT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({ model, messages, tools: chatTools(), tool_choice: 'auto', temperature: 0.4 })
+      });
+      if (!res.ok) throw new Error(`Grok chat ${res.status}: ${await res.text()}`);
+      const data = await res.json();
+      const msg = data.choices?.[0]?.message;
+      if (!msg) throw new Error('Malformed Grok response');
+
+      if (msg.tool_calls && msg.tool_calls.length) {
+        // Append the assistant message with tool calls, then resolve each call
+        messages.push(msg);
+        for (const call of msg.tool_calls) {
+          const fn = call.function || {};
+          const name = fn.name;
+          let args = fn.arguments || '{}';
+          try { args = typeof args === 'string' ? JSON.parse(args) : args; } catch (_) { args = {}; }
+          pushLog('tool', `→ ${name}(${JSON.stringify(args)})`);
+          let result;
+          try { result = await (TOOL_IMPL[name] ? TOOL_IMPL[name](args) : Promise.resolve({ ok: false, error: 'Unknown tool ' + name })); }
+          catch (e) { result = { ok: false, error: e.message }; }
+          messages.push({ role: 'tool', tool_call_id: call.id, content: typeof result === 'string' ? result : JSON.stringify(result) });
+        }
+        continue; // next iteration — let Grok respond with tool results in hand
+      }
+
+      // Final assistant reply
+      return msg.content || '';
+    }
+    return 'I ran out of tool iterations. Try a narrower question.';
+  }
+
+  async function runBrowserTurn(preText) {
+    if (browserState.busy) return;
+    browserState.busy = true;
+    try {
+      let userText = preText;
+      if (!userText) {
+        try { userText = await listenOnce(); }
+        catch (e) { pushLog('error', e.message); browserState.busy = false; return; }
+      }
+      if (!userText) { browserState.busy = false; return; }
+      pushLog('user', userText);
+      setStatusClass('state-speaking');
+      let reply;
+      try { reply = await runChatWithTools(userText); }
+      catch (e) { pushLog('error', e.message); browserState.busy = false; return; }
+      pushLog('assistant', reply);
+      await speak(reply);
+    } finally {
+      browserState.busy = false;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // Mic toggle — tries WebSocket realtime, falls back to browser speech
   // ══════════════════════════════════════════════════════════════════
   async function toggleMic() {
     const btn = panelEl.querySelector('.jv-mic-btn');
-    if (!state.connected) {
-      btn.textContent = '⏳ Connecting…'; btn.disabled = true;
-      const ok = await connect();
-      btn.disabled = false;
-      if (!ok) { btn.textContent = '🎤 Start Talking'; return; }
+    const engine = getVoiceEngine();
+
+    // Browser-only mode, or if realtime WS previously failed
+    if (engine === 'browser' || state._forceBrowser) {
+      return browserToggle(btn);
     }
+
+    // Try WebSocket first (for 'auto' and 'websocket' modes)
+    if (!state.connected) {
+      btn.textContent = '⏳ Connecting realtime…'; btn.disabled = true;
+      const ok = await connectWithTimeout(6000);
+      btn.disabled = false;
+      if (!ok) {
+        if (engine === 'websocket') {
+          btn.textContent = '🎤 Start Talking';
+          pushLog('error', 'WebSocket realtime unavailable. Switch Voice Engine to "Browser (fallback)" in Settings to use Jarvis now.');
+          return;
+        }
+        // auto → fall back silently to browser speech
+        state._forceBrowser = true;
+        pushLog('tool', 'Realtime voice unavailable on this xAI account. Switched to browser-speech mode.');
+        return browserToggle(btn);
+      }
+    }
+
+    // WebSocket active — existing push-to-talk flow
     if (state.listening) {
       state.listening = false;
       stopMicCapture();
@@ -753,20 +959,54 @@
     }
   }
 
+  async function browserToggle(btn) {
+    if (!supportsBrowserSpeech()) {
+      pushLog('error', 'Browser speech recognition not available. Use Chrome, Edge, or Safari.');
+      return;
+    }
+    if (browserState.listening) {
+      stopListening();
+      btn.textContent = '🎤 Start Talking';
+      btn.classList.remove('rec');
+      return;
+    }
+    btn.textContent = '⏺ Listening…';
+    btn.classList.add('rec');
+    try {
+      await runBrowserTurn();
+    } finally {
+      btn.textContent = '🎤 Start Talking';
+      btn.classList.remove('rec');
+    }
+  }
+
+  function connectWithTimeout(ms) {
+    return new Promise((resolve) => {
+      let done = false;
+      const t = setTimeout(() => { if (!done) { done = true; resolve(false); } }, ms);
+      connect().then((ok) => { if (!done) { done = true; clearTimeout(t); resolve(ok); } })
+               .catch(() => { if (!done) { done = true; clearTimeout(t); resolve(false); } });
+    });
+  }
+
   async function morningBriefing() {
+    const engine = getVoiceEngine();
+    const prompt = 'Give me my morning briefing. Call the morning_briefing tool first, then read the script back to me warmly and concisely.';
+    if (engine === 'browser' || state._forceBrowser) {
+      return runBrowserTurn(prompt);
+    }
     if (!state.connected) {
-      const ok = await connect();
-      if (!ok) return;
+      const ok = await connectWithTimeout(6000);
+      if (!ok) {
+        if (engine === 'websocket') { pushLog('error', 'WebSocket unavailable.'); return; }
+        state._forceBrowser = true;
+        return runBrowserTurn(prompt);
+      }
     }
     pushLog('user', '☀️ Morning briefing');
-    // Ask the model to produce a spoken briefing using the morning_briefing tool
     sendWs({
       type: 'conversation.item.create',
-      item: {
-        type: 'message',
-        role: 'user',
-        content: [{ type: 'input_text', text: 'Give me my morning briefing. Call the morning_briefing tool first, then read the script back to me warmly and concisely.' }]
-      }
+      item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: prompt }] }
     });
     sendWs({ type: 'response.create' });
   }
@@ -802,6 +1042,10 @@
     open: openPanel, close: closePanel, toggle: togglePanel,
     connect, disconnect, toggleMic, morningBriefing,
     setApiKey, getApiKey, setVoice, getVoice,
+    getVoiceEngine, setVoiceEngine,
+    getTextModel, setTextModel,
+    runBrowserTurn, speak, listenOnce,
+    supportsBrowserSpeech,
     state, tools: TOOLS, toolImpl: TOOL_IMPL,
     pushLog  // for tests / integrations
   };

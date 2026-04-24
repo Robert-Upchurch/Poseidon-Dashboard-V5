@@ -95,7 +95,17 @@
       #jarvis-panel .jv-mic-btn.rec{background:linear-gradient(135deg,#ef4444,#b91c1c);animation:jarvis-pulse-dot 1s infinite;}
       #jarvis-panel .jv-mic-btn:disabled{opacity:0.6;cursor:not-allowed;}
       #jarvis-panel .jv-brief-btn,#jarvis-panel .jv-clear-btn,#jarvis-panel .jv-conn-btn{background:rgba(148,163,184,0.1);color:#cbd5e1;border:1px solid rgba(148,163,184,0.18);border-radius:8px;padding:10px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
-      #jarvis-panel .jv-brief-btn:hover,#jarvis-panel .jv-clear-btn:hover,#jarvis-panel .jv-conn-btn:hover{color:#2dd4bf;border-color:rgba(20,184,166,0.5);}
+      #jarvis-panel .jv-brief-btn:hover,#jarvis-panel .jv-clear-btn:hover{color:#2dd4bf;border-color:rgba(20,184,166,0.5);}
+      #jarvis-panel .jv-conn-btn{display:none;background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.35);}
+      #jarvis-panel .jv-conn-btn:hover{background:rgba(239,68,68,0.22);color:#fecaca;border-color:rgba(239,68,68,0.6);}
+      #jarvis-panel.state-connected .jv-conn-btn,
+      #jarvis-panel.state-listening .jv-conn-btn,
+      #jarvis-panel.state-speaking  .jv-conn-btn{display:inline-flex;align-items:center;gap:6px;}
+
+      #jarvis-panel .jv-status-label{margin-left:8px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;}
+      #jarvis-panel.state-connected .jv-status-label{color:#22c55e;}
+      #jarvis-panel.state-listening .jv-status-label{color:#14b8a6;}
+      #jarvis-panel.state-speaking  .jv-status-label{color:#f59e0b;}
 
       #jarvis-panel .jv-cfg{padding:10px 16px;font-size:11px;color:#64748b;background:rgba(0,0,0,0.2);border-top:1px solid rgba(148,163,184,0.08);display:flex;flex-direction:column;gap:6px;}
       #jarvis-panel .jv-cfg input{width:100%;background:#0a1628;border:1px solid rgba(148,163,184,0.18);border-radius:6px;padding:6px 8px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;}
@@ -134,12 +144,14 @@
           <div class="jv-sub">Grok Voice · Poseidon</div>
         </div>
         <div class="jv-status-dot" title="status"></div>
+        <span class="jv-status-label" data-jv-status-label>Idle</span>
         <button class="jv-close" aria-label="Close" data-action="close">&times;</button>
       </div>
       <div class="jv-log" id="jv-log"></div>
       <div class="jv-foot">
         <button class="jv-mic-btn" data-action="toggle-mic">🎤 Start Talking</button>
         <button class="jv-brief-btn" data-action="brief" title="Morning Briefing">☀️ Brief Me</button>
+        <button class="jv-conn-btn" data-action="disconnect" title="Disconnect from Grok Voice (releases mic + closes WebSocket)">🔌 Disconnect</button>
         <button class="jv-clear-btn" data-action="clear" title="Clear conversation">🗑</button>
       </div>
       <div class="jv-cfg" id="jv-cfg-section">
@@ -155,6 +167,14 @@
       else if (act === 'toggle-mic') toggleMic();
       else if (act === 'brief') morningBriefing();
       else if (act === 'clear') clearTranscript();
+      else if (act === 'disconnect') {
+        try { if (typeof disconnect === 'function') disconnect(); } catch (_) {}
+        try { if (typeof stopListening === 'function') stopListening(); } catch (_) {}
+        const micBtn = panelEl.querySelector('.jv-mic-btn');
+        if (micBtn) { micBtn.textContent = '🎤 Start Talking'; micBtn.classList.remove('rec'); }
+        setStatusClass(null);
+        pushLog('tool', 'Disconnected from Jarvis. Mic released.');
+      }
     });
     const keyInput = panelEl.querySelector('#jv-api-key');
     keyInput.value = getApiKey();
@@ -182,6 +202,13 @@
     if (!panelEl) return;
     panelEl.classList.remove('state-connected','state-listening','state-speaking');
     if (cls) panelEl.classList.add(cls);
+    const labelEl = panelEl.querySelector('[data-jv-status-label]');
+    if (labelEl) {
+      labelEl.textContent = cls === 'state-listening' ? 'Listening'
+                          : cls === 'state-speaking'  ? 'Speaking'
+                          : cls === 'state-connected' ? 'Connected'
+                          : 'Idle';
+    }
     if (fabEl) {
       fabEl.classList.remove('listening','speaking','connected');
       if (cls === 'state-connected') fabEl.classList.add('connected');
@@ -221,7 +248,7 @@
       parameters: {
         type: 'object',
         properties: {
-          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'], description: 'The page ID to open.' }
+          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'], description: 'The page ID to open.' }
         },
         required: ['page_id']
       }
@@ -282,7 +309,7 @@
         properties: {
           page_id: {
             type: 'string',
-            enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'],
+            enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'],
             description: 'The page whose content to read.'
           },
           max_len_per_field: {
@@ -300,7 +327,7 @@
       parameters: {
         type: 'object',
         properties: {
-          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing'] }
+          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing'] }
         },
         required: ['division']
       }
@@ -312,7 +339,7 @@
       parameters: {
         type: 'object',
         properties: {
-          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing'] },
+          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing'] },
           action:   { type: 'string', enum: ['refresh','simulate','whatif','export','pdf'] }
         },
         required: ['division','action']
@@ -367,6 +394,24 @@
       type: 'function',
       name: 'restart_training',
       description: 'Restart the interactive onboarding tour.',
+      parameters: { type: 'object', properties: {} }
+    },
+    {
+      type: 'function',
+      name: 'read_contracts',
+      description: 'Read the embedded Cruise Line Contracts dashboard top-to-bottom. Walks every tab (Overview, Fees, Obligations, Legal, Insurance, Positions, Compliance, Pros/Cons), extracts each table and KPI, and returns a structured JSON snapshot of the entire contracts comparison. Use when the user asks anything about cruise line contracts, fees, terms, or wants you to summarize/compare what is on the contracts dashboard.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tab: { type: 'string', enum: ['overview','fees','obligations','legal','insurance','positions','compliance','proscons','all'], description: 'Which tab to read. Use "all" (default) to walk every tab top-to-bottom.' },
+          line_filter: { type: 'string', description: 'Optional cruise line name substring to focus on (e.g., "Carnival", "Apollo").' }
+        }
+      }
+    },
+    {
+      type: 'function',
+      name: 'read_contracts_lines',
+      description: 'List all cruise lines that the Contracts dashboard knows about, with their contract year, brand, ship count, and fees-at-a-glance.',
       parameters: { type: 'object', properties: {} }
     }
   ];
@@ -517,7 +562,93 @@
 
     open_directory()  { if (window.PoseidonDirectory) window.PoseidonDirectory.open(); return { ok: true }; },
     open_changelog()  { if (window.PoseidonVersion)   window.PoseidonVersion.open();   return { ok: true }; },
-    restart_training(){ if (window.PoseidonTraining)  window.PoseidonTraining.restart(); return { ok: true }; }
+    restart_training(){ if (window.PoseidonTraining)  window.PoseidonTraining.restart(); return { ok: true }; },
+
+    // ─── CONTRACTS — read the embedded iframe end-to-end ────────────
+    async read_contracts({ tab = 'all', line_filter = '' } = {}) {
+      const link = document.querySelector('.nav-link[data-page="contracts"]');
+      if (link) link.click();
+      const frame = await new Promise(resolve => {
+        const start = Date.now();
+        (function poll() {
+          const f = document.getElementById('contracts-frame');
+          if (f && f.contentDocument && f.contentDocument.readyState === 'complete' && f.contentDocument.body && f.contentDocument.body.innerText.length > 100) return resolve(f);
+          if (Date.now() - start > 8000) return resolve(f || null);
+          setTimeout(poll, 200);
+        })();
+      });
+      if (!frame || !frame.contentDocument) return { ok: false, error: 'Contracts iframe is not loaded.' };
+      const doc = frame.contentDocument;
+
+      const tabs = ['overview','fees','obligations','legal','insurance','positions','compliance','proscons'];
+      const targets = tab === 'all' ? tabs : [tab];
+
+      function activate(t) { const btn = doc.querySelector(`.tab[data-tab="${t}"]`); if (btn) btn.click(); }
+      function panelText(t) {
+        const panel = doc.getElementById('panel-' + t);
+        if (!panel) return null;
+        return (panel.innerText || '').replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      }
+      function panelTable(t) {
+        const panel = doc.getElementById('panel-' + t);
+        if (!panel) return null;
+        const tbl = panel.querySelector('table');
+        if (!tbl) return null;
+        const rows = [];
+        tbl.querySelectorAll('tr').forEach(tr => {
+          const cells = [...tr.querySelectorAll('th,td')].map(td => (td.innerText || '').trim());
+          if (cells.length) rows.push(cells);
+        });
+        return rows;
+      }
+
+      const kpis = [...doc.querySelectorAll('.kpi')].map(k => ({
+        label: (k.querySelector('.lab')?.innerText || '').trim(),
+        value: (k.querySelector('.val')?.innerText || '').trim()
+      }));
+      const activeLines = [...doc.querySelectorAll('.line-pill.active')].map(p => p.innerText.trim());
+
+      const out = { ok: true, kpis, active_lines: activeLines, tabs: {} };
+
+      for (const t of targets) {
+        activate(t);
+        await new Promise(r => setTimeout(r, 250));
+        out.tabs[t] = { text: panelText(t), table: panelTable(t) };
+      }
+
+      if (line_filter) {
+        const re = new RegExp(line_filter, 'i');
+        for (const t of Object.keys(out.tabs)) {
+          const tbl = out.tabs[t].table;
+          if (Array.isArray(tbl) && tbl.length > 1) {
+            const header = tbl[0];
+            const keepIdx = header.map((h, i) => i === 0 || re.test(h) ? i : -1).filter(i => i >= 0);
+            out.tabs[t].table = tbl.map(row => keepIdx.map(i => row[i]));
+          }
+        }
+        out.filter = line_filter;
+      }
+
+      activate('overview');
+      return out;
+    },
+
+    read_contracts_lines() {
+      const frame = document.getElementById('contracts-frame');
+      if (!frame || !frame.contentWindow) return { ok: false, error: 'Contracts iframe not mounted. Call read_contracts first.' };
+      const LINES = frame.contentWindow.LINES;
+      if (!Array.isArray(LINES)) return { ok: false, error: 'LINES dataset not exposed by iframe.' };
+      return {
+        ok: true,
+        count: LINES.length,
+        lines: LINES.map(l => ({
+          id: l.id, name: l.name, brand: l.brand, parent: l.parent,
+          year: l.contractYear, contract_type: l.contractType,
+          ships: l.ships, crew_source: l.crewSource,
+          fees: l.fees ? { newHire: l.fees.newHire, rehire: l.fees.rehire, monthly: l.fees.monthly } : null
+        }))
+      };
+    }
   };
 
   function _firstMeetingLabel(events) {
@@ -1104,6 +1235,7 @@
       'When the user asks about a KPI on a specific division, call read_kpi with that division.',
       'When the user asks you to navigate ("take me to finance", "open J1 housing"), call go_to_page.',
       'When the user asks to add a task or event, call save_task / save_event.',
+      'When the user asks anything about cruise line contracts, fees, terms, obligations, legal, insurance, positions, compliance, or pros/cons — first call read_contracts (or read_contracts_lines for a quick line list), then summarize the results. The Contracts dashboard is fully readable end-to-end via these tools.',
       'Always respond with audio. Keep responses under 25 seconds unless reading a briefing.',
       `Today is ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.`
     ].join(' ');

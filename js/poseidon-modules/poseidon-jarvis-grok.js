@@ -413,6 +413,39 @@
       name: 'read_contracts_lines',
       description: 'List all cruise lines that the Contracts dashboard knows about, with their contract year, brand, ship count, and fees-at-a-glance.',
       parameters: { type: 'object', properties: {} }
+    },
+    {
+      type: 'function',
+      name: 'popout_division',
+      description: 'Open a division dashboard in a new full-screen tab (embed mode with an exit-door button). Use when the user asks to "open in new tab", "pop out", or "expand" a division.',
+      parameters: {
+        type: 'object',
+        properties: { div_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing'] } },
+        required: ['div_id']
+      }
+    },
+    {
+      type: 'function',
+      name: 'list_analytics_reports',
+      description: 'List the analytics reports / charts available for a given division (Finance, Contracts, etc.). Returns each report id, label, and chart type.',
+      parameters: {
+        type: 'object',
+        properties: { div_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing'] } },
+        required: ['div_id']
+      }
+    },
+    {
+      type: 'function',
+      name: 'read_analytics',
+      description: 'Read the data behind a specific analytics report (chart) on a division dashboard — returns the chart labels and series so you can summarize or compare the numbers without seeing the chart.',
+      parameters: {
+        type: 'object',
+        properties: {
+          div_id:    { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing'] },
+          report_id: { type: 'string', description: 'Report id from list_analytics_reports.' }
+        },
+        required: ['div_id', 'report_id']
+      }
     }
   ];
 
@@ -648,6 +681,28 @@
           fees: l.fees ? { newHire: l.fees.newHire, rehire: l.fees.rehire, monthly: l.fees.monthly } : null
         }))
       };
+    },
+
+    // ─── Universal toolbar tools (popout + analytics) ────────────────
+    popout_division({ div_id }) {
+      if (!window.PoseidonToolbar) return { ok: false, error: 'Toolbar module not loaded' };
+      window.PoseidonToolbar.popoutDivision(div_id);
+      return { ok: true, div_id, opened: 'new_tab' };
+    },
+    list_analytics_reports({ div_id }) {
+      if (!window.PoseidonToolbar) return { ok: false, error: 'Toolbar module not loaded' };
+      const reports = window.PoseidonToolbar.listReports(div_id);
+      return { ok: true, div_id, count: reports.length, reports };
+    },
+    async read_analytics({ div_id, report_id }) {
+      if (!window.PoseidonToolbar) return { ok: false, error: 'Toolbar module not loaded' };
+      // For Contracts, ensure the iframe is mounted so LINES is available
+      if (div_id === 'contracts' && !document.getElementById('contracts-frame')) {
+        const link = document.querySelector('.nav-link[data-page="contracts"]');
+        if (link) link.click();
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      return window.PoseidonToolbar.readReport(div_id, report_id);
     }
   };
 
@@ -1236,6 +1291,7 @@
       'When the user asks you to navigate ("take me to finance", "open J1 housing"), call go_to_page.',
       'When the user asks to add a task or event, call save_task / save_event.',
       'When the user asks anything about cruise line contracts, fees, terms, obligations, legal, insurance, positions, compliance, or pros/cons — first call read_contracts (or read_contracts_lines for a quick line list), then summarize the results. The Contracts dashboard is fully readable end-to-end via these tools.',
+      'When the user asks to "open in new tab", "pop out", or "expand" a division, call popout_division. For analytics or chart questions on a division, call list_analytics_reports first to discover available reports, then read_analytics to pull the actual numbers behind the chart.',
       'Always respond with audio. Keep responses under 25 seconds unless reading a briefing.',
       `Today is ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.`
     ].join(' ');

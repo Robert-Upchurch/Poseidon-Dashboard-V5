@@ -19,7 +19,8 @@
     'poseidon-version.js',
     'poseidon-llm.js',
     'poseidon-jarvis-grok.js',
-    'poseidon-zoho-books.js'
+    'poseidon-zoho-books.js',
+    'poseidon-toolbar.js'
   ];
 
   function loadScript(src) {

@@ -270,6 +270,13 @@
   }
 
   function shouldAutoRun() {
+    // Never auto-run inside a popped-out embed view (?embed=<div>) or when
+    // the dashboard is loaded with an explicit deep-link to a report.
+    // The popout is meant to be a focused, distraction-free view.
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.has('embed') || params.has('report')) return false;
+    } catch (_) {}
     try {
       const raw = localStorage.getItem(LS_COMPLETE);
       if (!raw) return true;

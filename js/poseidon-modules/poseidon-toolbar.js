@@ -430,10 +430,10 @@
       body.pt-embed .page.hidden{display:none !important;}
       body.pt-embed .page{display:block !important;}
 
-      #pt-exit-door{position:fixed;top:14px;right:14px;z-index:9995;background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff;border:0;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(244,63,94,0.45);transition:all 0.18s;font-family:inherit;}
-      #pt-exit-door:hover{transform:scale(1.08);box-shadow:0 12px 32px rgba(244,63,94,0.6);}
-      #pt-exit-door svg{width:22px;height:22px;}
-      #pt-exit-door + .pt-exit-tip{position:fixed;top:66px;right:14px;z-index:9994;font-size:10px;color:#fda4af;background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.3);border-radius:6px;padding:3px 8px;pointer-events:none;}
+      /* Exit button — lives in the toolbar like every other button.
+         Hidden in normal view, visible only when ?embed= mode is on. */
+      [data-pt="exit"]{display:none !important;}
+      body.pt-embed [data-pt="exit"]{display:inline-flex !important;}
     `;
     const s = document.createElement('style');
     s.id = STYLE_ID;
@@ -494,8 +494,17 @@
     anWrap.appendChild(anBtn);
     anBtn.onclick = (e) => { e.stopPropagation(); toggleAnalyticsMenu(divId, anWrap); };
 
+    // Exit (only visible in embed mode — hidden by CSS otherwise)
+    const exitBtn = document.createElement('button');
+    exitBtn.dataset.pt = 'exit';
+    exitBtn.className = `${BTN_BASE} ${BTN.exit}`;
+    exitBtn.title = 'Exit pop-out — return to main dashboard (Esc)';
+    exitBtn.innerHTML = '<i data-lucide="log-out" class="w-3.5 h-3.5"></i> Exit';
+    exitBtn.onclick = exitPopout;
+
     tb.appendChild(popBtn);
     tb.appendChild(anWrap);
+    tb.appendChild(exitBtn);
     if (window.lucide?.createIcons) try { window.lucide.createIcons(); } catch (_) {}
     return true;
   }
@@ -659,7 +668,9 @@
     function go() {
       if (typeof window.switchPage === 'function') {
         window.switchPage(focus);
-        injectExitDoor();
+        // Re-augment the toolbar so the Exit button (auto-shown via CSS in
+        // embed mode) is present even if the page mutated after first scan.
+        DIVISIONS.forEach(d => augmentDivisionToolbar(d));
         if (reportId) setTimeout(() => openAnalyticsReport(focus, reportId), 800);
         return true;
       }
@@ -682,19 +693,6 @@
       // Otherwise, if in embed mode, exit
       if (document.body.classList.contains('pt-embed')) { exitPopout(); e.preventDefault(); }
     });
-  }
-  function injectExitDoor() {
-    if (document.getElementById('pt-exit-door')) return;
-    const btn = document.createElement('button');
-    btn.id = 'pt-exit-door';
-    btn.title = 'Exit pop-out — return to main dashboard';
-    btn.innerHTML = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>`;
-    const tip = document.createElement('div');
-    tip.className = 'pt-exit-tip';
-    tip.textContent = 'Exit';
-    btn.onclick = exitPopout;
-    document.body.appendChild(btn);
-    document.body.appendChild(tip);
   }
   function exitPopout() {
     // If opened via window.open, close. Otherwise navigate back to the

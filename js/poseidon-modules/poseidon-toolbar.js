@@ -260,6 +260,10 @@
       .pt-modal-head{padding:14px 18px;border-bottom:1px solid rgba(148,163,184,0.14);display:flex;align-items:center;gap:10px;}
       .pt-modal-title{font-weight:700;font-size:15px;color:#f1f5f9;}
       .pt-modal-sub{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-left:6px;}
+      .pt-modal-csv,.pt-modal-share{margin-left:8px;background:rgba(148,163,184,0.1);border:1px solid rgba(148,163,184,0.18);color:#cbd5e1;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;}
+      .pt-modal-csv:hover{background:rgba(20,184,166,0.18);color:#5eead4;border-color:rgba(20,184,166,0.4);}
+      .pt-modal-share:hover{background:rgba(168,85,247,0.18);color:#d8b4fe;border-color:rgba(168,85,247,0.4);}
+      .pt-modal-share + .pt-modal-close{margin-left:8px;}
       .pt-modal-close{margin-left:auto;background:transparent;border:0;color:#94a3b8;font-size:22px;cursor:pointer;padding:0 8px;border-radius:6px;}
       .pt-modal-close:hover{color:#f1f5f9;background:rgba(148,163,184,0.1);}
       .pt-modal-body{padding:16px 18px;overflow:auto;}
@@ -288,12 +292,27 @@
   // For each division, locate its toolbar (the div that holds the
   // existing toolbar buttons) and append "Open in New Tab" + "Analytics"
   // unless they're already there.
+  // Tab-only divisions need a synthesized toolbar (their page chrome
+  // doesn't include the standard division toolbar pattern).
+  const SYNTH_TOOLBAR_DIVISIONS = new Set(['j1division','j1housing']);
   function findToolbar(divId) {
     const page = document.getElementById(divId);
     if (!page) return null;
-    // Toolbar = the flex row right after the title that contains buttons
-    const candidates = page.querySelectorAll('.flex.items-center.gap-2.flex-wrap, .flex.items-center.gap-2');
+    if (SYNTH_TOOLBAR_DIVISIONS.has(divId)) {
+      let synth = page.querySelector('[data-pt-synth-toolbar]');
+      if (synth) return synth;
+      synth = document.createElement('div');
+      synth.dataset.ptSynthToolbar = '1';
+      synth.className = 'flex items-center gap-2 flex-wrap mb-3';
+      page.insertBefore(synth, page.firstChild);
+      return synth;
+    }
+    // Standard divisions: find the flex row of toolbar buttons.
+    // Restrict to *direct* children of the page or one level down to
+    // avoid matching nested footers/embed widgets.
+    const candidates = page.querySelectorAll(':scope > .flex.items-center.gap-2.flex-wrap, :scope > div .flex.items-center.gap-2.flex-wrap, :scope > .flex.items-center.gap-2');
     for (const c of candidates) {
+      if (c.closest('iframe, [data-pt-modal]')) continue;
       if (c.querySelector('button, a')) return c;
     }
     return null;
@@ -358,6 +377,7 @@
   function openAnalyticsReport(divId, reportId) {
     const report = (REPORTS[divId] || []).find(r => r.id === reportId);
     if (!report) return;
+    closeAnalyticsModal();
     const data = report.data();
     const backdrop = document.createElement('div');
     backdrop.className = 'pt-modal-backdrop';
@@ -371,21 +391,26 @@
           <i data-lucide="bar-chart-3" class="w-4 h-4 text-purple-400"></i>
           <span class="pt-modal-title">${escapeHtml(report.label)}</span>
           <span class="pt-modal-sub">${escapeHtml(prettyDivision(divId))}</span>
-          <button class="pt-modal-close" data-pt-action="close" aria-label="Close">&times;</button>
+          <button class="pt-modal-csv" data-pt-action="csv" title="Download chart data as CSV">⇩ CSV</button>
+          <button class="pt-modal-share" data-pt-action="share" title="Copy deep link to this report">⎘ Link</button>
+          <button class="pt-modal-close" data-pt-action="close" aria-label="Close (Esc)" title="Close (Esc)">&times;</button>
         </div>
         <div class="pt-modal-body">
           ${data ? `<div class="pt-chart-host"><canvas id="pt-chart-${reportId}"></canvas></div>` :
                    `<div style="text-align:center;padding:40px;color:#94a3b8">Live data not yet available for this report. Open the source dashboard or refresh and try again.</div>`}
         </div>
         <div class="pt-modal-foot">
-          <span>Source: live division data · readable via Jarvis read_analytics tool</span>
+          <span>Source: live division data · Esc to close · Jarvis-readable via read_analytics</span>
           <span data-pt-readback>${data ? `${labelCount(data)} series · ${pointCount(data)} points` : 'no data'}</span>
         </div>
       </div>
     `;
     document.body.appendChild(backdrop);
     backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop || e.target.dataset.ptAction === 'close') closeAnalyticsModal();
+      const a = e.target.dataset.ptAction;
+      if (e.target === backdrop || a === 'close') closeAnalyticsModal();
+      else if (a === 'csv')   downloadReportCSV(divId, reportId);
+      else if (a === 'share') copyReportLink(divId, reportId);
     });
     if (window.lucide?.createIcons) try { window.lucide.createIcons(); } catch (_) {}
 
@@ -397,6 +422,48 @@
         options: chartOptions(report.type)
       });
     }
+  }
+
+  // ─── CSV export + deep-link copy ────────────────────────────────
+  function downloadReportCSV(divId, reportId) {
+    const r = (REPORTS[divId] || []).find(x => x.id === reportId);
+    if (!r) return;
+    const d = r.data();
+    if (!d) { alert('No data to export'); return; }
+    const labels = d.labels || [];
+    const series = d.datasets || [];
+    const head = ['label', ...series.map(s => s.label || 'value')].join(',');
+    const lines = [head];
+    labels.forEach((lab, i) => {
+      lines.push([csvCell(lab), ...series.map(s => csvCell(s.data?.[i]))].join(','));
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${divId}-${reportId}.csv`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  }
+  function csvCell(v) {
+    if (v == null) return '';
+    const s = String(v);
+    return /[,"\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }
+  function copyReportLink(divId, reportId) {
+    const url = location.origin + location.pathname + `?embed=${encodeURIComponent(divId)}&report=${encodeURIComponent(reportId)}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url);
+      flashToast('Link copied — opens this report in a new tab');
+    } else {
+      prompt('Copy this URL:', url);
+    }
+  }
+  function flashToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#0f172a;color:#5eead4;border:1px solid rgba(20,184,166,0.4);border-radius:10px;padding:8px 14px;font-size:12px;z-index:10000;box-shadow:0 12px 30px rgba(0,0,0,0.4)';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
   }
   function closeAnalyticsModal() {
     document.querySelectorAll('[data-pt-modal]').forEach(el => el.remove());
@@ -427,13 +494,20 @@
   function handleEmbedMode() {
     const params = new URLSearchParams(location.search);
     const focus = params.get('embed');
+    const reportId = params.get('report');
+    // Even without ?embed, ?report=<div>:<id> can deep-link to a chart
+    if (!focus && reportId && reportId.includes(':')) {
+      const [d, r] = reportId.split(':');
+      setTimeout(() => openAnalyticsReport(d, r), 1200);
+      return;
+    }
     if (!focus) return;
     document.body.classList.add('pt-embed');
-    // Switch to focused division as soon as switchPage is available
     function go() {
       if (typeof window.switchPage === 'function') {
         window.switchPage(focus);
         injectExitDoor();
+        if (reportId) setTimeout(() => openAnalyticsReport(focus, reportId), 800);
         return true;
       }
       return false;
@@ -443,6 +517,18 @@
       obs.observe(document.body, { childList: true, subtree: true });
       setTimeout(() => { go(); obs.disconnect(); }, 4000);
     }
+  }
+  function bindKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const modal = document.querySelector('[data-pt-modal]');
+      if (modal) { closeAnalyticsModal(); e.preventDefault(); return; }
+      // Close any open analytics dropdown
+      const menu = document.querySelector('.pt-analytics-menu');
+      if (menu) { menu.remove(); e.preventDefault(); return; }
+      // Otherwise, if in embed mode, exit
+      if (document.body.classList.contains('pt-embed')) { exitPopout(); e.preventDefault(); }
+    });
   }
   function injectExitDoor() {
     if (document.getElementById('pt-exit-door')) return;
@@ -486,6 +572,7 @@
     injectStyle();
     DIVISIONS.forEach(d => augmentDivisionToolbar(d));
     handleEmbedMode();
+    bindKeyboardShortcuts();
     // Re-augment if pages get re-rendered (e.g., switchPage rebuilds DOM)
     const obs = new MutationObserver(() => DIVISIONS.forEach(d => augmentDivisionToolbar(d)));
     obs.observe(document.body, { childList: true, subtree: true });

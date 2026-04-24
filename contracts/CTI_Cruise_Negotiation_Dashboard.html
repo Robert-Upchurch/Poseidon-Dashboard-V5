@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b2545" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="CTI Cruise Dashboard" />
+<title>CTI Cruise Line Contract Negotiation Dashboard</title>
+<style>
+  :root { color-scheme: light; --header-h: 68px; --controls-h: 64px; }
+  html, body { max-width: 100%; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f7f9fc;
+    color: #1a2233;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  header {
+    background: linear-gradient(135deg, #0b2545 0%, #13315c 100%);
+    color: #fff;
+    padding: 18px 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .2px; }
+  header .subtitle { font-size: 12px; opacity: .8; margin-top: 2px; }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+    padding: 14px 28px; background: #fff; border-bottom: 1px solid #e2e8f0;
+    position: sticky; top: var(--header-h); z-index: 9;
+  }
+  .control-group { display: flex; align-items: center; gap: 8px; }
+  .control-group label { font-size: 12px; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: .5px; }
+  select, input[type=text], input[type=number] {
+    padding: 6px 10px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; background: #fff;
+  }
+  input[type=number] { width: 90px; }
+  .line-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+  .line-pill {
+    display: inline-flex; align-items: center; padding: 5px 12px;
+    border: 1.5px solid #cbd5e0; border-radius: 999px; font-size: 12px; cursor: pointer;
+    background: #fff; transition: all .15s; user-select: none;
+  }
+  .line-pill.active { background: #0b2545; color: #fff; border-color: #0b2545; }
+  .line-pill.disabled { opacity: .4; cursor: not-allowed; }
+  .btn {
+    padding: 6px 14px; background: #0b2545; color: #fff; border: 0; border-radius: 4px;
+    font-size: 12px; font-weight: 600; cursor: pointer; letter-spacing: .3px;
+  }
+  .btn:hover { background: #13315c; }
+  .btn.secondary { background: #fff; color: #0b2545; border: 1px solid #0b2545; }
+  .btn.danger { background: #c53030; }
+  main { padding: 20px 28px 40px; }
+  .tabs {
+    display: flex; gap: 2px; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap;
+  }
+  .tab {
+    padding: 8px 16px; background: transparent; border: 0; border-bottom: 3px solid transparent;
+    cursor: pointer; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: -2px;
+  }
+  .tab.active { color: #0b2545; border-bottom-color: #0b2545; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .grid {
+    display: grid; gap: 12px; overflow-x: auto;
+  }
+  .card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    min-width: 260px;
+  }
+  .card-header {
+    border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px;
+  }
+  .card-header .name { font-size: 15px; font-weight: 700; color: #0b2545; margin-bottom: 2px; }
+  .card-header .brand { font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: .5px; }
+  .card-header .badge {
+    display: inline-block; padding: 2px 8px; background: #edf2f7; color: #2d3748;
+    border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 4px; margin-top: 4px;
+  }
+  .stat-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; border-bottom: 1px dashed #edf2f7; }
+  .stat-row:last-child { border: 0; }
+  .stat-row .k { color: #718096; }
+  .stat-row .v { color: #1a2233; font-weight: 600; text-align: right; max-width: 60%; }
+  .stat-row input { font-size: 12px; padding: 2px 6px; width: 120px; text-align: right; border: 1px solid #e2e8f0; border-radius: 3px; }
+  .stat-row input.editable { background: #fffbea; }
+  table.compare {
+    width: 100%; border-collapse: collapse; background: #fff; font-size: 12px;
+    border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;
+  }
+  table.compare th, table.compare td {
+    padding: 8px 10px; border-bottom: 1px solid #edf2f7; text-align: left; vertical-align: top;
+  }
+  table.compare thead th {
+    background: #0b2545; color: #fff; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .5px; position: sticky; top: calc(var(--header-h) + var(--controls-h)); z-index: 2;
+  }
+  table.compare tbody tr.section-header td {
+    background: #edf2f7; font-weight: 700; color: #0b2545;
+    text-transform: uppercase; font-size: 11px; letter-spacing: .5px; padding: 6px 10px;
+  }
+  table.compare tbody tr:hover { background: #f7fafc; }
+  table.compare td.category { font-weight: 600; color: #2d3748; width: 220px; background: #fafbfc; }
+  .risk-crit { color: #c53030; font-weight: 700; }
+  .risk-high { color: #dd6b20; font-weight: 600; }
+  .risk-mod  { color: #d69e2e; font-weight: 600; }
+  .risk-low  { color: #38a169; font-weight: 600; }
+  .risk-fav  { color: #2f855a; font-weight: 700; }
+  .score-bar { display: inline-block; background: #e2e8f0; border-radius: 4px; height: 8px; width: 80px; overflow: hidden; vertical-align: middle; }
+  .score-bar > div { height: 100%; background: #0b2545; }
+  .score-bar.risk > div { background: #c53030; }
+  .score-bar.fee  > div { background: #38a169; }
+  ul.bullets { margin: 6px 0 0; padding-left: 18px; }
+  ul.bullets li { margin-bottom: 3px; }
+  .pros li { color: #2f855a; }
+  .cons li { color: #c53030; }
+  .fee-input { width: 110px; }
+  .fee-delta { font-size: 11px; margin-left: 6px; font-weight: 700; }
+  .fee-delta.up { color: #2f855a; }
+  .fee-delta.down { color: #c53030; }
+  .note {
+    background: #fffbea; border-left: 4px solid #d69e2e; padding: 10px 14px; border-radius: 4px;
+    font-size: 12px; margin-bottom: 14px;
+  }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; text-align: center; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: #0b2545; }
+  .kpi .lab { font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  .empty {
+    text-align: center; padding: 40px; color: #a0aec0; font-size: 14px;
+    background: #fff; border: 2px dashed #e2e8f0; border-radius: 8px;
+  }
+  .proposed-fees-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; }
+  .table-scroll table.compare { border: 0; border-radius: 0; min-width: 560px; }
+
+  /* ---------- Tablet / iPad Portrait ---------- */
+  @media (max-width: 900px) {
+    header { padding: 14px 18px; }
+    header h1 { font-size: 17px; }
+    header .subtitle { font-size: 11px; }
+    .controls { padding: 12px 18px; gap: 10px; top: var(--header-h); }
+    .controls .control-group[style] { margin-left: 0 !important; }
+    main { padding: 16px 18px 32px; }
+    table.compare thead th { top: calc(var(--header-h) + var(--controls-h)); }
+    .card-header .name { font-size: 14px; }
+  }
+
+  /* ---------- Phone (landscape/portrait) ---------- */
+  @media (max-width: 640px) {
+    body { font-size: 13px; }
+    header { padding: 12px 14px; }
+    header h1 { font-size: 15px; line-height: 1.25; }
+    header .subtitle { font-size: 10.5px; margin-top: 3px; }
+    .controls {
+      padding: 10px 14px; gap: 8px;
+      flex-direction: column; align-items: stretch;
+    }
+    .control-group { flex-wrap: wrap; width: 100%; gap: 6px; }
+    .control-group label { font-size: 11px; }
+    select { flex: 1; min-height: 38px; font-size: 14px; }
+    .line-picker { width: 100%; }
+    .line-pill { padding: 8px 12px; font-size: 12px; min-height: 36px; }
+    .controls .control-group[style] {
+      width: 100%; margin-left: 0 !important; justify-content: space-between;
+    }
+    .btn { padding: 8px 12px; min-height: 38px; font-size: 12px; flex: 1; }
+    main { padding: 14px 12px 28px; }
+    .tabs {
+      overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: 0 0 auto; padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .kpi { padding: 10px 6px; }
+    .kpi .val { font-size: 18px; }
+    .kpi .lab { font-size: 10px; }
+    .card { padding: 14px; min-width: 0; }
+    table.compare { min-width: 520px; font-size: 11.5px; }
+    table.compare th, table.compare td { padding: 7px 8px; }
+    table.compare td.category { width: 150px; position: sticky; left: 0; background: #fafbfc; z-index: 1; }
+    table.compare tbody tr.section-header td { position: sticky; left: 0; }
+    .stat-row { flex-wrap: wrap; }
+    .stat-row input { width: 100%; max-width: 100%; font-size: 13px; padding: 6px 8px; }
+    .stat-row .v { max-width: 100%; text-align: left; margin-top: 2px; }
+    .fee-input { width: 100%; }
+  }
+
+  /* ---------- Small phones (iPhone SE) ---------- */
+  @media (max-width: 420px) {
+    header h1 { font-size: 14px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .tab { padding: 9px 10px; font-size: 11.5px; }
+    table.compare { min-width: 460px; font-size: 11px; }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CTI Group — Cruise Line Contract Negotiation Dashboard</h1>
+  <div class="subtitle">Interactive comparison tool • Up to 5 cruise lines side-by-side • Source: CTI Contract Comparison workbook (Mar 2026)</div>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Contract Year</label>
+    <select id="yearFilter">
+      <option value="all">All Years</option>
+      <option value="2018">2018</option>
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Select Cruise Lines (max 5)</label>
+    <div class="line-picker" id="linePicker"></div>
+  </div>
+  <div class="control-group" style="margin-left:auto">
+    <button class="btn secondary" id="exportBtn">Export Scenario (JSON)</button>
+    <button class="btn secondary" id="importBtn">Import Scenario</button>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+    <button class="btn" id="resetBtn">Reset</button>
+  </div>
+</div>
+
+<main>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="fees">Fees & Placements</button>
+    <button class="tab" data-tab="obligations">CTI vs Cruise Line Obligations</button>
+    <button class="tab" data-tab="legal">Legal &amp; Liability</button>
+    <button class="tab" data-tab="insurance">Insurance</button>
+    <button class="tab" data-tab="positions">Position Requirements</button>
+    <button class="tab" data-tab="compliance">Compliance</button>
+    <button class="tab" data-tab="proscons">Pros / Cons Scorecard</button>
+  </div>
+
+  <div id="emptyState" class="empty" style="display:none">Select at least one cruise line above to begin comparing.</div>
+
+  <!-- OVERVIEW -->
+  <section class="panel active" id="panel-overview">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="grid" id="overviewCards" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));"></div>
+  </section>
+
+  <!-- FEES -->
+  <section class="panel" id="panel-fees">
+    <div class="note">Enter <b>Proposed Fees</b> (editable, yellow cells) to negotiate against current terms. Delta shown beside each.</div>
+    <div class="proposed-fees-wrapper"><table class="compare" id="feeTable"></table></div>
+  </section>
+
+  <!-- OBLIGATIONS -->
+  <section class="panel" id="panel-obligations">
+    <div class="table-scroll"><table class="compare" id="obligationsTable"></table></div>
+  </section>
+
+  <!-- LEGAL -->
+  <section class="panel" id="panel-legal">
+    <div class="table-scroll"><table class="compare" id="legalTable"></table></div>
+  </section>
+
+  <!-- INSURANCE -->
+  <section class="panel" id="panel-insurance">
+    <div class="table-scroll"><table class="compare" id="insuranceTable"></table></div>
+  </section>
+
+  <!-- POSITIONS -->
+  <section class="panel" id="panel-positions">
+    <div class="table-scroll"><table class="compare" id="positionsTable"></table></div>
+  </section>
+
+  <!-- COMPLIANCE -->
+  <section class="panel" id="panel-compliance">
+    <div class="table-scroll"><table class="compare" id="complianceTable"></table></div>
+  </section>
+
+  <!-- PROS/CONS -->
+  <section class="panel" id="panel-proscons">
+    <div class="grid" id="prosConsGrid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));"></div>
+  </section>
+</main>
+
+<script>
+/* ==========================================================================
+ * Source data (from CTI_Contract_Comparison_Dashboard.xlsx, Mar 25 2026)
+ * ========================================================================== */
+const LINES = [
+  {
+    id: 'seabourn', name: 'Seabourn GDP', brand: 'Seabourn (HAL N.V.)',
+    parent: 'Carnival Corporation', location: 'Seattle, WA, USA',
+    ships: 7, contractYear: 2025, effectiveDate: 'July 1, 2025',
+    contractType: 'Global Talent Partner Agreement',
+    crewSource: 'Thailand ONLY',
+    countriesServed: 'Worldwide — all 7 continents, 400+ ports (Caribbean, Mediterranean, Northern Europe/Baltic, Alaska, Asia-Pacific, Australia/NZ, Americas, Africa, Antarctica/Arctic, Transatlantic, World cruises)',
+    ctiEntity: 'CTI Group Worldwide Services Inc.',
+    scope: 'All departments: Rooms, F&B, Deck, Steward, Galley, Admin, HR, Medical',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$300 per deployment',
+      rehire: '$100 per deployment',
+      directHire: 'N/A',
+      culinarySenior: '$300 (flat)', culinaryMgmt: '$300 (flat)', culinaryMid: '$300 (flat)',
+      hotelSenior: '$300 (flat)', hotelMgmt: '$300 (flat)', hotelMid: '$300 (flat)',
+      docFees: 'Pass-through at cost (no markup)',
+      monthly: 'None',
+      payTiming: 'Net 30 days after approved invoice',
+      qualPeriod: 'On deployment (none specified)',
+      invoiceDeadline: 'Monthly',
+      replacement: "Free replacement if crew doesn't meet standards"
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: '1 year (auto-renew annually)', autoRenew: 'Yes — successive 12-month', notice: '3 months prior to end of 12-month period', postTerm: 'None specified' },
+    obligations: {
+      cti: [
+        'Source Thailand crew only (exclusive)',
+        'Pay repatriation for substandard crew',
+        'CTI liable for wage errors on documents',
+        'Full GDPR/CCPA compliance + DPO named (Pause Tu)',
+        'Free replacement until suitable candidate provided',
+        'Monthly invoicing',
+        'Maintain $1M / $2M CGL insurance'
+      ],
+      cruise: [
+        'Pay $300 new hire / $100 rehire deployment fees',
+        'Net 30 payment after approved invoice',
+        'Mutual indemnification (both sides)',
+        'Provide deployment approval per SBN standards',
+        'Right to deduct costs from fees owed for service failures',
+        'Set minimum Marlins scores by rank'
+      ]
+    },
+    legal: {
+      nonCompete: 'YES — Cannot supply Thai crew to: Royal Caribbean, Celebrity, Disney, MSC, Azamara, TUI, Silversea',
+      nonCompeteSeverity: 'HIGH',
+      indemCti: 'YES — Full for breach, negligence, non-compliance',
+      indemCruise: 'YES — Mutual',
+      liabilityCap: 'None specified',
+      indemRating: 'MODERATE',
+      repatriation: "YES — if crew doesn't meet standards",
+      absconder: 'Not specified',
+      replacementCost: "At CTI's expense",
+      serviceDeduct: 'YES — SBN can deduct all costs for service failures',
+      deductRating: 'HIGH',
+      audit: 'YES — SBN monitors services + audits; CTI must cooperate'
+    },
+    insurance: {
+      required: 'CGL: $1M per occurrence / $2M aggregate',
+      estCost: '~$15–25K/year',
+      impact: 'MODERATE'
+    },
+    positions: {
+      marlins: 'Required — min scores by rank (SBN sets)',
+      stcw: 'Required — BST + rank-specific',
+      peme: 'Required — approved examiner',
+      seamansBook: 'Required', police: 'Required',
+      c1d: 'Required (CTI responsibility)',
+      passport: '6+ months required', cpr: 'Required', vaccination: 'Required'
+    },
+    compliance: {
+      mlc: 'Required (Section 13)',
+      gdpr: 'YES — full DPA (Appendix 3)', ccpa: 'YES',
+      breach: '48 hours', ofac: 'Not specified', dpo: 'YES — named',
+      postRepat: '14 days after disembarkation',
+      briefing: 'Not specified', embark247: 'Not specified',
+      records: '5 years (MLC)', grooming: 'YES — Appendix 4'
+    },
+    pros: [
+      'Mutual indemnification',
+      'Flat fee model (predictable)',
+      '$300 new hire is highest flat fee in portfolio',
+      '1-year auto-renew provides stability',
+      'No invoice deadline restriction',
+      'Documentation fees passed through'
+    ],
+    cons: [
+      'Non-compete blocks Thai crew from 7 major lines',
+      'CTI pays repatriation for substandard crew',
+      'SBN can deduct costs from fees owed',
+      '$1M/$2M insurance required',
+      'CTI liable for wage errors on documents',
+      'Extensive data protection (GDPR/CCPA)'
+    ],
+    scores: { fee: 7, risk: 6, overall: 6 }
+  },
+  {
+    id: 'cuk', name: 'Carnival UK (CUK)', brand: 'P&O Cruises / Cunard / CUK Maritime',
+    parent: 'Carnival Corporation (Carnival plc)', location: 'Southampton, UK',
+    ships: 11, contractYear: 2026, effectiveDate: 'Under renewal (Jan 2026)',
+    contractType: 'Manning/GTP Agreement (under renewal)',
+    crewSource: 'Indonesia (primary), S. Africa, Zimbabwe, Thailand',
+    countriesServed: 'Worldwide — UK-based global itineraries (Caribbean, Mediterranean, Northern Europe/Baltic/Norwegian Fjords, Canary Islands, Transatlantic, Asia, Australia/NZ, World cruises via Cunard flagship Queen Mary 2)',
+    ctiEntity: 'CTI (Carnival/GTP)',
+    scope: 'Hotel, F&B, Culinary, Deck & Engine, Entertainment',
+    currentCrew: 444, placementsYTD: null,
+    fees: {
+      newHire: 'TBD (90-day qualifying period)',
+      rehire: 'TBD', directHire: 'N/A',
+      culinarySenior: 'TBD', culinaryMgmt: 'TBD', culinaryMid: 'TBD',
+      hotelSenior: 'TBD', hotelMgmt: 'TBD', hotelMid: 'TBD',
+      docFees: 'TBD', monthly: 'None',
+      payTiming: 'TBD', qualPeriod: '90 days (no fee if leaves within 90)',
+      invoiceDeadline: 'TBD', replacement: 'Yes'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Under renewal', autoRenew: 'TBD', notice: 'TBD', postTerm: 'None — no fees owed after termination' },
+    obligations: {
+      cti: [
+        'Source Indonesian crew (primary) + SA/Zimbabwe/Thai',
+        'Cover all crew documentation, vaccinations, visas',
+        'Full indemnification + reimbursement for compliance failures',
+        'Annual audit cooperation',
+        'Absorb pipeline wait costs (12–17 months)',
+        'Repatriation if crew lacks docs / vaccines / visas',
+        'Maintain MLC license insurance (USD 616,371 / 10B IDR)'
+      ],
+      cruise: [
+        'Pay fees (TBD under renewal)',
+        '90-day qualifying period before fee earned',
+        'Can credit instead of reimburse service failures (sole discretion)',
+        'Conduct annual audits',
+        'Approve final deployments'
+      ]
+    },
+    legal: {
+      nonCompete: 'TBD', nonCompeteSeverity: 'TBD',
+      indemCti: 'YES — Full + reimbursement for compliance failures',
+      indemCruise: 'TBD',
+      liabilityCap: 'TBD',
+      indemRating: 'HIGH',
+      repatriation: 'YES — if crew lacks docs/vaccines/visas',
+      absconder: 'TBD',
+      replacementCost: 'TBD',
+      serviceDeduct: 'YES — Carnival can credit at sole discretion',
+      deductRating: 'HIGH',
+      audit: 'YES — Annual audits'
+    },
+    insurance: {
+      required: 'CGL: USD 616,371 / 10B IDR (per MLC license)',
+      estCost: 'Covered by MLC license',
+      impact: 'LOW'
+    },
+    positions: {
+      marlins: 'Required', stcw: 'Required per audit docs',
+      peme: 'Required', seamansBook: 'Required', police: 'Required',
+      c1d: 'Required (per pipeline data)', passport: 'Required', cpr: 'TBD', vaccination: 'Required'
+    },
+    compliance: {
+      mlc: 'Required per audit', gdpr: 'YES (Carnival standard)', ccpa: 'TBD',
+      breach: 'Per Carnival standard', ofac: 'Not specified', dpo: 'TBD',
+      postRepat: 'TBD', briefing: 'TBD', embark247: 'TBD',
+      records: 'TBD', grooming: 'TBD'
+    },
+    pros: [
+      'Large volume (444 crew in current pipeline)',
+      'Multiple brands (P&O, Cunard, CUK Maritime)',
+      'Established relationship',
+      'MLC license covers insurance requirement'
+    ],
+    cons: [
+      '90-DAY qualifying period (industry worst)',
+      'No fee if crew leaves within 90 days',
+      'Full indemnification + reimbursement obligation',
+      'Carnival can credit instead of reimburse fees',
+      'Contract under renewal (uncertain terms)',
+      '12–17 month pipeline wait times'
+    ],
+    scores: { fee: 4, risk: 8, overall: 4 }
+  },
+  {
+    id: 'apollo-std', name: 'Apollo Group (Standard)', brand: 'Apollo Group (multiple brands)',
+    parent: 'Apollo Group', location: 'Miami, FL, USA (Apollo Ship Services)',
+    ships: null, contractYear: 2025, effectiveDate: 'March 1, 2025',
+    contractType: 'Seafarer Recruitment & Placement SLA (2 yr)',
+    crewSource: 'Thailand ONLY',
+    countriesServed: 'Worldwide — 7 marine employers incl. Four Seasons Yachts; deploy to Caribbean, Mediterranean, Northern Europe, Americas, Asia, Middle East (per client itineraries)',
+    ctiEntity: 'CTI Thailand',
+    scope: 'Recruitment & placement per HPOM guidelines',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$250 per applicant (30-day qualifying)',
+      rehire: '$75 per returning seafarer',
+      directHire: '$100 per applicant',
+      culinarySenior: '$250 (standard)', culinaryMgmt: '$250', culinaryMid: '$250',
+      hotelSenior: '$250', hotelMgmt: '$250', hotelMid: '$250',
+      docFees: 'Absorbed by CTI', monthly: 'None',
+      payTiming: 'Net 30 after proper invoice received',
+      qualPeriod: '30 days', invoiceDeadline: '60 days max',
+      replacement: '90-day probation / 180-day guarantee for new hires'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: '2 years (Mar 2025 – Mar 2027)', autoRenew: 'No auto-renewal specified', notice: '30 calendar days written notice', postTerm: 'None — no further fees owed' },
+    obligations: {
+      cti: [
+        'Source Thai crew only',
+        'Absorb documentation costs',
+        '18-month post-termination non-solicitation of Apollo crew',
+        'Financial liability for absconders + immigration fines',
+        'Free replacement within 90-day probation / 180-day new hire',
+        'Reimburse for English language failures',
+        'OFAC screening mandatory',
+        'Submit invoices within 60 days (else no payment)'
+      ],
+      cruise: [
+        'Pay $250 / $75 / $100 per fee type',
+        'Net 30 payment',
+        'One-sided indemnification (Apollo not liable)',
+        'Provide HPOM guidelines',
+        'Arbitration in Miami'
+      ]
+    },
+    legal: {
+      nonCompete: '18-month post-termination non-solicitation of ANY Apollo-recruited crew',
+      nonCompeteSeverity: 'HIGH',
+      indemCti: 'YES — Full for negligence, misconduct, non-compliance',
+      indemCruise: 'NO — One-sided',
+      liabilityCap: 'None specified',
+      indemRating: 'HIGH',
+      repatriation: 'YES — if denied boarding due to incomplete docs',
+      absconder: 'YES — CTI financially liable if reasonably should have known; joining/repat costs + fines',
+      replacementCost: 'Free replacement within 90d probation / 180d new hire',
+      serviceDeduct: 'YES — 12+ disqualifier categories on invoicing',
+      deductRating: 'VERY HIGH',
+      audit: 'YES — per HPOM procedures'
+    },
+    insurance: { required: 'Not specified in contract', estCost: 'LOW', impact: 'LOW' },
+    positions: {
+      marlins: 'Required — min 75% score', stcw: 'Required per HPOM',
+      peme: 'Required — TAG Risk Mgmt approved', seamansBook: 'Required per HPOM',
+      police: 'Required — SRPS responsible before interview',
+      c1d: 'Required per joining docs', passport: 'Required per joining docs',
+      cpr: 'Per HPOM', vaccination: 'Per HPOM'
+    },
+    compliance: {
+      mlc: 'Required (Section 26)', gdpr: 'Not explicitly stated', ccpa: 'Not stated',
+      breach: 'Not specified', ofac: 'YES — Mandatory SDN list screening',
+      dpo: 'Not required',
+      postRepat: '7 days after repatriation; report if no contact in 21 days',
+      briefing: 'Per HPOM', embark247: 'Not specified',
+      records: 'Per HPOM', grooming: 'Per HPOM'
+    },
+    pros: [
+      '$250 new hire fee is reasonable',
+      'Multi-brand access (7 marine employers incl. Four Seasons Yachts)',
+      '2-year fixed term provides planning certainty',
+      '30-day qualifying period (better than CUK)',
+      'Detailed HPOM provides clear process guidelines'
+    ],
+    cons: [
+      '18-MONTH non-compete post-termination',
+      '12+ invoice disqualifiers (very aggressive)',
+      '60-day invoice submission deadline',
+      'CTI liable for absconder costs + immigration fines',
+      '180-day free replacement on new hires',
+      'CTI reimburses for English language failures',
+      'One-sided indemnification (Apollo not liable)',
+      'Arbitration in Miami (costly)'
+    ],
+    scores: { fee: 5, risk: 8, overall: 4 }
+  },
+  {
+    id: 'apollo-tier', name: 'Apollo Group (Tiered Fees)', brand: 'Apollo Fee Schedule',
+    parent: 'Apollo Group', location: 'Miami, FL, USA', ships: null,
+    contractYear: 2025, effectiveDate: 'May 13, 2025',
+    contractType: 'Fee Schedule Addendum',
+    crewSource: 'Thailand',
+    countriesServed: 'Same as Apollo Standard — Worldwide via 7 Apollo marine employers (Four Seasons Yachts, cruise & yacht brands); Caribbean, Mediterranean, Northern Europe, Americas, Asia, Middle East',
+    ctiEntity: 'CTI Thailand',
+    scope: 'Senior Mgmt, Mgmt, Mid-Mgmt fee tiers',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$250 base', rehire: '$75', directHire: '$100',
+      culinarySenior: '$3,500 (Exec Chef, Exec Pastry, Exec Sous, F&B Dir)',
+      culinaryMgmt: '$1,500 (Sous Chef, Chef de Cuisine)',
+      culinaryMid: '$700 (Chef de Partie)',
+      hotelSenior: '$3,500 (Sailor Svcs Dir, Hotel Controller)',
+      hotelMgmt: '$1,500 (Restaurant Mgr, Beverage Mgr, Ex HK)',
+      hotelMid: '$700 (Asst Restaurant Mgr, Asst Bev Mgr)',
+      docFees: 'Absorbed by CTI', monthly: 'None',
+      payTiming: 'Per contract', qualPeriod: 'Per contract (30 days)',
+      invoiceDeadline: '60 days max', replacement: '90/180 days'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'N/A (addendum)', autoRenew: 'N/A', notice: 'N/A', postTerm: 'N/A' },
+    obligations: {
+      cti: ['Same as Apollo Standard contract', 'Focus recruiting on senior-tier positions for max revenue', 'Higher quality scrutiny for senior hires'],
+      cruise: ['Pay tiered fees: $3,500 / $1,500 / $700', 'Same indemnification as Apollo Standard']
+    },
+    legal: {
+      nonCompete: 'Per parent contract (18-month)', nonCompeteSeverity: 'HIGH',
+      indemCti: 'Per contract', indemCruise: 'Per contract',
+      liabilityCap: 'N/A', indemRating: 'HIGH',
+      repatriation: 'Per contract', absconder: 'Per contract',
+      replacementCost: 'Per contract',
+      serviceDeduct: 'Per contract', deductRating: 'HIGH',
+      audit: 'Per contract'
+    },
+    insurance: { required: 'Per Apollo Standard', estCost: 'LOW', impact: 'LOW' },
+    positions: {
+      marlins: 'Per contract', stcw: 'Per contract', peme: 'Per contract',
+      seamansBook: 'Per contract', police: 'Per contract',
+      c1d: 'Per contract', passport: 'Per contract', cpr: 'Per contract', vaccination: 'Per contract'
+    },
+    compliance: {
+      mlc: 'Per contract', gdpr: 'N/A', ccpa: 'N/A',
+      breach: 'N/A', ofac: 'Per contract', dpo: 'N/A',
+      postRepat: 'Per contract', briefing: 'Per contract', embark247: 'Per contract',
+      records: 'Per contract', grooming: 'Per contract'
+    },
+    pros: [
+      'MASSIVE upside for senior positions ($3,500 exec, $1,500 mgmt)',
+      'Chef de Partie at $700 still 2x+ standard rate',
+      'Tiered model rewards recruiting harder-to-fill roles',
+      'Significantly higher revenue per placement'
+    ],
+    cons: [
+      'Same contract risks as Apollo Standard apply',
+      'High-fee positions are harder to fill',
+      'Greater scrutiny on quality of senior candidates',
+      'Higher liability if senior hire fails'
+    ],
+    scores: { fee: 9, risk: 8, overall: 7 }
+  },
+  {
+    id: 'hal-otc', name: 'HAL / Seabourn OTC', brand: 'Holland America Line / Seabourn',
+    parent: 'Carnival Corporation', location: 'Manila, Philippines (training center)',
+    ships: null, contractYear: 2026, effectiveDate: 'February 1, 2026',
+    contractType: 'OTC Training Program Agreement',
+    crewSource: 'Philippines (OTC training)',
+    countriesServed: 'Philippines (training center operations); trainees deploy globally on HAL (Alaska, Caribbean, Mediterranean, Europe, Asia, Australia, Panama Canal, World cruises) and Seabourn (all 7 continents)',
+    ctiEntity: 'CTI / OTC Inc.',
+    scope: 'Crew training center operations',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 'Per SOW (undefined)', rehire: 'N/A', directHire: 'N/A',
+      culinarySenior: 'N/A', culinaryMgmt: 'N/A', culinaryMid: 'N/A',
+      hotelSenior: 'N/A', hotelMgmt: 'N/A', hotelMid: 'N/A',
+      docFees: 'N/A', monthly: 'None',
+      payTiming: 'Per SOW', qualPeriod: 'N/A',
+      invoiceDeadline: 'Per SOW', replacement: 'N/A'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Per agreement', autoRenew: 'TBD', notice: 'TBD', postTerm: 'N/A' },
+    obligations: {
+      cti: ['Operate training center in Manila', 'STCW training delivery', 'Trainee pipeline management'],
+      cruise: ['Fund training per SOW', 'Intake trained crew into pipeline']
+    },
+    legal: {
+      nonCompete: 'N/A', nonCompeteSeverity: 'N/A',
+      indemCti: 'TBD', indemCruise: 'TBD',
+      liabilityCap: 'TBD', indemRating: 'TBD',
+      repatriation: 'N/A', absconder: 'N/A', replacementCost: 'N/A',
+      serviceDeduct: 'TBD', deductRating: 'TBD', audit: 'TBD'
+    },
+    insurance: { required: 'TBD', estCost: 'TBD', impact: 'TBD' },
+    positions: {
+      marlins: 'N/A', stcw: 'STCW training center focus',
+      peme: 'N/A', seamansBook: 'N/A', police: 'N/A',
+      c1d: 'N/A', passport: 'N/A', cpr: 'N/A', vaccination: 'N/A'
+    },
+    compliance: {
+      mlc: 'Required', gdpr: 'TBD', ccpa: 'TBD',
+      breach: 'TBD', ofac: 'Not specified', dpo: 'TBD',
+      postRepat: 'N/A', briefing: 'N/A', embark247: 'N/A',
+      records: 'TBD', grooming: 'N/A'
+    },
+    pros: [
+      'Training center model (different revenue stream)',
+      'Lower compliance burden (training vs. manning)',
+      'Philippines-based operations'
+    ],
+    cons: [
+      'Fee structure completely undefined (per SOW)',
+      'Scope limited to training only',
+      "Less relevant to CTI's manning core business"
+    ],
+    scores: { fee: 3, risk: 3, overall: 3 }
+  },
+  {
+    id: 'ccl-msa', name: 'CCL MSA Template', brand: 'Carnival Cruise Line',
+    parent: 'Carnival Corporation', location: 'Miami, FL, USA',
+    ships: 27, contractYear: 2018, effectiveDate: 'April 30, 2018 (template)',
+    contractType: 'Master Services Agreement Template',
+    crewSource: 'Not specified (template)',
+    countriesServed: 'Worldwide — Caribbean, Bahamas, Mexico/Baja, Alaska, Hawaii, Bermuda, Panama Canal, Transatlantic, Mediterranean/Europe (Carnival Luminosa seasonal), Australia (Carnival Adventure/Encounter)',
+    ctiEntity: 'Template (no specific entity)',
+    scope: 'General services (not crew-specific)',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 'Per SOW (undefined)', rehire: 'N/A', directHire: 'N/A',
+      culinarySenior: 'N/A', culinaryMgmt: 'N/A', culinaryMid: 'N/A',
+      hotelSenior: 'N/A', hotelMgmt: 'N/A', hotelMid: 'N/A',
+      docFees: 'N/A', monthly: 'None',
+      payTiming: 'Net 30 (template)', qualPeriod: 'N/A',
+      invoiceDeadline: 'Per SOW', replacement: 'N/A'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Per SOW', autoRenew: 'No', notice: '10 days without cause', postTerm: 'None' },
+    obligations: {
+      cti: [
+        'UNLIMITED liability exposure',
+        'All work product IP transfers to Carnival',
+        '2-year employee non-compete',
+        'Maintain $5M Prof Liability + $1M CGL + $1M Auto + Workers Comp',
+        'GDPR-level compliance + 48hr breach notification',
+        'Annual audits + any-time inspections',
+        'Per-SOW delivery'
+      ],
+      cruise: [
+        'Define SOW (fees undefined in template)',
+        'Right to terminate with 10 days notice without cause',
+        'Own all work product / IP',
+        'Audit at any time'
+      ]
+    },
+    legal: {
+      nonCompete: '2-year restriction on employees working for other cruise lines',
+      nonCompeteSeverity: 'CRITICAL',
+      indemCti: 'YES — UNLIMITED liability; broadest indemnification',
+      indemCruise: 'YES — But heavily limited',
+      liabilityCap: 'None — UNLIMITED',
+      indemRating: 'CRITICAL',
+      repatriation: 'Per SOW', absconder: 'Not specified', replacementCost: 'Not specified',
+      serviceDeduct: 'Not specified in template', deductRating: 'MODERATE',
+      audit: 'YES — At any time with reasonable notice'
+    },
+    insurance: {
+      required: '$5M Professional Liability + $1M CGL + $1M Auto + Workers Comp',
+      estCost: '~$40K+/year for $5M professional liability',
+      impact: 'CRITICAL'
+    },
+    positions: {
+      marlins: 'Not specified', stcw: 'Not specified', peme: 'Not specified',
+      seamansBook: 'Not specified', police: 'Not specified',
+      c1d: 'Not specified', passport: 'Not specified', cpr: 'Not specified', vaccination: 'Not specified'
+    },
+    compliance: {
+      mlc: 'Not specified (template)', gdpr: 'YES — Full compliance', ccpa: 'YES',
+      breach: '48 hours', ofac: 'Not specified',
+      dpo: 'Per Carnival requirements',
+      postRepat: 'Not specified', briefing: 'Not specified', embark247: 'Not specified',
+      records: 'Not specified', grooming: 'Not specified'
+    },
+    pros: [
+      'Access to Carnival Cruise Line brand',
+      'Part of Carnival Corporation ecosystem'
+    ],
+    cons: [
+      'MOST DANGEROUS CONTRACT',
+      '10-DAY termination without cause',
+      'UNLIMITED indemnification liability',
+      "All work product becomes Carnival's IP",
+      '$5M professional liability insurance ($40K+/yr)',
+      '2-year employee non-compete',
+      'No minimum volume or revenue guarantee',
+      'GDPR + 48hr breach notification',
+      'Heavily one-sided throughout'
+    ],
+    scores: { fee: 2, risk: 10, overall: 1 }
+  },
+  {
+    id: 'viking', name: 'Viking Ocean Cruises', brand: 'Viking Ocean Cruises Ltd',
+    parent: 'Viking (Independent)', location: 'Basel, Switzerland / Los Angeles, CA',
+    ships: 12, contractYear: 2025, effectiveDate: 'December 10, 2025',
+    contractType: 'Agency Agreement (Manning)',
+    crewSource: 'No geographic restriction',
+    countriesServed: 'Worldwide — 100+ countries, 400+ ports (Europe, Mediterranean, Caribbean, Central/South America, Alaska, Asia, Australia/NZ, Africa, Middle East, Antarctica; World cruises / Grand Journeys)',
+    ctiEntity: 'CTI Group Worldwide Services Inc.',
+    scope: 'Manning & recruitment for 12 Viking vessels',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$25/month per crew member (recurring)',
+      rehire: '$25/month (same)',
+      directHire: 'N/A',
+      culinarySenior: '$25/month', culinaryMgmt: '$25/month', culinaryMid: '$25/month',
+      hotelSenior: '$25/month', hotelMgmt: '$25/month', hotelMid: '$25/month',
+      docFees: 'Reimbursable (PEME, visa, travel)',
+      monthly: '$25 per crew member / month',
+      payTiming: 'Net 30 after Statement of Accounts',
+      qualPeriod: '30 days (50/50 split if terminated for non-agent reasons)',
+      invoiceDeadline: 'Within 10 days after month end',
+      replacement: 'Yes — upon request'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Indefinite', autoRenew: 'N/A (indefinite)', notice: '30 calendar days written notice', postTerm: '3 months — fees due on candidates hired within 3 months after termination' },
+    obligations: {
+      cti: [
+        'Recruit + supply crew globally (no geographic restriction)',
+        'Arrange PEME (doctor liability shield applies)',
+        'Pre-departure lecture / seminar',
+        '24/7 embarkation support',
+        'Maintain records 1 year post-employment',
+        'GDPR compliance (EU Reg 2016/679)',
+        'General liability insurance for seminars/fairs',
+        'Submit invoices within 10 days of month end'
+      ],
+      cruise: [
+        'Pay $25/month per crew member (recurring)',
+        'Reimburse documentation costs (PEME, visa, travel)',
+        'Pay all assessment centre expenses',
+        'Pay all bank charges',
+        'Indemnify agent for employment claims',
+        'Provide pre-departure information',
+        'Handle employment termination costs'
+      ]
+    },
+    legal: {
+      nonCompete: 'Non-exclusive; no non-compete on agent',
+      nonCompeteSeverity: 'LOW',
+      indemCti: 'YES — For breach, data protection, candidate claims',
+      indemCruise: 'YES — Employment + vessel claims (except agent gross negligence)',
+      liabilityCap: 'YES — Capped at total fees paid under agreement',
+      indemRating: 'FAVORABLE',
+      repatriation: 'NO — PRINCIPAL handles employment termination costs',
+      absconder: 'Not specified', replacementCost: 'Upon request (no cost specified)',
+      serviceDeduct: 'NO — Separate invoicing; no deduction rights', deductRating: 'LOW',
+      audit: 'YES — PRINCIPAL may inspect at any time'
+    },
+    insurance: {
+      required: 'General liability for seminars/fairs',
+      estCost: 'LOW',
+      impact: 'LOW'
+    },
+    positions: {
+      marlins: 'Not specified', stcw: 'Required (Art. 2.13)',
+      peme: 'Required — AGENT arranges', seamansBook: 'Required (Art. 2.7)', police: 'Not specified',
+      c1d: 'Required (Art. 2.7.2)', passport: 'Required (Art. 2.7)', cpr: 'Not specified',
+      vaccination: 'Required (Art. 2.7.3)'
+    },
+    compliance: {
+      mlc: 'Required (Art. 2.12)', gdpr: 'YES (EU Reg 2016/679)', ccpa: 'Not stated',
+      breach: 'Not specified', ofac: 'Not specified', dpo: 'Not specified',
+      postRepat: 'Not specified', briefing: 'YES — lecture/seminar (Art. 2.6)',
+      embark247: 'YES (Art. 2.8)',
+      records: '1 year after employment (Art. 2.1)', grooming: 'Per PRINCIPAL requirements'
+    },
+    pros: [
+      'MOST FAVORABLE CONTRACT',
+      'Recurring $25/month per crew (predictable revenue)',
+      'PRINCIPAL indemnifies agent for employment claims',
+      'Liability CAPPED at total fees paid',
+      'No geographic restriction on sourcing',
+      'Non-exclusive (can work with competitors)',
+      'Viking pays assessment centre costs',
+      'Viking pays all bank charges',
+      '3-month post-termination fee rights',
+      'PEME doctor liability shield',
+      '50/50 fee split on early terminations (not 100% agent)',
+      'Documentation costs reimbursable'
+    ],
+    cons: [
+      '$25/month is lowest per-crew revenue',
+      'Indefinite term (no long-term guarantee)',
+      'PRINCIPAL can terminate for management change',
+      'ICC arbitration in London (expensive)',
+      'Anti-bribery zero-tolerance termination',
+      '15-day cure period for breach is short'
+    ],
+    scores: { fee: 4, risk: 2, overall: 7 }
+  }
+];
+
+/* ==========================================================================
+ * State
+ * ========================================================================== */
+let selectedIds = ['seabourn', 'cuk', 'apollo-tier', 'viking'];
+let yearFilter = 'all';
+let activeTab = 'overview';
+const overrides = {}; // { lineId: { field: value } }
+
+/* ==========================================================================
+ * Helpers
+ * ========================================================================== */
+function getLine(id) { return LINES.find(l => l.id === id); }
+function applyOverrides(line) {
+  const o = overrides[line.id] || {};
+  return {
+    ...line,
+    ...o,
+    proposedFees: { ...line.proposedFees, ...(o.proposedFees || {}) }
+  };
+}
+function getSelected() {
+  return selectedIds
+    .map(id => getLine(id))
+    .filter(l => l && (yearFilter === 'all' || String(l.contractYear) === yearFilter))
+    .map(applyOverrides);
+}
+function riskClass(v) {
+  if (!v) return '';
+  const s = String(v).toUpperCase();
+  if (s.includes('CRIT')) return 'risk-crit';
+  if (s.includes('VERY HIGH')) return 'risk-crit';
+  if (s.includes('HIGH')) return 'risk-high';
+  if (s.includes('MOD')) return 'risk-mod';
+  if (s.includes('FAVOR')) return 'risk-fav';
+  if (s.includes('LOW')) return 'risk-low';
+  return '';
+}
+function parseDollar(s) {
+  if (!s) return null;
+  const m = String(s).match(/\$\s*([\d,]+)/);
+  return m ? parseFloat(m[1].replace(/,/g, '')) : null;
+}
+
+/* ==========================================================================
+ * Renderers
+ * ========================================================================== */
+function renderLinePicker() {
+  const box = document.getElementById('linePicker');
+  box.innerHTML = '';
+  const canAdd = selectedIds.length < 5;
+  LINES.forEach(l => {
+    const yearOk = yearFilter === 'all' || String(l.contractYear) === yearFilter;
+    const isOn = selectedIds.includes(l.id);
+    const disabled = !isOn && (!canAdd || !yearOk);
+    const pill = document.createElement('div');
+    pill.className = 'line-pill' + (isOn ? ' active' : '') + (disabled ? ' disabled' : '');
+    pill.textContent = l.name;
+    pill.onclick = () => {
+      if (disabled) return;
+      if (isOn) selectedIds = selectedIds.filter(x => x !== l.id);
+      else selectedIds = [...selectedIds, l.id];
+      render();
+    };
+    box.appendChild(pill);
+  });
+}
+
+function renderKPIs(lines) {
+  const kpi = document.getElementById('kpiGrid');
+  const totalShips = lines.reduce((s, l) => s + (Number(l.ships) || 0), 0);
+  const totalCrew = lines.reduce((s, l) => s + (Number(l.currentCrew) || 0), 0);
+  const totalPlace = lines.reduce((s, l) => s + (Number(l.placementsYTD) || 0), 0);
+  const avgFee = (() => {
+    const arr = lines.map(l => parseDollar(l.fees.newHire)).filter(x => x);
+    return arr.length ? Math.round(arr.reduce((a,b)=>a+b,0) / arr.length) : null;
+  })();
+  const avgRisk = (() => {
+    const arr = lines.map(l => l.scores.risk).filter(x => x !== undefined);
+    return arr.length ? (arr.reduce((a,b)=>a+b,0) / arr.length).toFixed(1) : '—';
+  })();
+  kpi.innerHTML = `
+    <div class="kpi"><div class="val">${lines.length}</div><div class="lab">Lines Compared</div></div>
+    <div class="kpi"><div class="val">${totalShips || '—'}</div><div class="lab">Total Ships</div></div>
+    <div class="kpi"><div class="val">${totalCrew || '—'}</div><div class="lab">Current Crew Onboard</div></div>
+    <div class="kpi"><div class="val">${totalPlace || '—'}</div><div class="lab">Placements YTD</div></div>
+    <div class="kpi"><div class="val">${avgFee ? '$'+avgFee : '—'}</div><div class="lab">Avg New-Hire Fee</div></div>
+    <div class="kpi"><div class="val">${avgRisk}/10</div><div class="lab">Avg Risk Score</div></div>
+  `;
+}
+
+function renderOverview(lines) {
+  const box = document.getElementById('overviewCards');
+  box.innerHTML = '';
+  lines.forEach(l => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="name">${l.name}</div>
+        <div class="brand">${l.brand}</div>
+        <div><span class="badge">${l.contractYear}</span><span class="badge">${l.parent}</span></div>
+      </div>
+      <div class="stat-row"><div class="k">Company</div><div class="v">${l.brand}</div></div>
+      <div class="stat-row"><div class="k">Location</div><div class="v"><input class="editable" data-field="location" data-id="${l.id}" value="${l.location || ''}"></div></div>
+      <div class="stat-row"><div class="k"># Ships</div><div class="v"><input class="editable" type="number" data-field="ships" data-id="${l.id}" value="${l.ships || ''}"></div></div>
+      <div class="stat-row"><div class="k">Contract Year</div><div class="v">${l.contractYear}</div></div>
+      <div class="stat-row"><div class="k">Effective Date</div><div class="v">${l.effectiveDate}</div></div>
+      <div class="stat-row"><div class="k">Contract Type</div><div class="v">${l.contractType}</div></div>
+      <div class="stat-row"><div class="k">Crew Source</div><div class="v">${l.crewSource}</div></div>
+      <div class="stat-row"><div class="k">Countries Served</div><div class="v" style="max-width:70%; font-weight:400;">${l.countriesServed || '—'}</div></div>
+      <div class="stat-row"><div class="k">CTI Entity</div><div class="v">${l.ctiEntity}</div></div>
+      <div class="stat-row"><div class="k">Current Crew Onboard</div><div class="v"><input class="editable" type="number" data-field="currentCrew" data-id="${l.id}" value="${l.currentCrew || ''}"></div></div>
+      <div class="stat-row"><div class="k">Placements YTD</div><div class="v"><input class="editable" type="number" data-field="placementsYTD" data-id="${l.id}" value="${l.placementsYTD || ''}"></div></div>
+      <div class="stat-row"><div class="k">Scope</div><div class="v" style="max-width:70%; font-weight:400;">${l.scope}</div></div>
+      <div class="stat-row"><div class="k">CTI Score</div><div class="v">${l.scores.overall}/10 <span class="score-bar"><div style="width:${l.scores.overall*10}%"></div></span></div></div>
+    `;
+    box.appendChild(card);
+  });
+  wireEditableInputs();
+}
+
+function renderFeeTable(lines) {
+  const t = document.getElementById('feeTable');
+  const rows = [
+    { k: 'One-Time Deployment Fees', header: true },
+    { k: 'New Hire', get: l => l.fees.newHire, prop: 'newHire' },
+    { k: 'Rehire / Reconfirmation', get: l => l.fees.rehire, prop: 'rehire' },
+    { k: 'Direct Hire Processing', get: l => l.fees.directHire },
+    { k: 'Culinary / Hotel — Senior Mgmt', header: false, get: l => l.fees.culinarySenior, prop: 'seniorMgmt' },
+    { k: 'Culinary / Hotel — Management', get: l => l.fees.culinaryMgmt, prop: 'mgmt' },
+    { k: 'Culinary / Hotel — Mid-Management', get: l => l.fees.culinaryMid, prop: 'midMgmt' },
+    { k: 'Recurring / Monthly Fee', get: l => l.fees.monthly, prop: 'monthly' },
+    { k: 'Documentation Fees', get: l => l.fees.docFees },
+    { k: 'Payment Terms', header: true },
+    { k: 'Payment Timing', get: l => l.fees.payTiming },
+    { k: 'Qualifying Period', get: l => l.fees.qualPeriod },
+    { k: 'Invoice Deadline', get: l => l.fees.invoiceDeadline },
+    { k: 'Replacement Obligation', get: l => l.fees.replacement },
+    { k: 'Term & Termination', header: true },
+    { k: 'Initial Term', get: l => l.term.initial },
+    { k: 'Auto-Renewal', get: l => l.term.autoRenew },
+    { k: 'Termination Notice', get: l => l.term.notice },
+    { k: 'Post-Termination Fee Rights', get: l => l.term.postTerm }
+  ];
+  let html = '<thead><tr><th>Category</th>' + lines.map(l=>`<th>${l.name}<div style="font-size:10px;opacity:.7">${l.contractYear}</div></th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    if (r.header) {
+      html += `<tr class="section-header"><td colspan="${lines.length+1}">${r.k}</td></tr>`;
+      return;
+    }
+    html += `<tr><td class="category">${r.k}</td>`;
+    lines.forEach(l => {
+      const current = r.get(l) || '—';
+      let cell = `<div>${current}</div>`;
+      if (r.prop) {
+        const prop = l.proposedFees[r.prop] || '';
+        const cur$ = parseDollar(current);
+        const prop$ = parseFloat(String(prop).replace(/[^0-9.-]/g,'')) || null;
+        let delta = '';
+        if (cur$ && prop$) {
+          const d = prop$ - cur$;
+          delta = `<span class="fee-delta ${d>=0?'up':'down'}">${d>=0?'+':''}$${d.toLocaleString()}</span>`;
+        }
+        cell += `<div style="margin-top:4px"><input class="fee-input editable" data-line="${l.id}" data-fee="${r.prop}" placeholder="Proposed" value="${prop}">${delta}</div>`;
+      }
+      html += `<td>${cell}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+  wireFeeInputs();
+}
+
+function renderObligations(lines) {
+  const t = document.getElementById('obligationsTable');
+  let html = '<thead><tr><th>Party</th>' + lines.map(l=>`<th>${l.name}</th>`).join('') + '</tr></thead><tbody>';
+  html += `<tr class="section-header"><td colspan="${lines.length+1}">CTI Obligations (what CTI must do / pay)</td></tr>`;
+  html += '<tr><td class="category">CTI Obligations</td>' + lines.map(l =>
+    `<td><ul class="bullets">${l.obligations.cti.map(x=>`<li>${x}</li>`).join('')}</ul></td>`
+  ).join('') + '</tr>';
+  html += `<tr class="section-header"><td colspan="${lines.length+1}">Cruise Line Obligations (what cruise line must do / pay)</td></tr>`;
+  html += '<tr><td class="category">Cruise Line Obligations</td>' + lines.map(l =>
+    `<td><ul class="bullets">${l.obligations.cruise.map(x=>`<li>${x}</li>`).join('')}</ul></td>`
+  ).join('') + '</tr>';
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+function renderLegal(lines) {
+  const t = document.getElementById('legalTable');
+  const rows = [
+    { k: 'Non-Compete Restrictions', header: true },
+    { k: 'Non-Compete Clause', get: l => l.legal.nonCompete },
+    { k: 'Non-Compete Severity', get: l => l.legal.nonCompeteSeverity, risk: true },
+    { k: 'Indemnification', header: true },
+    { k: 'CTI Indemnifies Cruise Line', get: l => l.legal.indemCti },
+    { k: 'Cruise Line Indemnifies CTI', get: l => l.legal.indemCruise },
+    { k: 'Liability Cap', get: l => l.legal.liabilityCap },
+    { k: 'Indemnity Rating', get: l => l.legal.indemRating, risk: true },
+    { k: 'Repatriation & Liability', header: true },
+    { k: 'CTI Pays Repatriation', get: l => l.legal.repatriation },
+    { k: 'Absconder Liability', get: l => l.legal.absconder },
+    { k: 'Replacement Cost', get: l => l.legal.replacementCost },
+    { k: 'Service Deductions', header: true },
+    { k: 'Can Cruise Line Deduct from Fees', get: l => l.legal.serviceDeduct },
+    { k: 'Deduction Risk Rating', get: l => l.legal.deductRating, risk: true },
+    { k: 'Audit Rights', get: l => l.legal.audit }
+  ];
+  let html = '<thead><tr><th>Legal Category</th>' + lines.map(l=>`<th>${l.name}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    if (r.header) {
+      html += `<tr class="section-header"><td colspan="${lines.length+1}">${r.k}</td></tr>`;
+      return;
+    }
+    html += `<tr><td class="category">${r.k}</td>` + lines.map(l => {
+      const v = r.get(l) || '—';
+      const cls = r.risk ? riskClass(v) : '';
+      return `<td class="${cls}">${v}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+function renderInsurance(lines) {
+  const t = document.getElementById('insuranceTable');
+  const rows = [
+    { k: 'Required Insurance / Amounts', get: l => l.insurance.required },
+    { k: 'Estimated Annual Cost', get: l => l.insurance.estCost },
+    { k: 'Cost Impact Rating', get: l => l.insurance.impact, risk: true }
+  ];
+  let html = '<thead><tr><th>Insurance Category</th>' + lines.map(l=>`<th>${l.name}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    html += `<tr><td class="category">${r.k}</td>` + lines.map(l => {
+      const v = r.get(l) || '—';
+      const cls = r.risk ? riskClass(v) : '';
+      return `<td class="${cls}">${v}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+function renderPositions(lines) {
+  const t = document.getElementById('positionsTable');
+  const rows = [
+    ['Marlins English Test', 'marlins'],
+    ['STCW Certificates', 'stcw'],
+    ['Medical Certificate (PEME)', 'peme'],
+    ["Seaman's Book", 'seamansBook'],
+    ['Police Background Check', 'police'],
+    ['C1/D Visa (US embark.)', 'c1d'],
+    ['Passport (6+ months)', 'passport'],
+    ['CPR Certificate', 'cpr'],
+    ['Vaccination Records', 'vaccination']
+  ];
+  let html = '<thead><tr><th>Position Requirement</th>' + lines.map(l=>`<th>${l.name}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(([lab, key]) => {
+    html += `<tr><td class="category">${lab}</td>` + lines.map(l => `<td>${l.positions[key] || '—'}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+function renderCompliance(lines) {
+  const t = document.getElementById('complianceTable');
+  const rows = [
+    { k: 'Maritime & MLC', header: true },
+    ['MLC 2006 Compliance', 'mlc'],
+    { k: 'Data Protection', header: true },
+    ['GDPR Compliance', 'gdpr'],
+    ['CCPA Compliance', 'ccpa'],
+    ['Data Breach Notification', 'breach'],
+    ['OFAC Screening', 'ofac'],
+    ['DPO Appointment', 'dpo'],
+    { k: 'Operational', header: true },
+    ['Crew Contact Post-Repatriation', 'postRepat'],
+    ['Pre-Deployment Briefing', 'briefing'],
+    ['24/7 Embarkation Support', 'embark247'],
+    ['Record Retention', 'records'],
+    ['Appearance/Grooming Standards', 'grooming']
+  ];
+  let html = '<thead><tr><th>Compliance Requirement</th>' + lines.map(l=>`<th>${l.name}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    if (r.header) { html += `<tr class="section-header"><td colspan="${lines.length+1}">${r.k}</td></tr>`; return; }
+    const [lab, key] = r;
+    html += `<tr><td class="category">${lab}</td>` + lines.map(l => `<td>${l.compliance[key] || '—'}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+function renderProsCons(lines) {
+  const box = document.getElementById('prosConsGrid');
+  box.innerHTML = '';
+  lines.forEach(l => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="name">${l.name}</div>
+        <div class="brand">${l.contractYear} • ${l.parent}</div>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <div style="flex:1"><div style="font-size:10px;color:#718096;text-transform:uppercase">Fee Attractiveness</div>
+          <div>${l.scores.fee}/10 <span class="score-bar fee"><div style="width:${l.scores.fee*10}%"></div></span></div></div>
+        <div style="flex:1"><div style="font-size:10px;color:#718096;text-transform:uppercase">Liability Risk</div>
+          <div>${l.scores.risk}/10 <span class="score-bar risk"><div style="width:${l.scores.risk*10}%"></div></span></div></div>
+        <div style="flex:1"><div style="font-size:10px;color:#718096;text-transform:uppercase">Overall</div>
+          <div><b>${l.scores.overall}/10</b> <span class="score-bar"><div style="width:${l.scores.overall*10}%"></div></span></div></div>
+      </div>
+      <div style="font-size:11px; font-weight:700; color:#2f855a; text-transform:uppercase; margin-top:8px;">Benefits (Positives for CTI)</div>
+      <ul class="bullets pros">${l.pros.map(x=>`<li>${x}</li>`).join('')}</ul>
+      <div style="font-size:11px; font-weight:700; color:#c53030; text-transform:uppercase; margin-top:8px;">Negatives (Risks for CTI)</div>
+      <ul class="bullets cons">${l.cons.map(x=>`<li>${x}</li>`).join('')}</ul>
+    `;
+    box.appendChild(card);
+  });
+}
+
+/* ==========================================================================
+ * Wiring
+ * ========================================================================== */
+function wireEditableInputs() {
+  document.querySelectorAll('input.editable[data-field]').forEach(inp => {
+    inp.addEventListener('change', e => {
+      const id = e.target.dataset.id;
+      const field = e.target.dataset.field;
+      const val = e.target.type === 'number' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value;
+      if (!overrides[id]) overrides[id] = {};
+      overrides[id][field] = val;
+      render();
+    });
+  });
+}
+function wireFeeInputs() {
+  document.querySelectorAll('input.fee-input').forEach(inp => {
+    inp.addEventListener('change', e => {
+      const id = e.target.dataset.line;
+      const fee = e.target.dataset.fee;
+      if (!overrides[id]) overrides[id] = {};
+      if (!overrides[id].proposedFees) overrides[id].proposedFees = {};
+      overrides[id].proposedFees[fee] = e.target.value;
+      render();
+    });
+  });
+}
+
+/* ==========================================================================
+ * Main render
+ * ========================================================================== */
+function render() {
+  renderLinePicker();
+  const lines = getSelected();
+  const empty = document.getElementById('emptyState');
+  const panels = document.querySelectorAll('.panel');
+  if (!lines.length) {
+    empty.style.display = '';
+    panels.forEach(p => p.style.display = 'none');
+    return;
+  }
+  empty.style.display = 'none';
+  panels.forEach(p => { p.style.display = ''; p.classList.toggle('active', p.id === 'panel-' + activeTab); });
+  // Only rebuild the active panel to keep things snappy
+  if (activeTab === 'overview') { renderKPIs(lines); renderOverview(lines); }
+  if (activeTab === 'fees') renderFeeTable(lines);
+  if (activeTab === 'obligations') renderObligations(lines);
+  if (activeTab === 'legal') renderLegal(lines);
+  if (activeTab === 'insurance') renderInsurance(lines);
+  if (activeTab === 'positions') renderPositions(lines);
+  if (activeTab === 'compliance') renderCompliance(lines);
+  if (activeTab === 'proscons') renderProsCons(lines);
+}
+
+document.getElementById('yearFilter').addEventListener('change', e => {
+  yearFilter = e.target.value;
+  // Drop any selected lines outside year
+  selectedIds = selectedIds.filter(id => {
+    const l = getLine(id);
+    return yearFilter === 'all' || String(l.contractYear) === yearFilter;
+  });
+  render();
+});
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    render();
+  });
+});
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const payload = { savedAt: new Date().toISOString(), yearFilter, selectedIds, overrides };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cti_negotiation_scenario_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      yearFilter = data.yearFilter || 'all';
+      selectedIds = data.selectedIds || selectedIds;
+      Object.keys(overrides).forEach(k => delete overrides[k]);
+      Object.assign(overrides, data.overrides || {});
+      document.getElementById('yearFilter').value = yearFilter;
+      render();
+    } catch(err) { alert('Invalid scenario file.'); }
+  };
+  reader.readAsText(f);
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Reset all overrides and selections?')) return;
+  Object.keys(overrides).forEach(k => delete overrides[k]);
+  selectedIds = ['seabourn', 'cuk', 'apollo-tier', 'viking'];
+  yearFilter = 'all';
+  document.getElementById('yearFilter').value = 'all';
+  render();
+});
+
+render();
+
+/* ==========================================================================
+ * Mobile: dynamic sticky offset + touch polish
+ * ========================================================================== */
+function updateStickyOffset() {
+  const header = document.querySelector('header');
+  const controls = document.querySelector('.controls');
+  if (header) document.documentElement.style.setProperty('--header-h', header.getBoundingClientRect().height + 'px');
+  if (controls) document.documentElement.style.setProperty('--controls-h', controls.getBoundingClientRect().height + 'px');
+}
+updateStickyOffset();
+window.addEventListener('resize', updateStickyOffset);
+window.addEventListener('orientationchange', () => setTimeout(updateStickyOffset, 250));
+// Recalc whenever the line-picker wraps onto more rows
+const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateStickyOffset) : null;
+if (ro) { ro.observe(document.querySelector('header')); ro.observe(document.querySelector('.controls')); }
+
+/* Scroll active tab into view on mobile so user always sees their selection */
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (window.innerWidth <= 640) {
+      btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  });
+});
+
+/* Mobile-friendly numeric keyboards on number inputs */
+document.addEventListener('focusin', e => {
+  const t = e.target;
+  if (t.matches && t.matches('input[type=number]')) t.setAttribute('inputmode', 'numeric');
+  if (t.matches && t.matches('input.fee-input')) t.setAttribute('inputmode', 'decimal');
+});
+</script>
+</body>
+</html>

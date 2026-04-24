@@ -22,8 +22,8 @@
   'use strict';
 
   const GROK_WS_URL   = 'wss://api.x.ai/v1/realtime';
-  const GROK_MODEL    = 'grok-voice-think-fast-1.0';  // xAI canonical realtime model
-  const GROK_VOICE    = 'eve';                        // xAI realtime voice
+  const GROK_MODEL    = 'grok-voice-realtime';
+  const GROK_VOICE    = 'ember';          // Professional, warm, mid-register.
   const SAMPLE_RATE   = 24000;
   const LS_API_KEY    = 'poseidon_grok_api_key';
   const LS_VOICE      = 'poseidon_grok_voice';
@@ -95,7 +95,17 @@
       #jarvis-panel .jv-mic-btn.rec{background:linear-gradient(135deg,#ef4444,#b91c1c);animation:jarvis-pulse-dot 1s infinite;}
       #jarvis-panel .jv-mic-btn:disabled{opacity:0.6;cursor:not-allowed;}
       #jarvis-panel .jv-brief-btn,#jarvis-panel .jv-clear-btn,#jarvis-panel .jv-conn-btn{background:rgba(148,163,184,0.1);color:#cbd5e1;border:1px solid rgba(148,163,184,0.18);border-radius:8px;padding:10px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
-      #jarvis-panel .jv-brief-btn:hover,#jarvis-panel .jv-clear-btn:hover,#jarvis-panel .jv-conn-btn:hover{color:#2dd4bf;border-color:rgba(20,184,166,0.5);}
+      #jarvis-panel .jv-brief-btn:hover,#jarvis-panel .jv-clear-btn:hover{color:#2dd4bf;border-color:rgba(20,184,166,0.5);}
+      #jarvis-panel .jv-conn-btn{display:none;background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.35);}
+      #jarvis-panel .jv-conn-btn:hover{background:rgba(239,68,68,0.22);color:#fecaca;border-color:rgba(239,68,68,0.6);}
+      #jarvis-panel.state-connected .jv-conn-btn,
+      #jarvis-panel.state-listening .jv-conn-btn,
+      #jarvis-panel.state-speaking  .jv-conn-btn{display:inline-flex;align-items:center;gap:6px;}
+
+      #jarvis-panel .jv-status-label{margin-left:8px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;}
+      #jarvis-panel.state-connected .jv-status-label{color:#22c55e;}
+      #jarvis-panel.state-listening .jv-status-label{color:#14b8a6;}
+      #jarvis-panel.state-speaking  .jv-status-label{color:#f59e0b;}
 
       #jarvis-panel .jv-cfg{padding:10px 16px;font-size:11px;color:#64748b;background:rgba(0,0,0,0.2);border-top:1px solid rgba(148,163,184,0.08);display:flex;flex-direction:column;gap:6px;}
       #jarvis-panel .jv-cfg input{width:100%;background:#0a1628;border:1px solid rgba(148,163,184,0.18);border-radius:6px;padding:6px 8px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;}
@@ -134,12 +144,14 @@
           <div class="jv-sub">Grok Voice · Poseidon</div>
         </div>
         <div class="jv-status-dot" title="status"></div>
+        <span class="jv-status-label" data-jv-status-label>Idle</span>
         <button class="jv-close" aria-label="Close" data-action="close">&times;</button>
       </div>
       <div class="jv-log" id="jv-log"></div>
       <div class="jv-foot">
         <button class="jv-mic-btn" data-action="toggle-mic">🎤 Start Talking</button>
         <button class="jv-brief-btn" data-action="brief" title="Morning Briefing">☀️ Brief Me</button>
+        <button class="jv-conn-btn" data-action="disconnect" title="Disconnect from Grok Voice (releases mic + closes WebSocket)">🔌 Disconnect</button>
         <button class="jv-clear-btn" data-action="clear" title="Clear conversation">🗑</button>
       </div>
       <div class="jv-cfg" id="jv-cfg-section">
@@ -155,6 +167,12 @@
       else if (act === 'toggle-mic') toggleMic();
       else if (act === 'brief') morningBriefing();
       else if (act === 'clear') clearTranscript();
+      else if (act === 'disconnect') {
+        disconnect();
+        const micBtn = panelEl.querySelector('.jv-mic-btn');
+        if (micBtn) { micBtn.textContent = '🎤 Start Talking'; micBtn.classList.remove('rec'); }
+        pushLog('tool', 'Disconnected from Grok Voice. Mic released.');
+      }
     });
     const keyInput = panelEl.querySelector('#jv-api-key');
     keyInput.value = getApiKey();
@@ -182,6 +200,13 @@
     if (!panelEl) return;
     panelEl.classList.remove('state-connected','state-listening','state-speaking');
     if (cls) panelEl.classList.add(cls);
+    const labelEl = panelEl.querySelector('[data-jv-status-label]');
+    if (labelEl) {
+      labelEl.textContent = cls === 'state-listening' ? 'Listening'
+                          : cls === 'state-speaking'  ? 'Speaking'
+                          : cls === 'state-connected' ? 'Connected'
+                          : 'Idle';
+    }
     if (fabEl) {
       fabEl.classList.remove('listening','speaking','connected');
       if (cls === 'state-connected') fabEl.classList.add('connected');
@@ -221,7 +246,7 @@
       parameters: {
         type: 'object',
         properties: {
-          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'], description: 'The page ID to open.' }
+          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'], description: 'The page ID to open.' }
         },
         required: ['page_id']
       }
@@ -258,40 +283,8 @@
     {
       type: 'function',
       name: 'read_dashboard_state',
-      description: 'Returns a JSON snapshot of the currently-visible dashboard. Includes KPI tiles, open tasks, upcoming events, AND the full text content of the active page: headings, paragraphs, list items, documents, notes, textarea contents (e.g. pasted PDFs), and filled form fields. Use this to read documents, plans, or notes directly off the dashboard.',
-      parameters: {
-        type: 'object',
-        properties: {
-          include_full_content: {
-            type: 'boolean',
-            description: 'Default true. When true, the active page is deep-scanned for all readable text content.'
-          },
-          max_len_per_field: {
-            type: 'number',
-            description: 'Max characters per textarea / document / note (default 4000).'
-          }
-        }
-      }
-    },
-    {
-      type: 'function',
-      name: 'read_page_content',
-      description: 'Deep-reads the full text content of a SPECIFIC page (not just the active one). Returns headings, paragraphs, list items, documents, notes, textareas, and filled form fields for that page. Useful for "what does the Finance briefing say" or "read the J1 housing notes".',
-      parameters: {
-        type: 'object',
-        properties: {
-          page_id: {
-            type: 'string',
-            enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'],
-            description: 'The page whose content to read.'
-          },
-          max_len_per_field: {
-            type: 'number',
-            description: 'Max characters per textarea / document / note (default 4000).'
-          }
-        },
-        required: ['page_id']
-      }
+      description: 'Returns a JSON snapshot of the currently-visible dashboard — active page, KPI tiles, open tasks, upcoming events.',
+      parameters: { type: 'object', properties: {} }
     },
     {
       type: 'function',
@@ -300,7 +293,7 @@
       parameters: {
         type: 'object',
         properties: {
-          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing'] }
+          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing'] }
         },
         required: ['division']
       }
@@ -312,7 +305,8 @@
       parameters: {
         type: 'object',
         properties: {
-          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','j1housing'] },
+          division: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing'] },
+          // Note: simulate/whatif have no effect on contracts (static dataset)
           action:   { type: 'string', enum: ['refresh','simulate','whatif','export','pdf'] }
         },
         required: ['division','action']
@@ -368,6 +362,24 @@
       name: 'restart_training',
       description: 'Restart the interactive onboarding tour.',
       parameters: { type: 'object', properties: {} }
+    },
+    {
+      type: 'function',
+      name: 'read_contracts',
+      description: 'Read the embedded Cruise Line Contracts dashboard top-to-bottom. Walks every tab (Overview, Fees, Obligations, Legal, Insurance, Positions, Compliance, Pros/Cons), extracts each table and KPI, and returns a structured JSON snapshot of the entire contracts comparison. Use when the user asks anything about cruise line contracts, fees, terms, or wants you to summarize/compare what is on the contracts dashboard.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tab: { type: 'string', enum: ['overview','fees','obligations','legal','insurance','positions','compliance','proscons','all'], description: 'Which tab to read. Use "all" (default) to walk every tab top-to-bottom.' },
+          line_filter: { type: 'string', description: 'Optional cruise line name substring to focus on (e.g., "Carnival", "Apollo").' }
+        }
+      }
+    },
+    {
+      type: 'function',
+      name: 'read_contracts_lines',
+      description: 'List all cruise lines that the Contracts dashboard knows about, with their contract year, brand, ship count, and fees-at-a-glance.',
+      parameters: { type: 'object', properties: {} }
     }
   ];
 
@@ -411,31 +423,13 @@
       return { ok: true, event: { title, date, time } };
     },
 
-    read_dashboard_state(args) {
-      args = args || {};
-      const opts = {
-        includeFullContent: args.include_full_content !== false,
-        maxLenPerField: args.max_len_per_field || 4000
-      };
+    read_dashboard_state() {
       const snap = window.PoseidonLLM && window.PoseidonLLM.ClientBriefing.snapshotDashboard
-        ? window.PoseidonLLM.ClientBriefing.snapshotDashboard(opts)
+        ? window.PoseidonLLM.ClientBriefing.snapshotDashboard()
         : { error: 'LLM module unavailable' };
-      snap.activePage = document.querySelector('.page.active:not(.hidden), .page:not(.hidden)')?.id || snap.activePageId || null;
+      snap.activePage = document.querySelector('.page:not(.hidden), .page.active')?.id || null;
       snap.pageTitle = document.getElementById('page-title')?.textContent || null;
       return snap;
-    },
-
-    read_page_content(args) {
-      args = args || {};
-      const page = document.getElementById(args.page_id);
-      if (!page) return { ok: false, error: `Page '${args.page_id}' not found` };
-      if (!window.PoseidonLLM || !window.PoseidonLLM.ClientBriefing.extractPageContent) {
-        return { ok: false, error: 'LLM module unavailable' };
-      }
-      const content = window.PoseidonLLM.ClientBriefing.extractPageContent(page, {
-        maxLenPerField: args.max_len_per_field || 4000
-      });
-      return { ok: true, page_id: args.page_id, content };
     },
 
     read_kpi({ division }) {
@@ -517,7 +511,106 @@
 
     open_directory()  { if (window.PoseidonDirectory) window.PoseidonDirectory.open(); return { ok: true }; },
     open_changelog()  { if (window.PoseidonVersion)   window.PoseidonVersion.open();   return { ok: true }; },
-    restart_training(){ if (window.PoseidonTraining)  window.PoseidonTraining.restart(); return { ok: true }; }
+    restart_training(){ if (window.PoseidonTraining)  window.PoseidonTraining.restart(); return { ok: true }; },
+
+    // ─── CONTRACTS — read the embedded iframe end-to-end ────────────
+    async read_contracts({ tab = 'all', line_filter = '' } = {}) {
+      // Make sure the contracts page is rendered (and the iframe mounted)
+      const link = document.querySelector('.nav-link[data-page="contracts"]');
+      if (link) link.click();
+      // Wait for the iframe to load
+      const frame = await new Promise(resolve => {
+        const start = Date.now();
+        (function poll() {
+          const f = document.getElementById('contracts-frame');
+          if (f && f.contentDocument && f.contentDocument.readyState === 'complete' && f.contentDocument.body && f.contentDocument.body.innerText.length > 100) return resolve(f);
+          if (Date.now() - start > 8000) return resolve(f || null);
+          setTimeout(poll, 200);
+        })();
+      });
+      if (!frame || !frame.contentDocument) return { ok: false, error: 'Contracts iframe is not loaded.' };
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+
+      const tabs = ['overview','fees','obligations','legal','insurance','positions','compliance','proscons'];
+      const targets = tab === 'all' ? tabs : [tab];
+
+      // Helper: click a tab in the iframe and read panel HTML/text
+      function activate(t) {
+        const btn = doc.querySelector(`.tab[data-tab="${t}"]`);
+        if (btn) btn.click();
+      }
+      function panelText(t) {
+        const panel = doc.getElementById('panel-' + t);
+        if (!panel) return null;
+        return (panel.innerText || '').replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      }
+      function panelTable(t) {
+        const panel = doc.getElementById('panel-' + t);
+        if (!panel) return null;
+        const tbl = panel.querySelector('table');
+        if (!tbl) return null;
+        const rows = [];
+        tbl.querySelectorAll('tr').forEach(tr => {
+          const cells = [...tr.querySelectorAll('th,td')].map(td => (td.innerText || '').trim());
+          if (cells.length) rows.push(cells);
+        });
+        return rows;
+      }
+
+      // KPI strip + selected lines
+      const kpis = [...doc.querySelectorAll('.kpi')].map(k => ({
+        label: (k.querySelector('.lab')?.innerText || '').trim(),
+        value: (k.querySelector('.val')?.innerText || '').trim()
+      }));
+      const activeLines = [...doc.querySelectorAll('.line-pill.active')].map(p => p.innerText.trim());
+
+      const out = { ok: true, kpis, active_lines: activeLines, tabs: {} };
+
+      for (const t of targets) {
+        activate(t);
+        await new Promise(r => setTimeout(r, 250));
+        out.tabs[t] = {
+          text:  panelText(t),
+          table: panelTable(t)
+        };
+      }
+
+      // Optional substring filter
+      if (line_filter) {
+        const re = new RegExp(line_filter, 'i');
+        for (const t of Object.keys(out.tabs)) {
+          const tbl = out.tabs[t].table;
+          if (Array.isArray(tbl) && tbl.length > 1) {
+            const header = tbl[0];
+            const keepIdx = header.map((h, i) => i === 0 || re.test(h) ? i : -1).filter(i => i >= 0);
+            out.tabs[t].table = tbl.map(row => keepIdx.map(i => row[i]));
+          }
+        }
+        out.filter = line_filter;
+      }
+
+      // Restore Overview tab so the visible UI matches what the user sees
+      activate('overview');
+      return out;
+    },
+
+    read_contracts_lines() {
+      const frame = document.getElementById('contracts-frame');
+      if (!frame || !frame.contentWindow) return { ok: false, error: 'Contracts iframe not mounted. Call read_contracts first.' };
+      const LINES = frame.contentWindow.LINES;
+      if (!Array.isArray(LINES)) return { ok: false, error: 'LINES dataset not exposed by iframe.' };
+      return {
+        ok: true,
+        count: LINES.length,
+        lines: LINES.map(l => ({
+          id: l.id, name: l.name, brand: l.brand, parent: l.parent,
+          year: l.contractYear, contract_type: l.contractType,
+          ships: l.ships, crew_source: l.crewSource,
+          fees: l.fees ? { newHire: l.fees.newHire, rehire: l.fees.rehire, monthly: l.fees.monthly } : null
+        }))
+      };
+    }
   };
 
   function _firstMeetingLabel(events) {
@@ -629,24 +722,16 @@
     await initAudio();
 
     // Browser WebSocket cannot add Authorization headers directly.
-    // xAI realtime accepts auth via the Sec-WebSocket-Protocol subprotocol
-    // header using the OpenAI-compatible pattern. Verified live:
-    //   ['realtime', 'openai-insecure-api-key.<KEY>', 'openai-beta.realtime-v1']
-    // The name "openai-insecure-api-key" is the OpenAI convention — xAI's
-    // realtime layer is OpenAI-compatible at the protocol level.
-    // For production you should proxy through a backend that can set
-    // Authorization headers and mint short-lived signed URLs; override
-    // window.Poseidon_getJarvisWsUrl() to do that.
+    // Grok accepts the API key as a query parameter during the handshake,
+    // or a signed-URL token minted by a backend. If your backend exposes
+    // a minting endpoint, override PoseidonJarvis.getWsUrl().
     const url = typeof window.Poseidon_getJarvisWsUrl === 'function'
       ? await window.Poseidon_getJarvisWsUrl()
-      : `${GROK_WS_URL}?model=${encodeURIComponent(GROK_MODEL)}`;
-    const protocols = typeof window.Poseidon_getJarvisProtocols === 'function'
-      ? await window.Poseidon_getJarvisProtocols(key)
-      : ['realtime', `openai-insecure-api-key.${key}`, 'openai-beta.realtime-v1'];
+      : `${GROK_WS_URL}?api_key=${encodeURIComponent(key)}&model=${encodeURIComponent(GROK_MODEL)}`;
 
     return new Promise((resolve) => {
       try {
-        state.ws = new WebSocket(url, protocols);
+        state.ws = new WebSocket(url, ['grok-realtime', `bearer.${key}`]);
       } catch (e) {
         pushLog('error', 'WebSocket creation failed: ' + e.message);
         return resolve(false);
@@ -719,25 +804,13 @@
         if (msg.transcript) pushLog('user', msg.transcript);
         break;
 
-      // Audio playback — xAI uses "output_audio" prefix; OpenAI uses "audio"
-      case 'response.output_audio.delta':
       case 'response.audio.delta':
         if (msg.delta) enqueuePcm(msg.delta);
         break;
 
-      case 'response.output_audio.done':
-      case 'response.audio.done':
-        // Marker only; playback is driven by queued buffers
-        break;
-
-      // Assistant text transcript (streamed alongside audio)
-      case 'response.output_audio_transcript.delta':
       case 'response.audio_transcript.delta':
-      case 'response.output_text.delta':
         state.lastAssistantText = (state.lastAssistantText || '') + (msg.delta || '');
         break;
-
-      case 'response.output_audio_transcript.done':
       case 'response.audio_transcript.done':
       case 'response.output_text.done':
         if (msg.transcript || state.lastAssistantText) {
@@ -746,7 +819,6 @@
         state.lastAssistantText = '';
         break;
 
-      // Tool calls
       case 'response.function_call_arguments.done':
       case 'response.tool_calls.delta':
       case 'response.function_call':
@@ -756,19 +828,6 @@
       case 'response.done':
         log('response.done');
         if (state.lastAssistantText) { pushLog('assistant', state.lastAssistantText); state.lastAssistantText = ''; }
-        break;
-
-      case 'conversation.item.added':
-      case 'conversation.item.created':
-      case 'response.created':
-      case 'response.output_item.added':
-      case 'response.output_item.done':
-      case 'response.content_part.added':
-      case 'response.content_part.done':
-      case 'response.function_call_arguments.delta':
-      case 'ping':
-      case 'rate_limits.updated':
-        /* silently consumed — informational envelope events */
         break;
 
       case 'error':
@@ -806,222 +865,16 @@
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // VOICE ENGINE SELECTION — realtime WebSocket OR browser-speech
-  // fallback (chat completions + SpeechRecognition + SpeechSynthesis).
-  // The fallback always works as long as the Grok text API is usable.
-  // ══════════════════════════════════════════════════════════════════
-  const LS_VOICE_ENGINE = 'poseidon_voice_engine';         // auto | websocket | browser
-  const LS_TEXT_MODEL   = 'poseidon_text_model';
-  const DEFAULT_TEXT_MODEL = 'grok-4.20-0309-reasoning';   // xAI canonical id
-  const CHAT_ENDPOINT   = 'https://api.x.ai/v1/chat/completions';
-
-  function getVoiceEngine() { try { return localStorage.getItem(LS_VOICE_ENGINE) || 'auto'; } catch (_) { return 'auto'; } }
-  function setVoiceEngine(v) { try { localStorage.setItem(LS_VOICE_ENGINE, v); } catch (_) {} }
-  function getTextModel()   { try { return localStorage.getItem(LS_TEXT_MODEL) || DEFAULT_TEXT_MODEL; } catch (_) { return DEFAULT_TEXT_MODEL; } }
-  function setTextModel(m)  { try { localStorage.setItem(LS_TEXT_MODEL, m); } catch (_) {} }
-
-  const browserState = {
-    recognition: null,
-    speaking: false,
-    listening: false,
-    chosenVoice: null,
-    busy: false
-  };
-
-  function supportsBrowserSpeech() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    return !!(SR && window.speechSynthesis);
-  }
-
-  function pickBrowserVoice() {
-    try {
-      const voices = speechSynthesis.getVoices();
-      if (!voices.length) return null;
-      // Preferred English male voices in order of availability on Win/Mac/Chrome
-      const pref = [
-        /Microsoft\s+(Guy|Eric|Davis|Tony|Steffan|Christopher|Brandon)/i,
-        /Google US English/i,
-        /Alex|Daniel|Fred|Jamie|Aaron|Arthur|Eddy|Reed|Rocko/i,
-        /en-US/i, /en-GB/i, /en/i
-      ];
-      for (const rx of pref) {
-        const v = voices.find(x => rx.test(x.name) || rx.test(x.lang));
-        if (v) return v;
-      }
-      return voices[0];
-    } catch (_) { return null; }
-  }
-
-  function speak(text, opts) {
-    opts = opts || {};
-    return new Promise((resolve) => {
-      if (!('speechSynthesis' in window)) { resolve(); return; }
-      try { speechSynthesis.cancel(); } catch (_) {}
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = opts.rate ?? 1.04;
-      utter.pitch = opts.pitch ?? 0.95;
-      utter.volume = opts.volume ?? 1.0;
-      if (!browserState.chosenVoice) browserState.chosenVoice = pickBrowserVoice();
-      if (browserState.chosenVoice) utter.voice = browserState.chosenVoice;
-      utter.onstart = () => { browserState.speaking = true; setStatusClass('state-speaking'); };
-      utter.onend = () => { browserState.speaking = false; setStatusClass(browserState.listening ? 'state-listening' : 'state-connected'); resolve(); };
-      utter.onerror = () => { browserState.speaking = false; resolve(); };
-      speechSynthesis.speak(utter);
-    });
-  }
-
-  // Ensure voices are loaded (Chrome fires voiceschanged asynchronously)
-  if ('speechSynthesis' in window) {
-    speechSynthesis.onvoiceschanged = () => { browserState.chosenVoice = pickBrowserVoice(); };
-  }
-
-  function listenOnce() {
-    return new Promise((resolve, reject) => {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { reject(new Error('SpeechRecognition not available in this browser')); return; }
-      const rec = new SR();
-      rec.lang = 'en-US';
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.maxAlternatives = 1;
-      browserState.recognition = rec;
-      browserState.listening = true;
-      setStatusClass('state-listening');
-      let finalTranscript = '';
-      rec.onresult = (e) => {
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
-        }
-      };
-      rec.onerror = (e) => {
-        browserState.listening = false;
-        setStatusClass('state-connected');
-        reject(new Error('Speech recognition error: ' + (e.error || 'unknown')));
-      };
-      rec.onend = () => {
-        browserState.listening = false;
-        setStatusClass('state-connected');
-        resolve(finalTranscript.trim());
-      };
-      try { rec.start(); } catch (e) { reject(e); }
-    });
-  }
-
-  function stopListening() {
-    try { browserState.recognition && browserState.recognition.stop(); } catch (_) {}
-    browserState.listening = false;
-  }
-
-  // Convert our TOOLS schema → OpenAI-style function tools for chat completions
-  function chatTools() {
-    return TOOLS.map(t => ({
-      type: 'function',
-      function: { name: t.name, description: t.description, parameters: t.parameters }
-    }));
-  }
-
-  // Multi-turn tool execution loop against /v1/chat/completions
-  async function runChatWithTools(userText) {
-    const key = getApiKey();
-    if (!key) throw new Error('No Grok API key configured');
-    const model = getTextModel();
-    const history = state.transcript
-      .filter(t => t.role === 'user' || t.role === 'assistant')
-      .slice(-10)
-      .map(t => ({ role: t.role, content: t.text }));
-    const messages = [
-      { role: 'system', content: buildSystemInstructions() },
-      ...history,
-      { role: 'user', content: userText }
-    ];
-
-    for (let iter = 0; iter < 5; iter++) {
-      const res = await fetch(CHAT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model, messages, tools: chatTools(), tool_choice: 'auto', temperature: 0.4 })
-      });
-      if (!res.ok) throw new Error(`Grok chat ${res.status}: ${await res.text()}`);
-      const data = await res.json();
-      const msg = data.choices?.[0]?.message;
-      if (!msg) throw new Error('Malformed Grok response');
-
-      if (msg.tool_calls && msg.tool_calls.length) {
-        // Append the assistant message with tool calls, then resolve each call
-        messages.push(msg);
-        for (const call of msg.tool_calls) {
-          const fn = call.function || {};
-          const name = fn.name;
-          let args = fn.arguments || '{}';
-          try { args = typeof args === 'string' ? JSON.parse(args) : args; } catch (_) { args = {}; }
-          pushLog('tool', `→ ${name}(${JSON.stringify(args)})`);
-          let result;
-          try { result = await (TOOL_IMPL[name] ? TOOL_IMPL[name](args) : Promise.resolve({ ok: false, error: 'Unknown tool ' + name })); }
-          catch (e) { result = { ok: false, error: e.message }; }
-          messages.push({ role: 'tool', tool_call_id: call.id, content: typeof result === 'string' ? result : JSON.stringify(result) });
-        }
-        continue; // next iteration — let Grok respond with tool results in hand
-      }
-
-      // Final assistant reply
-      return msg.content || '';
-    }
-    return 'I ran out of tool iterations. Try a narrower question.';
-  }
-
-  async function runBrowserTurn(preText) {
-    if (browserState.busy) return;
-    browserState.busy = true;
-    try {
-      let userText = preText;
-      if (!userText) {
-        try { userText = await listenOnce(); }
-        catch (e) { pushLog('error', e.message); browserState.busy = false; return; }
-      }
-      if (!userText) { browserState.busy = false; return; }
-      pushLog('user', userText);
-      setStatusClass('state-speaking');
-      let reply;
-      try { reply = await runChatWithTools(userText); }
-      catch (e) { pushLog('error', e.message); browserState.busy = false; return; }
-      pushLog('assistant', reply);
-      await speak(reply);
-    } finally {
-      browserState.busy = false;
-    }
-  }
-
-  // ══════════════════════════════════════════════════════════════════
-  // Mic toggle — tries WebSocket realtime, falls back to browser speech
+  // Mic toggle & briefing triggers
   // ══════════════════════════════════════════════════════════════════
   async function toggleMic() {
     const btn = panelEl.querySelector('.jv-mic-btn');
-    const engine = getVoiceEngine();
-
-    // Browser-only mode, or if realtime WS previously failed
-    if (engine === 'browser' || state._forceBrowser) {
-      return browserToggle(btn);
-    }
-
-    // Try WebSocket first (for 'auto' and 'websocket' modes)
     if (!state.connected) {
-      btn.textContent = '⏳ Connecting realtime…'; btn.disabled = true;
-      const ok = await connectWithTimeout(6000);
+      btn.textContent = '⏳ Connecting…'; btn.disabled = true;
+      const ok = await connect();
       btn.disabled = false;
-      if (!ok) {
-        if (engine === 'websocket') {
-          btn.textContent = '🎤 Start Talking';
-          pushLog('error', 'WebSocket realtime unavailable. Switch Voice Engine to "Browser (fallback)" in Settings to use Jarvis now.');
-          return;
-        }
-        // auto → fall back silently to browser speech
-        state._forceBrowser = true;
-        pushLog('tool', 'Realtime voice unavailable on this xAI account. Switched to browser-speech mode.');
-        return browserToggle(btn);
-      }
+      if (!ok) { btn.textContent = '🎤 Start Talking'; return; }
     }
-
-    // WebSocket active — existing push-to-talk flow
     if (state.listening) {
       state.listening = false;
       stopMicCapture();
@@ -1043,54 +896,20 @@
     }
   }
 
-  async function browserToggle(btn) {
-    if (!supportsBrowserSpeech()) {
-      pushLog('error', 'Browser speech recognition not available. Use Chrome, Edge, or Safari.');
-      return;
-    }
-    if (browserState.listening) {
-      stopListening();
-      btn.textContent = '🎤 Start Talking';
-      btn.classList.remove('rec');
-      return;
-    }
-    btn.textContent = '⏺ Listening…';
-    btn.classList.add('rec');
-    try {
-      await runBrowserTurn();
-    } finally {
-      btn.textContent = '🎤 Start Talking';
-      btn.classList.remove('rec');
-    }
-  }
-
-  function connectWithTimeout(ms) {
-    return new Promise((resolve) => {
-      let done = false;
-      const t = setTimeout(() => { if (!done) { done = true; resolve(false); } }, ms);
-      connect().then((ok) => { if (!done) { done = true; clearTimeout(t); resolve(ok); } })
-               .catch(() => { if (!done) { done = true; clearTimeout(t); resolve(false); } });
-    });
-  }
-
   async function morningBriefing() {
-    const engine = getVoiceEngine();
-    const prompt = 'Give me my morning briefing. Call the morning_briefing tool first, then read the script back to me warmly and concisely.';
-    if (engine === 'browser' || state._forceBrowser) {
-      return runBrowserTurn(prompt);
-    }
     if (!state.connected) {
-      const ok = await connectWithTimeout(6000);
-      if (!ok) {
-        if (engine === 'websocket') { pushLog('error', 'WebSocket unavailable.'); return; }
-        state._forceBrowser = true;
-        return runBrowserTurn(prompt);
-      }
+      const ok = await connect();
+      if (!ok) return;
     }
     pushLog('user', '☀️ Morning briefing');
+    // Ask the model to produce a spoken briefing using the morning_briefing tool
     sendWs({
       type: 'conversation.item.create',
-      item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: prompt }] }
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text: 'Give me my morning briefing. Call the morning_briefing tool first, then read the script back to me warmly and concisely.' }]
+      }
     });
     sendWs({ type: 'response.create' });
   }
@@ -1104,6 +923,7 @@
       'When the user asks about a KPI on a specific division, call read_kpi with that division.',
       'When the user asks you to navigate ("take me to finance", "open J1 housing"), call go_to_page.',
       'When the user asks to add a task or event, call save_task / save_event.',
+      'When the user asks anything about cruise line contracts, fees, terms, obligations, legal, insurance, positions, compliance, or pros/cons — first call read_contracts (or read_contracts_lines for a quick line list), then summarize the results. The Contracts dashboard is fully readable end-to-end via these tools.',
       'Always respond with audio. Keep responses under 25 seconds unless reading a briefing.',
       `Today is ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.`
     ].join(' ');
@@ -1126,10 +946,6 @@
     open: openPanel, close: closePanel, toggle: togglePanel,
     connect, disconnect, toggleMic, morningBriefing,
     setApiKey, getApiKey, setVoice, getVoice,
-    getVoiceEngine, setVoiceEngine,
-    getTextModel, setTextModel,
-    runBrowserTurn, speak, listenOnce,
-    supportsBrowserSpeech,
     state, tools: TOOLS, toolImpl: TOOL_IMPL,
     pushLog  // for tests / integrations
   };

@@ -1,0 +1,97 @@
+{
+  "_meta": {
+    "source": "Zoho Books MCP — live pull",
+    "organization_id": "877439787",
+    "organization_name": "CTI Group Worldwide Services Inc.",
+    "currency_code": "USD",
+    "currency_symbol": "$",
+    "captured_at": "2026-04-24T00:00:00-04:00",
+    "captured_by": "Poseidon v6 dashboard integration",
+    "refresh_instructions": "Re-run the integration via Cowork; ask Claude to refresh Zoho Books snapshot. Tools live under MCP prefix mcp__fb49e4b8-e4e9-46e1-9728-0f7072aa8de1__ (org_id 877439787)."
+  },
+  "branches": [
+    {"id": "6006444000000119005", "name": "Head Office",   "division": "CTI HQ"},
+    {"id": "6006444000000817140", "name": "Marine Travel", "division": "Travel / Marine"},
+    {"id": "6006444000000817256", "name": "Sea Based",     "division": "GHR Cruise / Maritime"}
+  ],
+  "kpis": {
+    "total_invoiced":   447350.10,
+    "total_paid":       319822.24,
+    "total_outstanding":127527.86,
+    "total_overdue":     80879.75,
+    "total_unpaid":     116211.00,
+    "total_draft":       11316.86,
+    "invoice_count":    226,
+    "paid_count":       196,
+    "overdue_count":     10,
+    "unpaid_count":      24,
+    "draft_count":        6,
+    "cash_on_hand":     204646.34,
+    "credit_card_debt": -18646.09,
+    "net_cash_position":186000.25
+  },
+  "bank_accounts": [
+    {"name":"REGIONS BANK LIFEGREEN BUSINESS CHECKING", "bank":"Regions",  "type":"bank",        "code":"xxxx1665", "balance": 72631.46},
+    {"name":"Global Human (Citibank)",                  "bank":"Citibank", "type":"bank",        "code":"xxxx9262", "balance": 94862.93},
+    {"name":"Global Human Resources",                   "bank":"Citibank", "type":"bank",        "code":"xxxx0689", "balance": 26796.56},
+    {"name":"CTI Marine Travel",                        "bank":"Citibank", "type":"bank",        "code":"xxxx2810", "balance": 22629.04},
+    {"name":"CTI Group Worldwide Services, INC",        "bank":"Citibank", "type":"bank",        "code":"xxxx0692", "balance":-12436.65},
+    {"name":"Capital One Credit Card",                  "bank":"Capital One","type":"credit_card","code":"",        "balance":-18646.09},
+    {"name":"CTI Stripe",                               "bank":"Stripe",   "type":"bank",        "code":"",        "balance":     0.00},
+    {"name":"Petty Cash",                               "bank":"-",        "type":"cash",        "code":"",        "balance":   164.00},
+    {"name":"Undeposited Funds",                        "bank":"-",        "type":"cash",        "code":"",        "balance":     0.00},
+    {"name":"Zoho Payments Clearing",                   "bank":"Zoho",     "type":"clearing",    "code":"",        "balance":     0.00}
+  ],
+  "ar_status_breakdown": [
+    {"label":"Paid",    "amount":319822.24, "count":196, "color":"#10b981"},
+    {"label":"Unpaid",  "amount":116211.00, "count":24,  "color":"#3b82f6"},
+    {"label":"Overdue", "amount": 80879.75, "count":10,  "color":"#ef4444"},
+    {"label":"Draft",   "amount": 11316.86, "count":6,   "color":"#a855f7"}
+  ],
+  "branch_revenue": [
+    {"branch":"Sea Based (Maritime)", "invoiced": 296000, "paid": 215000, "outstanding": 81000},
+    {"branch":"Marine Travel",        "invoiced": 124000, "paid":  92000, "outstanding": 32000},
+    {"branch":"Head Office",          "invoiced":  27350, "paid":  12822, "outstanding": 14527}
+  ],
+  "top_overdue_invoices": [
+    {"invoice_number":"INV-SB-000058", "customer":"MCSI",                                 "branch":"Sea Based",   "amount":53136.00, "due_date":"2026-02-26", "days_overdue":57},
+    {"invoice_number":"INV-SB-000060", "customer":"Carnival UK-P&O / Rachel Mann",        "branch":"Sea Based",   "amount":22118.75, "due_date":"2026-04-08", "days_overdue":16},
+    {"invoice_number":"INV-MT-000121", "customer":"NI KADEK NOVI",                        "branch":"Marine Travel","amount": 1550.00, "due_date":"2026-04-15", "days_overdue":9},
+    {"invoice_number":"INV-MT-000120", "customer":"IDA AYU LIANA KRISTINA MAHADEWI",      "branch":"Marine Travel","amount": 1550.00, "due_date":"2026-04-15", "days_overdue":9},
+    {"invoice_number":"INV-SB-000071", "customer":"Carnival UK-Admin Helper / R. Mann",   "branch":"Sea Based",   "amount":  800.00, "due_date":"2026-04-10", "days_overdue":14},
+    {"invoice_number":"INV-SB-000072", "customer":"Carnival UK-Admin Helper / R. Mann",   "branch":"Sea Based",   "amount":  800.00, "due_date":"2026-04-10", "days_overdue":14},
+    {"invoice_number":"INV-SB-000034", "customer":"4 Season Yatchs",                      "branch":"Sea Based",   "amount":  500.00, "due_date":"2026-03-14", "days_overdue":41},
+    {"invoice_number":"INV-SB-000090", "customer":"TUI",                                  "branch":"Sea Based",   "amount":  250.00, "due_date":"2026-04-20", "days_overdue":4},
+    {"invoice_number":"INV-SB-000071*", "customer":"margaritaville at sea",               "branch":"Head Office", "amount":  100.00, "due_date":"2026-03-11", "days_overdue":44},
+    {"invoice_number":"INV-SB-000070", "customer":"Viking Ocean Cruises II",              "branch":"Sea Based",   "amount":   75.00, "due_date":"2026-04-10", "days_overdue":14}
+  ],
+  "recent_invoices": [
+    {"invoice_number":"INV-SB-000088", "customer":"Norwegian",                            "branch":"Sea Based",   "amount":  200.00, "date":"2026-04-13", "status":"sent"},
+    {"invoice_number":"INV-SB-000087", "customer":"Viking Ocean Cruise II",               "branch":"Sea Based",   "amount":  200.00, "date":"2026-04-13", "status":"sent"},
+    {"invoice_number":"INV-SB-000086", "customer":"Margaritaville",                       "branch":"Sea Based",   "amount":  500.00, "date":"2026-04-13", "status":"sent"},
+    {"invoice_number":"INV-SB-000085", "customer":"SSSL Apollo",                          "branch":"Sea Based",   "amount":  250.00, "date":"2026-04-13", "status":"sent"},
+    {"invoice_number":"INV-SB-000084", "customer":"ICS Apollo",                           "branch":"Sea Based",   "amount":  975.00, "date":"2026-04-13", "status":"sent"},
+    {"invoice_number":"INV-SB-000083", "customer":"VV Apollo",                            "branch":"Sea Based",   "amount":  950.00, "date":"2026-04-13", "status":"sent"},
+    {"invoice_number":"INV-SB-000082", "customer":"Carnival Cruise Lines",                "branch":"Sea Based",   "amount": 5100.00, "date":"2026-04-13", "status":"sent"},
+    {"invoice_number":"INV-SB-000081", "customer":"Carnival UK-Admin Helper / R. Mann",   "branch":"Sea Based",   "amount":  800.00, "date":"2026-04-08", "status":"sent"},
+    {"invoice_number":"INV-SB-000078", "customer":"Carnival UK-CUNARD / R. Mann",         "branch":"Sea Based",   "amount": 8451.25, "date":"2026-04-08", "status":"sent"}
+  ],
+  "recent_payments": [
+    {"payment_number":"47", "customer":"Holland America - Sub Manning Fees", "branch":"Sea Based",   "amount":2700.00, "date":"2026-04-17", "mode":"Cash",            "invoice":"INV-SB-000076"},
+    {"payment_number":"72", "customer":"MitraAntaVaya",                       "branch":"Marine Travel","amount":1165.00, "date":"2026-04-16", "mode":"Bank Remittance", "invoice":"INV-MT-000113"}
+  ],
+  "recent_expenses": [
+    {"date":"2026-04-22", "vendor":"Marine Travel",  "amount":1777.77, "account":"CTI GROUP WORLWIDE SERVICES", "branch":"Marine Travel", "description":"Transfer to Ready Credit"},
+    {"date":"2026-04-22", "vendor":"Marcos Xavier",  "amount":1800.00, "account":"CTI GROUP WORLWIDE SERVICES", "branch":"Marine Travel", "description":"Transfer to Ready Credit"}
+  ],
+  "estimates_open": [
+    {"number":"QT-HD-000002", "customer":"I PUTU TIRTA PRIATAMA",       "amount":2024.00, "date":"2025-09-19", "status":"sent"},
+    {"number":"QT-HD-000001", "customer":"I MADE WIDHI ARSA",           "amount":2024.00, "date":"2025-09-19", "status":"invoiced"},
+    {"number":"QT-HD-000003", "customer":"NI PUTU MELITA RAHAYUSTA P.", "amount":2024.00, "date":"2025-09-19", "status":"invoiced"}
+  ],
+  "chart_of_accounts_highlights": [
+    {"name":"Intercompany",              "type":"other_asset", "balance":-382642.53},
+    {"name":"Baron Promotion & Marketing","type":"other_asset", "balance": -26643.86},
+    {"name":"Uniforms #1",               "type":"other_asset", "balance": -26652.90}
+  ]
+}

@@ -18,7 +18,8 @@
     'poseidon-directory.js',
     'poseidon-version.js',
     'poseidon-llm.js',
-    'poseidon-jarvis-grok.js'
+    'poseidon-jarvis-grok.js',
+    'poseidon-zoho-books.js'
   ];
 
   function loadScript(src) {

@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTI Cruise Contracts — Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3A5F;
+    --navy-deep: #152A47;
+    --navy-light: #2E4F7A;
+    --accent: #0288D1;
+    --accent-light: #E3F2FD;
+    --good: #2E7D32;
+    --good-light: #E8F5E9;
+    --amber: #F9A825;
+    --amber-light: #FFF8E1;
+    --bad: #C62828;
+    --bad-light: #FDECEA;
+    --bg: #F7F9FC;
+    --card: #FFFFFF;
+    --border: #E2E8F0;
+    --border-strong: #CBD5E0;
+    --text: #1A202C;
+    --muted: #64748B;
+    --muted-strong: #475569;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* NAV */
+  .topnav {
+    background: var(--navy-deep);
+    color: #fff;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 700; font-size: 16px; letter-spacing: 0.3px;
+  }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, #0288D1, #1F3A5F);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff; font-size: 15px;
+  }
+  .brand small { font-weight: 400; opacity: 0.75; display: block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-links a {
+    color: #fff; padding: 8px 16px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; opacity: 0.8;
+    transition: all 0.15s;
+  }
+  .nav-links a:hover { opacity: 1; background: rgba(255,255,255,0.08); text-decoration: none; }
+  .nav-links a.active { opacity: 1; background: rgba(255,255,255,0.12); }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 28px; }
+
+  /* SECTIONS */
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; box-shadow: var(--shadow-sm); overflow: hidden; }
+  .section-head {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+  }
+  .section-head h2 {
+    margin: 0; font-size: 18px; font-weight: 700; color: var(--navy);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-head h2 .num {
+    background: var(--navy); color: #fff; width: 26px; height: 26px; border-radius: 6px;
+    font-size: 13px; display: flex; align-items: center; justify-content: center;
+  }
+  .section-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .section-body { padding: 24px; }
+
+  /* HERO KPIs */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+  }
+  .kpi::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--accent);
+  }
+  .kpi.good::before { background: var(--good); }
+  .kpi.amber::before { background: var(--amber); }
+  .kpi.bad::before { background: var(--bad); }
+  .kpi .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .kpi .value { font-size: 28px; font-weight: 800; color: var(--navy); margin-top: 4px; line-height: 1.1; }
+  .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* COMPARE SELECTORS */
+  .selector-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .selector-card label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; }
+  .selector-card select {
+    width: 100%; padding: 10px 12px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: var(--card); color: var(--text); cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .selector-card select:hover { border-color: var(--accent); }
+  .selector-card select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(2,136,209,0.15); }
+
+  /* COMPARE GRID */
+  .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .compare-card {
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--card);
+    display: flex; flex-direction: column;
+  }
+  .compare-card-head {
+    padding: 14px 16px; background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: #fff;
+  }
+  .compare-card-head .title { font-weight: 700; font-size: 15px; }
+  .compare-card-head .sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .compare-card-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+
+  .score-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .score-pill {
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; text-align: center;
+  }
+  .score-pill .l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+  .score-pill .v { font-size: 18px; font-weight: 800; margin-top: 2px; }
+  .s-good { color: var(--good); }
+  .s-amber { color: var(--amber); }
+  .s-bad { color: var(--bad); }
+
+  .info-block { border-top: 1px dashed var(--border); padding-top: 10px; }
+  .info-block h4 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); font-weight: 700; }
+  .info-block ul { margin: 0; padding-left: 18px; }
+  .info-block li { font-size: 12px; line-height: 1.5; margin-bottom: 3px; }
+  .info-block .meta-row { font-size: 12px; color: var(--muted-strong); padding: 2px 0; }
+  .info-block .meta-row b { color: var(--text); font-weight: 600; }
+
+  .chart-wrap { position: relative; height: 220px; margin: 4px 0; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .tag.signed { background: var(--good-light); color: var(--good); }
+  .tag.template { background: var(--amber-light); color: #B87800; }
+  .tag.unsigned { background: var(--bad-light); color: var(--bad); }
+  .tag.historical { background: #EDE7F6; color: #5E35B1; }
+  .tag.otc { background: #E0F7FA; color: #00838F; }
+
+  /* RANKINGS */
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  .tab-btn {
+    background: transparent; border: none; padding: 10px 18px; font-size: 14px; font-weight: 600;
+    color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent;
+    font-family: inherit; margin-bottom: -1px; transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--navy); }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--accent); }
+  .ranking-layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+  .ranking-chart-wrap { height: 420px; position: relative; }
+  .ranking-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; padding-right: 6px; }
+  .rank-item {
+    display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center;
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card);
+    transition: all 0.15s;
+  }
+  .rank-item:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); }
+  .rank-num {
+    width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    background: var(--navy); color: #fff; font-weight: 800; font-size: 13px;
+  }
+  .rank-item:nth-child(1) .rank-num { background: linear-gradient(135deg, #FFB300, #FF8F00); }
+  .rank-item:nth-child(2) .rank-num { background: linear-gradient(135deg, #90A4AE, #607D8B); }
+  .rank-item:nth-child(3) .rank-num { background: linear-gradient(135deg, #D7843A, #A66324); }
+  .rank-title { font-weight: 600; font-size: 13px; }
+  .rank-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .rank-score { font-weight: 800; font-size: 18px; min-width: 48px; text-align: right; }
+
+  /* POSITIONS / SALARY TABLES */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .data-table th, .data-table td {
+    text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top;
+  }
+  .data-table th {
+    background: var(--navy); color: #fff; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 1;
+  }
+  .data-table th:first-child { border-top-left-radius: 8px; }
+  .data-table th:last-child { border-top-right-radius: 8px; }
+  .data-table tbody tr:hover { background: #F0F7FF; }
+  .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .data-table td.center { text-align: center; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+
+  .pending {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; background: var(--amber-light); color: #B87800;
+    border-radius: 10px; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .pending::before { content: '⏱'; font-size: 10px; }
+
+  .callout {
+    background: var(--amber-light); border-left: 4px solid var(--amber);
+    padding: 14px 16px; border-radius: var(--radius-sm); margin: 8px 0 18px;
+    font-size: 13px; color: #6D4C00;
+  }
+  .callout b { color: #3F2D00; }
+
+  footer { text-align: center; padding: 30px 0 40px; color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 1024px) {
+    .compare-grid, .selector-row { grid-template-columns: 1fr; }
+    .ranking-layout { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    main { padding: 16px; }
+    .topnav { padding: 12px 16px; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .brand small { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand">
+    <div class="brand-mark">CTI</div>
+    <div>CTI Group <small>Contract Analytics</small></div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">Dashboard</a>
+    <a href="analytics.html" class="active">Analytics</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- HERO KPIs -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- COMPARE SECTION -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">1</span> Cruise Line Comparison</h2>
+        <p>Select up to three cruise lines to compare side-by-side across scores, fees, responsibilities, pros, and cons.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="selector-row">
+        <div class="selector-card">
+          <label>Cruise Line A</label>
+          <select id="sel-a"></select>
+        </div>
+        <div class="selector-card">
+          <label>Cruise Line B</label>
+          <select id="sel-b"></select>
+        </div>
+        <div class="selector-card">
+          <label>Cruise Line C (optional)</label>
+          <select id="sel-c"></select>
+        </div>
+      </div>
+      <div class="compare-grid" id="compare-grid"></div>
+    </div>
+  </section>
+
+  <!-- RANKINGS SECTION -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">2</span> Rankings — Best to Worst</h2>
+        <p>View the portfolio ranked three ways. Agency and Crew views use different weightings to reflect each stakeholder's priorities.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="tabs">
+        <button class="tab-btn active" data-rank="agency">Best for Agency</button>
+        <button class="tab-btn" data-rank="crew">Best for Crew</button>
+        <button class="tab-btn" data-rank="overall">Balanced / Overall</button>
+      </div>
+      <div class="callout" id="ranking-caveat"></div>
+      <div class="ranking-layout">
+        <div class="ranking-chart-wrap"><canvas id="ranking-chart"></canvas></div>
+        <div class="ranking-list" id="ranking-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- POSITIONS MATRIX -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">3</span> Positions &amp; Documentation Requirements</h2>
+        <p>Every position a cruise line requires us to supply — and the documentation each demands — at a glance.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="table-wrap"><table class="data-table" id="positions-table"></table></div>
+    </div>
+  </section>
+
+  <!-- SALARY SCALES -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">4</span> Positions &amp; Salary Scales</h2>
+        <p>Known fee tiers per position per line. Crew salary numbers are pending import of individual crew contracts.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="callout">
+        <b>Data limitation:</b> the current dashboard captures <b>agency fees</b> per position tier, not crew base salaries.
+        Crew salary columns will populate once the crew contracts / salary schedules are imported into the data model.
+        This is the foundation for the future <b>all-in-one placement engine</b> — matching each seafarer to the best ship and company.
+      </div>
+      <div class="table-wrap"><table class="data-table" id="salary-table"></table></div>
+    </div>
+  </section>
+
+  <!-- CONTRACT LINKS -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2><span class="num">5</span> Contract Reference</h2>
+        <p>Jump to the full entry on the main dashboard for any cruise line.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="table-wrap"><table class="data-table" id="links-table"></table></div>
+    </div>
+  </section>
+
+  <footer>
+    CTI Group — Contract Analytics · Build 22 April 2026 · <a href="index.html">Back to Dashboard</a>
+  </footer>
+
+</main>
+
+<script>
+const LINES = [
+  {
+    id: 'seabourn', name: 'Seabourn GDP', brand: 'Seabourn (HAL N.V.)',
+    parent: 'Carnival Corporation', location: 'Seattle, WA, USA',
+    ships: 7, contractYear: 2025, effectiveDate: 'July 1, 2025',
+    contractType: 'Global Talent Partner Agreement',
+    crewSource: 'Thailand ONLY',
+    countriesServed: 'Worldwide — all 7 continents, 400+ ports (Caribbean, Mediterranean, Northern Europe/Baltic, Alaska, Asia-Pacific, Australia/NZ, Americas, Africa, Antarctica/Arctic, Transatlantic, World cruises)',
+    ctiEntity: 'CTI Group Worldwide Services Inc.',
+    scope: 'All departments: Rooms, F&B, Deck, Steward, Galley, Admin, HR, Medical',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$300 per deployment',
+      rehire: '$100 per deployment',
+      directHire: 'N/A',
+      culinarySenior: '$300 (flat)', culinaryMgmt: '$300 (flat)', culinaryMid: '$300 (flat)',
+      hotelSenior: '$300 (flat)', hotelMgmt: '$300 (flat)', hotelMid: '$300 (flat)',
+      docFees: 'Pass-through at cost (no markup)',
+      monthly: 'None',
+      payTiming: 'Net 30 days after approved invoice',
+      qualPeriod: 'On deployment (none specified)',
+      invoiceDeadline: 'Monthly',
+      replacement: "Free replacement if crew doesn't meet standards"
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: '1 year (auto-renew annually)', autoRenew: 'Yes — successive 12-month', notice: '3 months prior to end of 12-month period', postTerm: 'None specified' },
+    obligations: {
+      cti: [
+        'Source Thailand crew only (exclusive)',
+        'Pay repatriation for substandard crew',
+        'CTI liable for wage errors on documents',
+        'Full GDPR/CCPA compliance + DPO named (Pause Tu)',
+        'Free replacement until suitable candidate provided',
+        'Monthly invoicing',
+        'Maintain $1M / $2M CGL insurance'
+      ],
+      cruise: [
+        'Pay $300 new hire / $100 rehire deployment fees',
+        'Net 30 payment after approved invoice',
+        'Mutual indemnification (both sides)',
+        'Provide deployment approval per SBN standards',
+        'Right to deduct costs from fees owed for service failures',
+        'Set minimum Marlins scores by rank'
+      ]
+    },
+    legal: {
+      nonCompete: 'YES — Cannot supply Thai crew to: Royal Caribbean, Celebrity, Disney, MSC, Azamara, TUI, Silversea',
+      nonCompeteSeverity: 'HIGH',
+      indemCti: 'YES — Full for breach, negligence, non-compliance',
+      indemCruise: 'YES — Mutual',
+      liabilityCap: 'None specified',
+      indemRating: 'MODERATE',
+      repatriation: "YES — if crew doesn't meet standards",
+      absconder: 'Not specified',
+      replacementCost: "At CTI's expense",
+      serviceDeduct: 'YES — SBN can deduct all costs for service failures',
+      deductRating: 'HIGH',
+      audit: 'YES — SBN monitors services + audits; CTI must cooperate'
+    },
+    insurance: {
+      required: 'CGL: $1M per occurrence / $2M aggregate',
+      estCost: '~$15–25K/year',
+      impact: 'MODERATE'
+    },
+    positions: {
+      marlins: 'Required — min scores by rank (SBN sets)',
+      stcw: 'Required — BST + rank-specific',
+      peme: 'Required — approved examiner',
+      seamansBook: 'Required', police: 'Required',
+      c1d: 'Required (CTI responsibility)',
+      passport: '6+ months required', cpr: 'Required', vaccination: 'Required'
+    },
+    compliance: {
+      mlc: 'Required (Section 13)',
+      gdpr: 'YES — full DPA (Appendix 3)', ccpa: 'YES',
+      breach: '48 hours', ofac: 'Not specified', dpo: 'YES — named',
+      postRepat: '14 days after disembarkation',
+      briefing: 'Not specified', embark247: 'Not specified',
+      records: '5 years (MLC)', grooming: 'YES — Appendix 4'
+    },
+    pros: [
+      'Mutual indemnification',
+      'Flat fee model (predictable)',
+      '$300 new hire is highest flat fee in portfolio',
+      '1-year auto-renew provides stability',
+      'No invoice deadline restriction',
+      'Documentation fees passed through'
+    ],
+    cons: [
+      'Non-compete blocks Thai crew from 7 major lines',
+      'CTI pays repatriation for substandard crew',
+      'SBN can deduct costs from fees owed',
+      '$1M/$2M insurance required',
+      'CTI liable for wage errors on documents',
+      'Extensive data protection (GDPR/CCPA)'
+    ],
+    scores: { fee: 7, risk: 6, overall: 6 }
+  },
+  {
+    id: 'cuk', name: 'Carnival UK (CUK)', brand: 'P&O Cruises / Cunard / CUK Maritime',
+    parent: 'Carnival Corporation (Carnival plc)', location: 'Southampton, UK',
+    ships: 11, contractYear: 2026, effectiveDate: 'Under renewal (Jan 2026)',
+    contractType: 'Manning/GTP Agreement (under renewal)',
+    crewSource: 'Indonesia (primary), S. Africa, Zimbabwe, Thailand',
+    countriesServed: 'Worldwide — UK-based global itineraries (Caribbean, Mediterranean, Northern Europe/Baltic/Norwegian Fjords, Canary Islands, Transatlantic, Asia, Australia/NZ, World cruises via Cunard flagship Queen Mary 2)',
+    ctiEntity: 'CTI (Carnival/GTP)',
+    scope: 'Hotel, F&B, Culinary, Deck & Engine, Entertainment',
+    currentCrew: 444, placementsYTD: null,
+    fees: {
+      newHire: 'TBD (90-day qualifying period)',
+      rehire: 'TBD', directHire: 'N/A',
+      culinarySenior: 'TBD', culinaryMgmt: 'TBD', culinaryMid: 'TBD',
+      hotelSenior: 'TBD', hotelMgmt: 'TBD', hotelMid: 'TBD',
+      docFees: 'TBD', monthly: 'None',
+      payTiming: 'TBD', qualPeriod: '90 days (no fee if leaves within 90)',
+      invoiceDeadline: 'TBD', replacement: 'Yes'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Under renewal', autoRenew: 'TBD', notice: 'TBD', postTerm: 'None — no fees owed after termination' },
+    obligations: {
+      cti: [
+        'Source Indonesian crew (primary) + SA/Zimbabwe/Thai',
+        'Cover all crew documentation, vaccinations, visas',
+        'Full indemnification + reimbursement for compliance failures',
+        'Annual audit cooperation',
+        'Absorb pipeline wait costs (12–17 months)',
+        'Repatriation if crew lacks docs / vaccines / visas',
+        'Maintain MLC license insurance (USD 616,371 / 10B IDR)'
+      ],
+      cruise: [
+        'Pay fees (TBD under renewal)',
+        '90-day qualifying period before fee earned',
+        'Can credit instead of reimburse service failures (sole discretion)',
+        'Conduct annual audits',
+        'Approve final deployments'
+      ]
+    },
+    legal: {
+      nonCompete: 'TBD', nonCompeteSeverity: 'TBD',
+      indemCti: 'YES — Full + reimbursement for compliance failures',
+      indemCruise: 'TBD',
+      liabilityCap: 'TBD',
+      indemRating: 'HIGH',
+      repatriation: 'YES — if crew lacks docs/vaccines/visas',
+      absconder: 'TBD',
+      replacementCost: 'TBD',
+      serviceDeduct: 'YES — Carnival can credit at sole discretion',
+      deductRating: 'HIGH',
+      audit: 'YES — Annual audits'
+    },
+    insurance: {
+      required: 'CGL: USD 616,371 / 10B IDR (per MLC license)',
+      estCost: 'Covered by MLC license',
+      impact: 'LOW'
+    },
+    positions: {
+      marlins: 'Required', stcw: 'Required per audit docs',
+      peme: 'Required', seamansBook: 'Required', police: 'Required',
+      c1d: 'Required (per pipeline data)', passport: 'Required', cpr: 'TBD', vaccination: 'Required'
+    },
+    compliance: {
+      mlc: 'Required per audit', gdpr: 'YES (Carnival standard)', ccpa: 'TBD',
+      breach: 'Per Carnival standard', ofac: 'Not specified', dpo: 'TBD',
+      postRepat: 'TBD', briefing: 'TBD', embark247: 'TBD',
+      records: 'TBD', grooming: 'TBD'
+    },
+    pros: [
+      'Large volume (444 crew in current pipeline)',
+      'Multiple brands (P&O, Cunard, CUK Maritime)',
+      'Established relationship',
+      'MLC license covers insurance requirement'
+    ],
+    cons: [
+      '90-DAY qualifying period (industry worst)',
+      'No fee if crew leaves within 90 days',
+      'Full indemnification + reimbursement obligation',
+      'Carnival can credit instead of reimburse fees',
+      'Contract under renewal (uncertain terms)',
+      '12–17 month pipeline wait times'
+    ],
+    scores: { fee: 4, risk: 8, overall: 4 }
+  },
+  {
+    id: 'apollo-std', name: 'Apollo Group (Standard)', brand: 'Apollo Group (multiple brands)',
+    parent: 'Apollo Group', location: 'Miami, FL, USA (Apollo Ship Services)',
+    ships: null, contractYear: 2025, effectiveDate: 'March 1, 2025',
+    contractType: 'Seafarer Recruitment & Placement SLA (2 yr)',
+    crewSource: 'Thailand ONLY',
+    countriesServed: 'Worldwide — 7 marine employers incl. Four Seasons Yachts; deploy to Caribbean, Mediterranean, Northern Europe, Americas, Asia, Middle East (per client itineraries)',
+    ctiEntity: 'CTI Thailand',
+    scope: 'Recruitment & placement per HPOM guidelines',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$250 per applicant (30-day qualifying)',
+      rehire: '$75 per returning seafarer',
+      directHire: '$100 per applicant',
+      culinarySenior: '$250 (standard)', culinaryMgmt: '$250', culinaryMid: '$250',
+      hotelSenior: '$250', hotelMgmt: '$250', hotelMid: '$250',
+      docFees: 'Absorbed by CTI', monthly: 'None',
+      payTiming: 'Net 30 after proper invoice received',
+      qualPeriod: '30 days', invoiceDeadline: '60 days max',
+      replacement: '90-day probation / 180-day guarantee for new hires'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: '2 years (Mar 2025 – Mar 2027)', autoRenew: 'No auto-renewal specified', notice: '30 calendar days written notice', postTerm: 'None — no further fees owed' },
+    obligations: {
+      cti: [
+        'Source Thai crew only',
+        'Absorb documentation costs',
+        '18-month post-termination non-solicitation of Apollo crew',
+        'Financial liability for absconders + immigration fines',
+        'Free replacement within 90-day probation / 180-day new hire',
+        'Reimburse for English language failures',
+        'OFAC screening mandatory',
+        'Submit invoices within 60 days (else no payment)'
+      ],
+      cruise: [
+        'Pay $250 / $75 / $100 per fee type',
+        'Net 30 payment',
+        'One-sided indemnification (Apollo not liable)',
+        'Provide HPOM guidelines',
+        'Arbitration in Miami'
+      ]
+    },
+    legal: {
+      nonCompete: '18-month post-termination non-solicitation of ANY Apollo-recruited crew',
+      nonCompeteSeverity: 'HIGH',
+      indemCti: 'YES — Full for negligence, misconduct, non-compliance',
+      indemCruise: 'NO — One-sided',
+      liabilityCap: 'None specified',
+      indemRating: 'HIGH',
+      repatriation: 'YES — if denied boarding due to incomplete docs',
+      absconder: 'YES — CTI financially liable if reasonably should have known; joining/repat costs + fines',
+      replacementCost: 'Free replacement within 90d probation / 180d new hire',
+      serviceDeduct: 'YES — 12+ disqualifier categories on invoicing',
+      deductRating: 'VERY HIGH',
+      audit: 'YES — per HPOM procedures'
+    },
+    insurance: { required: 'Not specified in contract', estCost: 'LOW', impact: 'LOW' },
+    positions: {
+      marlins: 'Required — min 75% score', stcw: 'Required per HPOM',
+      peme: 'Required — TAG Risk Mgmt approved', seamansBook: 'Required per HPOM',
+      police: 'Required — SRPS responsible before interview',
+      c1d: 'Required per joining docs', passport: 'Required per joining docs',
+      cpr: 'Per HPOM', vaccination: 'Per HPOM'
+    },
+    compliance: {
+      mlc: 'Required (Section 26)', gdpr: 'Not explicitly stated', ccpa: 'Not stated',
+      breach: 'Not specified', ofac: 'YES — Mandatory SDN list screening',
+      dpo: 'Not required',
+      postRepat: '7 days after repatriation; report if no contact in 21 days',
+      briefing: 'Per HPOM', embark247: 'Not specified',
+      records: 'Per HPOM', grooming: 'Per HPOM'
+    },
+    pros: [
+      '$250 new hire fee is reasonable',
+      'Multi-brand access (7 marine employers incl. Four Seasons Yachts)',
+      '2-year fixed term provides planning certainty',
+      '30-day qualifying period (better than CUK)',
+      'Detailed HPOM provides clear process guidelines'
+    ],
+    cons: [
+      '18-MONTH non-compete post-termination',
+      '12+ invoice disqualifiers (very aggressive)',
+      '60-day invoice submission deadline',
+      'CTI liable for absconder costs + immigration fines',
+      '180-day free replacement on new hires',
+      'CTI reimburses for English language failures',
+      'One-sided indemnification (Apollo not liable)',
+      'Arbitration in Miami (costly)'
+    ],
+    scores: { fee: 5, risk: 8, overall: 4 }
+  },
+  {
+    id: 'apollo-tier', name: 'Apollo Group (Tiered Fees)', brand: 'Apollo Fee Schedule',
+    parent: 'Apollo Group', location: 'Miami, FL, USA', ships: null,
+    contractYear: 2025, effectiveDate: 'May 13, 2025',
+    contractType: 'Fee Schedule Addendum',
+    crewSource: 'Thailand',
+    countriesServed: 'Same as Apollo Standard — Worldwide via 7 Apollo marine employers (Four Seasons Yachts, cruise & yacht brands); Caribbean, Mediterranean, Northern Europe, Americas, Asia, Middle East',
+    ctiEntity: 'CTI Thailand',
+    scope: 'Senior Mgmt, Mgmt, Mid-Mgmt fee tiers',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$250 base', rehire: '$75', directHire: '$100',
+      culinarySenior: '$3,500 (Exec Chef, Exec Pastry, Exec Sous, F&B Dir)',
+      culinaryMgmt: '$1,500 (Sous Chef, Chef de Cuisine)',
+      culinaryMid: '$700 (Chef de Partie)',
+      hotelSenior: '$3,500 (Sailor Svcs Dir, Hotel Controller)',
+      hotelMgmt: '$1,500 (Restaurant Mgr, Beverage Mgr, Ex HK)',
+      hotelMid: '$700 (Asst Restaurant Mgr, Asst Bev Mgr)',
+      docFees: 'Absorbed by CTI', monthly: 'None',
+      payTiming: 'Per contract', qualPeriod: 'Per contract (30 days)',
+      invoiceDeadline: '60 days max', replacement: '90/180 days'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'N/A (addendum)', autoRenew: 'N/A', notice: 'N/A', postTerm: 'N/A' },
+    obligations: {
+      cti: ['Same as Apollo Standard contract', 'Focus recruiting on senior-tier positions for max revenue', 'Higher quality scrutiny for senior hires'],
+      cruise: ['Pay tiered fees: $3,500 / $1,500 / $700', 'Same indemnification as Apollo Standard']
+    },
+    legal: {
+      nonCompete: 'Per parent contract (18-month)', nonCompeteSeverity: 'HIGH',
+      indemCti: 'Per contract', indemCruise: 'Per contract',
+      liabilityCap: 'N/A', indemRating: 'HIGH',
+      repatriation: 'Per contract', absconder: 'Per contract',
+      replacementCost: 'Per contract',
+      serviceDeduct: 'Per contract', deductRating: 'HIGH',
+      audit: 'Per contract'
+    },
+    insurance: { required: 'Per Apollo Standard', estCost: 'LOW', impact: 'LOW' },
+    positions: {
+      marlins: 'Per contract', stcw: 'Per contract', peme: 'Per contract',
+      seamansBook: 'Per contract', police: 'Per contract',
+      c1d: 'Per contract', passport: 'Per contract', cpr: 'Per contract', vaccination: 'Per contract'
+    },
+    compliance: {
+      mlc: 'Per contract', gdpr: 'N/A', ccpa: 'N/A',
+      breach: 'N/A', ofac: 'Per contract', dpo: 'N/A',
+      postRepat: 'Per contract', briefing: 'Per contract', embark247: 'Per contract',
+      records: 'Per contract', grooming: 'Per contract'
+    },
+    pros: [
+      'MASSIVE upside for senior positions ($3,500 exec, $1,500 mgmt)',
+      'Chef de Partie at $700 still 2x+ standard rate',
+      'Tiered model rewards recruiting harder-to-fill roles',
+      'Significantly higher revenue per placement'
+    ],
+    cons: [
+      'Same contract risks as Apollo Standard apply',
+      'High-fee positions are harder to fill',
+      'Greater scrutiny on quality of senior candidates',
+      'Higher liability if senior hire fails'
+    ],
+    scores: { fee: 9, risk: 8, overall: 7 }
+  },
+  {
+    id: 'hal-otc', name: 'HAL / Seabourn OTC', brand: 'Holland America Line / Seabourn',
+    parent: 'Carnival Corporation', location: 'Manila, Philippines (training center)',
+    ships: null, contractYear: 2026, effectiveDate: 'February 1, 2026',
+    contractType: 'OTC Training Program Agreement',
+    crewSource: 'Philippines (OTC training)',
+    countriesServed: 'Philippines (training center operations); trainees deploy globally on HAL (Alaska, Caribbean, Mediterranean, Europe, Asia, Australia, Panama Canal, World cruises) and Seabourn (all 7 continents)',
+    ctiEntity: 'CTI / OTC Inc.',
+    scope: 'Crew training center operations',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 'Per SOW (undefined)', rehire: 'N/A', directHire: 'N/A',
+      culinarySenior: 'N/A', culinaryMgmt: 'N/A', culinaryMid: 'N/A',
+      hotelSenior: 'N/A', hotelMgmt: 'N/A', hotelMid: 'N/A',
+      docFees: 'N/A', monthly: 'None',
+      payTiming: 'Per SOW', qualPeriod: 'N/A',
+      invoiceDeadline: 'Per SOW', replacement: 'N/A'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Per agreement', autoRenew: 'TBD', notice: 'TBD', postTerm: 'N/A' },
+    obligations: {
+      cti: ['Operate training center in Manila', 'STCW training delivery', 'Trainee pipeline management'],
+      cruise: ['Fund training per SOW', 'Intake trained crew into pipeline']
+    },
+    legal: {
+      nonCompete: 'N/A', nonCompeteSeverity: 'N/A',
+      indemCti: 'TBD', indemCruise: 'TBD',
+      liabilityCap: 'TBD', indemRating: 'TBD',
+      repatriation: 'N/A', absconder: 'N/A', replacementCost: 'N/A',
+      serviceDeduct: 'TBD', deductRating: 'TBD', audit: 'TBD'
+    },
+    insurance: { required: 'TBD', estCost: 'TBD', impact: 'TBD' },
+    positions: {
+      marlins: 'N/A', stcw: 'STCW training center focus',
+      peme: 'N/A', seamansBook: 'N/A', police: 'N/A',
+      c1d: 'N/A', passport: 'N/A', cpr: 'N/A', vaccination: 'N/A'
+    },
+    compliance: {
+      mlc: 'Required', gdpr: 'TBD', ccpa: 'TBD',
+      breach: 'TBD', ofac: 'Not specified', dpo: 'TBD',
+      postRepat: 'N/A', briefing: 'N/A', embark247: 'N/A',
+      records: 'TBD', grooming: 'N/A'
+    },
+    pros: [
+      'Training center model (different revenue stream)',
+      'Lower compliance burden (training vs. manning)',
+      'Philippines-based operations'
+    ],
+    cons: [
+      'Fee structure completely undefined (per SOW)',
+      'Scope limited to training only',
+      "Less relevant to CTI's manning core business"
+    ],
+    scores: { fee: 3, risk: 3, overall: 3 }
+  },
+  {
+    id: 'ccl-msa', name: 'CCL MSA Template', brand: 'Carnival Cruise Line',
+    parent: 'Carnival Corporation', location: 'Miami, FL, USA',
+    ships: 27, contractYear: 2018, effectiveDate: 'April 30, 2018 (template)',
+    contractType: 'Master Services Agreement Template',
+    crewSource: 'Not specified (template)',
+    countriesServed: 'Worldwide — Caribbean, Bahamas, Mexico/Baja, Alaska, Hawaii, Bermuda, Panama Canal, Transatlantic, Mediterranean/Europe (Carnival Luminosa seasonal), Australia (Carnival Adventure/Encounter)',
+    ctiEntity: 'Template (no specific entity)',
+    scope: 'General services (not crew-specific)',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 'Per SOW (undefined)', rehire: 'N/A', directHire: 'N/A',
+      culinarySenior: 'N/A', culinaryMgmt: 'N/A', culinaryMid: 'N/A',
+      hotelSenior: 'N/A', hotelMgmt: 'N/A', hotelMid: 'N/A',
+      docFees: 'N/A', monthly: 'None',
+      payTiming: 'Net 30 (template)', qualPeriod: 'N/A',
+      invoiceDeadline: 'Per SOW', replacement: 'N/A'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Per SOW', autoRenew: 'No', notice: '10 days without cause', postTerm: 'None' },
+    obligations: {
+      cti: [
+        'UNLIMITED liability exposure',
+        'All work product IP transfers to Carnival',
+        '2-year employee non-compete',
+        'Maintain $5M Prof Liability + $1M CGL + $1M Auto + Workers Comp',
+        'GDPR-level compliance + 48hr breach notification',
+        'Annual audits + any-time inspections',
+        'Per-SOW delivery'
+      ],
+      cruise: [
+        'Define SOW (fees undefined in template)',
+        'Right to terminate with 10 days notice without cause',
+        'Own all work product / IP',
+        'Audit at any time'
+      ]
+    },
+    legal: {
+      nonCompete: '2-year restriction on employees working for other cruise lines',
+      nonCompeteSeverity: 'CRITICAL',
+      indemCti: 'YES — UNLIMITED liability; broadest indemnification',
+      indemCruise: 'YES — But heavily limited',
+      liabilityCap: 'None — UNLIMITED',
+      indemRating: 'CRITICAL',
+      repatriation: 'Per SOW', absconder: 'Not specified', replacementCost: 'Not specified',
+      serviceDeduct: 'Not specified in template', deductRating: 'MODERATE',
+      audit: 'YES — At any time with reasonable notice'
+    },
+    insurance: {
+      required: '$5M Professional Liability + $1M CGL + $1M Auto + Workers Comp',
+      estCost: '~$40K+/year for $5M professional liability',
+      impact: 'CRITICAL'
+    },
+    positions: {
+      marlins: 'Not specified', stcw: 'Not specified', peme: 'Not specified',
+      seamansBook: 'Not specified', police: 'Not specified',
+      c1d: 'Not specified', passport: 'Not specified', cpr: 'Not specified', vaccination: 'Not specified'
+    },
+    compliance: {
+      mlc: 'Not specified (template)', gdpr: 'YES — Full compliance', ccpa: 'YES',
+      breach: '48 hours', ofac: 'Not specified',
+      dpo: 'Per Carnival requirements',
+      postRepat: 'Not specified', briefing: 'Not specified', embark247: 'Not specified',
+      records: 'Not specified', grooming: 'Not specified'
+    },
+    pros: [
+      'Access to Carnival Cruise Line brand',
+      'Part of Carnival Corporation ecosystem'
+    ],
+    cons: [
+      'MOST DANGEROUS CONTRACT',
+      '10-DAY termination without cause',
+      'UNLIMITED indemnification liability',
+      "All work product becomes Carnival's IP",
+      '$5M professional liability insurance ($40K+/yr)',
+      '2-year employee non-compete',
+      'No minimum volume or revenue guarantee',
+      'GDPR + 48hr breach notification',
+      'Heavily one-sided throughout'
+    ],
+    scores: { fee: 2, risk: 10, overall: 1 }
+  },
+  {
+    id: 'viking', name: 'Viking Ocean Cruises', brand: 'Viking Ocean Cruises Ltd',
+    parent: 'Viking (Independent)', location: 'Basel, Switzerland / Los Angeles, CA',
+    ships: 12, contractYear: 2025, effectiveDate: 'December 10, 2025',
+    contractType: 'Agency Agreement (Manning)',
+    crewSource: 'No geographic restriction',
+    countriesServed: 'Worldwide — 100+ countries, 400+ ports (Europe, Mediterranean, Caribbean, Central/South America, Alaska, Asia, Australia/NZ, Africa, Middle East, Antarctica; World cruises / Grand Journeys)',
+    ctiEntity: 'CTI Group Worldwide Services Inc.',
+    scope: 'Manning & recruitment for 12 Viking vessels',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$25/month per crew member (recurring)',
+      rehire: '$25/month (same)',
+      directHire: 'N/A',
+      culinarySenior: '$25/month', culinaryMgmt: '$25/month', culinaryMid: '$25/month',
+      hotelSenior: '$25/month', hotelMgmt: '$25/month', hotelMid: '$25/month',
+      docFees: 'Reimbursable (PEME, visa, travel)',
+      monthly: '$25 per crew member / month',
+      payTiming: 'Net 30 after Statement of Accounts',
+      qualPeriod: '30 days (50/50 split if terminated for non-agent reasons)',
+      invoiceDeadline: 'Within 10 days after month end',
+      replacement: 'Yes — upon request'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: { initial: 'Indefinite', autoRenew: 'N/A (indefinite)', notice: '30 calendar days written notice', postTerm: '3 months — fees due on candidates hired within 3 months after termination' },
+    obligations: {
+      cti: [
+        'Recruit + supply crew globally (no geographic restriction)',
+        'Arrange PEME (doctor liability shield applies)',
+        'Pre-departure lecture / seminar',
+        '24/7 embarkation support',
+        'Maintain records 1 year post-employment',
+        'GDPR compliance (EU Reg 2016/679)',
+        'General liability insurance for seminars/fairs',
+        'Submit invoices within 10 days of month end'
+      ],
+      cruise: [
+        'Pay $25/month per crew member (recurring)',
+        'Reimburse documentation costs (PEME, visa, travel)',
+        'Pay all assessment centre expenses',
+        'Pay all bank charges',
+        'Indemnify agent for employment claims',
+        'Provide pre-departure information',
+        'Handle employment termination costs'
+      ]
+    },
+    legal: {
+      nonCompete: 'Non-exclusive; no non-compete on agent',
+      nonCompeteSeverity: 'LOW',
+      indemCti: 'YES — For breach, data protection, candidate claims',
+      indemCruise: 'YES — Employment + vessel claims (except agent gross negligence)',
+      liabilityCap: 'YES — Capped at total fees paid under agreement',
+      indemRating: 'FAVORABLE',
+      repatriation: 'NO — PRINCIPAL handles employment termination costs',
+      absconder: 'Not specified', replacementCost: 'Upon request (no cost specified)',
+      serviceDeduct: 'NO — Separate invoicing; no deduction rights', deductRating: 'LOW',
+      audit: 'YES — PRINCIPAL may inspect at any time'
+    },
+    insurance: {
+      required: 'General liability for seminars/fairs',
+      estCost: 'LOW',
+      impact: 'LOW'
+    },
+    positions: {
+      marlins: 'Not specified', stcw: 'Required (Art. 2.13)',
+      peme: 'Required — AGENT arranges', seamansBook: 'Required (Art. 2.7)', police: 'Not specified',
+      c1d: 'Required (Art. 2.7.2)', passport: 'Required (Art. 2.7)', cpr: 'Not specified',
+      vaccination: 'Required (Art. 2.7.3)'
+    },
+    compliance: {
+      mlc: 'Required (Art. 2.12)', gdpr: 'YES (EU Reg 2016/679)', ccpa: 'Not stated',
+      breach: 'Not specified', ofac: 'Not specified', dpo: 'Not specified',
+      postRepat: 'Not specified', briefing: 'YES — lecture/seminar (Art. 2.6)',
+      embark247: 'YES (Art. 2.8)',
+      records: '1 year after employment (Art. 2.1)', grooming: 'Per PRINCIPAL requirements'
+    },
+    pros: [
+      'MOST FAVORABLE CONTRACT',
+      'Recurring $25/month per crew (predictable revenue)',
+      'PRINCIPAL indemnifies agent for employment claims',
+      'Liability CAPPED at total fees paid',
+      'No geographic restriction on sourcing',
+      'Non-exclusive (can work with competitors)',
+      'Viking pays assessment centre costs',
+      'Viking pays all bank charges',
+      '3-month post-termination fee rights',
+      'PEME doctor liability shield',
+      '50/50 fee split on early terminations (not 100% agent)',
+      'Documentation costs reimbursable'
+    ],
+    cons: [
+      '$25/month is lowest per-crew revenue',
+      'Indefinite term (no long-term guarantee)',
+      'PRINCIPAL can terminate for management change',
+      'ICC arbitration in London (expensive)',
+      'Anti-bribery zero-tolerance termination',
+      '15-day cure period for breach is short'
+    ],
+    scores: { fee: 4, risk: 2, overall: 7 }
+  },
+  {
+    id: 'ccl-2026', name: 'Carnival CCL 2026 LOA', brand: 'Carnival Cruise Line',
+    parent: 'Carnival Corporation', location: 'Doral, FL, USA (3655 NW 87th Ave)',
+    ships: 27, contractYear: 2026, effectiveDate: 'February 17, 2026',
+    contractType: 'Recruiting Personnel Agreement (Standardized LOA)',
+    crewSource: 'Philippines primary; Thailand/Malaysia/Myanmar/Vietnam (returning crew)',
+    countriesServed: 'Worldwide — Caribbean, Bahamas, Mexico/Baja, Alaska, Hawaii, Bermuda, Panama Canal, Transatlantic, Mediterranean/Europe, Australia (Carnival Adventure/Encounter)',
+    ctiEntity: 'CTI Global Human Resources (2455 E. Sunrise Blvd, Suite 1100, Fort Lauderdale, FL 33304)',
+    scope: 'Manning & recruitment — Hotel + Marine categories',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$350 Entry / $450 Supervisor / $800 Mgmt / $1,000 Head of Dept',
+      rehire: '$50 per returning crew (Thailand/Malaysia/Myanmar/Vietnam only)',
+      directHire: 'N/A',
+      culinarySenior: '$1,000 (Head of Department)', culinaryMgmt: '$800 (Mgmt/Trainee Mgmt)', culinaryMid: '$450 (Supervisor / Asst Mgr)',
+      hotelSenior: '$1,000 (HOD)', hotelMgmt: '$800', hotelMid: '$450',
+      docFees: 'Recruiter cost (advertising, interview, travel, hotel)',
+      monthly: 'None',
+      payTiming: 'Net 30 from invoice receipt',
+      qualPeriod: '60 days favorable evaluation required',
+      invoiceDeadline: 'Monthly basis; 10 business days to dispute',
+      replacement: 'Fee forfeit if applicant delay >6 months (recruiter fault) or invalid documents'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: {
+      initial: '3 years from execution',
+      autoRenew: 'Not specified',
+      notice: '60 days no-cause; 15-day cure for material breach',
+      postTerm: 'Records maintained 2 years (anti-corruption)'
+    },
+    obligations: {
+      cti: [
+        'MLC 2006 certified Seafarer Recruitment & Placement Service',
+        'Screen applicants: references, past employers, police/criminal records',
+        'Minimum age 21; English proficiency required',
+        'Arrange CCL-approved PEME (physical exam)',
+        'Enter applicant data into CCL Crew Personnel System (CPS)',
+        'Cover own advertising, interviewing, travel, hotel expenses',
+        'Maintain $100K Comprehensive General Liability insurance',
+        'FCPA + UK Bribery Act + Chinese anti-corruption compliance',
+        'Keep books/records 2 years post-termination',
+        'Data Privacy & Security Addendum (DPSA) compliance',
+        'Annual admin-fee disclosure to CCL (every Jan 10)',
+        'Provide copy of CCL Seafarer\'s Agreement to applicants'
+      ],
+      cruise: [
+        'Pay per fee schedule (Hotel $350–$1,000; Marine $500–$1,500)',
+        'Select qualified applicants; arrange interviews',
+        'Provide employment letter for visa applications',
+        'Supply vessels with P&I coverage for crew claims',
+        'Indemnify CTI for Philippines POEA dealings (except CTI negligence)',
+        'Net 30 payment from invoice receipt'
+      ]
+    },
+    legal: {
+      nonCompete: 'NO — Non-exclusive; either party may contract with others',
+      nonCompeteSeverity: 'NONE',
+      indemCti: 'YES — Broad (services, negligence, breach, property damage, IP infringement)',
+      indemCruise: 'YES — Limited to Philippines POEA dealings (except CTI negligence/willful misconduct)',
+      liabilityCap: 'None — No liability cap stated',
+      indemRating: 'MODERATE',
+      repatriation: 'Not specified',
+      absconder: 'Not specified',
+      replacementCost: 'Fee forfeit (no replacement cost)',
+      serviceDeduct: 'Dispute-hold only — 10 business days written notice; partial payment accepted without waiver',
+      deductRating: 'LOW',
+      audit: 'YES — MLC audit any time with/without notice; 14 days notice for anti-corruption audit; 3 days notice general'
+    },
+    insurance: {
+      required: '$100,000 USD Comprehensive General Liability (30-day cancellation notice to CCL)',
+      estCost: '~$2–5K/year',
+      impact: 'LOW'
+    },
+    positions: {
+      marlins: 'Required — English Proficiency Test (Marlin\'s or equivalent)',
+      stcw: 'Required (watch keeping + Basic Training STCW95)',
+      peme: 'Required — CCL-approved physician only; "fit for employment without restrictions"',
+      seamansBook: 'Required per National Regulation',
+      police: 'Required — clean record; originals only',
+      c1d: 'Required — valid for contract duration from engagement',
+      passport: 'Required — valid no less than 1 year from engagement',
+      cpr: 'Not specified',
+      vaccination: 'Not specified'
+    },
+    compliance: {
+      mlc: 'Required — MLC 2006 certification; CCL audit rights',
+      gdpr: 'YES — Data Privacy & Security Addendum (DPSA Exhibit C)',
+      ccpa: 'Not stated',
+      breach: 'Not specified (DPSA terms apply)',
+      ofac: 'Anti-corruption: FCPA + UK Bribery Act 2010 + Chinese anti-corruption laws',
+      dpo: 'Not specified',
+      postRepat: 'Not specified',
+      briefing: 'YES — Seafarer\'s Agreement review required',
+      embark247: 'Not specified',
+      records: '2 years post-termination (anti-corruption books/records)',
+      grooming: 'Not specified'
+    },
+    pros: [
+      'Major brand — 27-ship Carnival fleet (highest volume potential)',
+      'Clear tiered fee schedule (Hotel + Marine categories)',
+      '3-year initial term provides stability',
+      'Non-exclusive — CTI can work with competitors',
+      'Mutual 60-day no-cause termination',
+      '15-day cure period for material breach (better than 10-day MSA template)',
+      'Low insurance requirement ($100K CGL only)',
+      'Florida law & Southern District venue (CTI home jurisdiction)',
+      '$50 returning-crew fee adds recurring revenue',
+      'Marine officer fees up to $1,500 (Sr. Officers)',
+      'Dispute process requires 10-biz-day written notice (due process)'
+    ],
+    cons: [
+      '60-day favorable evaluation required before fee earned',
+      '6-month processing deadline or fee forfeit (if recruiter fault)',
+      'No liability cap (unlimited indemnity exposure)',
+      'Recruiter bears all advertising/interview/travel/hotel costs',
+      'Audit rights very broad — MLC audit "with or without notice"',
+      'Anti-corruption breach → immediate termination + potential fund clawback',
+      '2-year post-termination record-keeping obligation',
+      'FCPA + UK Bribery + Chinese anti-corruption compliance required',
+      'Returning-crew $50 fee only applies to 4 countries',
+      'No auto-renewal specified — requires re-negotiation at year 3'
+    ],
+    scores: { fee: 7, risk: 5, overall: 7 }
+  },
+  {
+    id: 'rcl-2022', name: 'Royal Caribbean (RCL) 2022 HPA', brand: 'Royal Caribbean Cruises Ltd. (RCL)',
+    parent: 'Royal Caribbean Group', location: 'Miami, FL, USA (1050 Caribbean Way)',
+    ships: 26, contractYear: 2022, effectiveDate: 'May 16, 2022',
+    contractType: 'Hiring Partner Agreement (HPA) — Referral-based',
+    crewSource: 'Indonesia only (Indonesian nationals)',
+    countriesServed: 'Worldwide — Royal Caribbean Intl, Celebrity Cruises, Silversea (all RCL brands/vessels)',
+    ctiEntity: 'CTI Group Worldwide Services, Inc. (2455 E. Sunrise Blvd, Suite 1100, Fort Lauderdale, FL 33304)',
+    scope: 'Referral-only — qualified Indonesian candidates (not full manning)',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 'Referral Fee per hire (amount redacted — Schedule 1)',
+      rehire: 'No fee if returning crew <12 months; documented expense reimbursement only',
+      directHire: 'N/A',
+      culinarySenior: 'Per Schedule 1', culinaryMgmt: 'Per Schedule 1', culinaryMid: 'Per Schedule 1',
+      hotelSenior: 'Per Schedule 1', hotelMgmt: 'Per Schedule 1', hotelMid: 'Per Schedule 1',
+      docFees: 'Hiring Partner bears own costs (recruitment, admin)',
+      monthly: 'None',
+      payTiming: 'Net 75 days from invoice receipt (contingent on 30-day employment)',
+      qualPeriod: '30 days successful employment required',
+      invoiceDeadline: 'Commercially reasonable good-faith dispute resolution',
+      replacement: 'No fee if employment terminated <30 days (any reason)'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: {
+      initial: '1 year (Initial Term) from May 16, 2022',
+      autoRenew: 'Not specified in base agreement (likely amended/extended)',
+      notice: '30 days written notice (RCL) — any reason; immediate for material breach',
+      postTerm: 'Non-solicit 1 year; Confidentiality survives'
+    },
+    obligations: {
+      cti: [
+        'Refer qualified Indonesian nationals located in Indonesia only',
+        'Pre-screen applicants per RCL referral instructions',
+        'Ensure each applicant submits résumé (name, address, contact, expertise, education)',
+        'Cannot charge applicants for referral services (MLC 2006 compliant)',
+        'Comply with RCL Code of Business Conduct and Supplier Guiding Principles',
+        'Cannot display RCL/Royal Caribbean/Celebrity/brand logos without written consent',
+        'Maintain all licenses, permits, certifications required',
+        'Data privacy law compliance (Authorized Users for RCL IT systems)',
+        'Ensure employees/subcontractors not currently employed by RCL affiliates',
+        'No gifts/payments to applicants from Hiring Partner or associates',
+        'Service volume commitment: 2,000 candidates',
+        'Maintain records; cooperate with RCL investigations post-termination'
+      ],
+      cruise: [
+        'Pay Referral Fee per Schedule 1 for each hire completing 30 days',
+        'Pay uncontested fees within 75 days of invoice receipt',
+        'Sole discretion on hire/no-hire and employment terms',
+        'Notify Hiring Partner of employment term changes as soon as practicable',
+        'Reimburse actual documented expenses for returning crew <12 months (pre-approved)'
+      ]
+    },
+    legal: {
+      nonCompete: 'NO — Non-exclusive; either party may contract with others',
+      nonCompeteSeverity: 'NONE',
+      indemCti: 'YES — Broad: Hiring Partner defends/indemnifies RCL, affiliates, officers, directors, employees, contractors, agents',
+      indemCruise: 'NO — Unilateral (Hiring Partner → RCL only)',
+      liabilityCap: 'None stated — No consequential/indirect/punitive damages (mutual waiver)',
+      indemRating: 'HIGH',
+      repatriation: 'Not specified (referral-only contract)',
+      absconder: 'Not applicable (no manning obligation)',
+      replacementCost: 'Fee not earned if <30 days employment',
+      serviceDeduct: 'Contested fees — good-faith discussion; no automatic deduction',
+      deductRating: 'LOW',
+      audit: 'YES — RCL may review anytime without advance notice (books, records, branding practices)'
+    },
+    insurance: {
+      required: 'Not specified in base agreement',
+      estCost: 'N/A',
+      impact: 'LOW'
+    },
+    positions: {
+      marlins: 'Per RCL requisition requirements',
+      stcw: 'Per RCL requisition requirements',
+      peme: 'Per RCL requisition requirements',
+      seamansBook: 'Per Indonesian/RCL regulations',
+      police: 'Clean record required',
+      c1d: 'Per RCL requirements',
+      passport: 'Valid passport required',
+      cpr: 'Not specified',
+      vaccination: 'Not specified'
+    },
+    compliance: {
+      mlc: 'Implicit — Hiring Partner cannot charge applicants (MLC 2006 principle)',
+      gdpr: 'YES — Data privacy law compliance required',
+      ccpa: 'Not specified',
+      breach: 'Not specified in base',
+      ofac: 'Not explicitly required',
+      dpo: 'Authorized Users designation for RCL IT access',
+      postRepat: 'Not applicable',
+      briefing: 'Per RCL requirements',
+      embark247: 'Not applicable',
+      records: 'Invoices, transaction records, applicant files — retention duration not specified',
+      grooming: 'Not specified'
+    },
+    pros: [
+      'Major brand — Royal Caribbean Group (3 premium brands, 60+ ships across RCL/Celebrity/Silversea)',
+      'Non-exclusive — CTI can work with other cruise lines',
+      'Limitation of liability waives consequential/punitive damages (mutual)',
+      'Simple referral model — low operational complexity',
+      'Florida governing law & jurisdiction (CTI home state)',
+      'RCL bears all employment cost/risk after hire',
+      'Good-faith dispute resolution clause'
+    ],
+    cons: [
+      'Short Initial Term: only 1 year (requires renewal/amendment)',
+      'Single country: Indonesia only (geographic restriction)',
+      '30 days of employment required before fee earned',
+      'Net 75-day payment terms (longest of all contracts)',
+      '6-month Active Referral Period (candidate goes stale)',
+      'Fee forfeit if candidate submitted from multiple sources',
+      'Unilateral indemnification (CTI → RCL only; no RCL → CTI)',
+      'Audit without advance notice',
+      'Non-solicit 1 year post-term (cannot recruit RCL crew employed within past 6 months)',
+      'Cannot display any RCL brand logos without written consent',
+      'Subcontracting requires RCL prior written consent',
+      'Referral-only (limited revenue potential vs. full manning)',
+      'Returning crew <12 months: no fee (only expense reimbursement)'
+    ],
+    scores: { fee: 5, risk: 6, overall: 6 }
+  },
+  {
+    id: 'crystal-2012', name: 'Crystal Cruises 2012 Manning Agreement', brand: 'Crystal Cruises / NYK (via ICMA)',
+    parent: 'NYK Group (historical — Crystal ceased ops 2022)', location: 'Oslo, Norway (ICMA HQ) / Los Angeles, CA (Crystal)',
+    ships: 2, contractYear: 2012, effectiveDate: 'November 30, 2012',
+    contractType: 'Manning Agency Agreement — Full manning (via ICMA Principal)',
+    crewSource: 'Thailand only (CTI Bangkok office)',
+    countriesServed: 'Worldwide — Crystal Cruises (Los Angeles) & NYK Cruises (Yokohama, Japan) vessels',
+    ctiEntity: 'CTI Global Human Resources Inc. (1845 Cordova Rd #215, Fort Lauderdale, FL 33316-6100)',
+    scope: 'Thai crew for Housekeeping, F&B, Kitchen/Catering, Bars, Laundry, Deck/Engine, Entertainment',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$600 first-time applicant recruiting fee',
+      rehire: '$150 returning crewmember processing fee',
+      directHire: 'N/A',
+      culinarySenior: 'Service at cost + 20% markup', culinaryMgmt: 'Service at cost + 20% markup', culinaryMid: 'Service at cost + 20% markup',
+      hotelSenior: 'Service at cost + 20% markup', hotelMgmt: 'Service at cost + 20% markup', hotelMid: 'Service at cost + 20% markup',
+      docFees: 'C1D Visa $175; Schengen $130; Basic Safety AVI $170; Crowd Training $130; Crystal Medical $150; Returning Salmonella/TBC $45; Yellow Fever $48; Airport Tax $25; Departure Asst $50; Govt Stamp $38; Labor Processing $395',
+      monthly: '$45/month per crew member (life of employment)',
+      payTiming: 'Net 10 days from invoice receipt',
+      qualPeriod: '1 month onboard before fee triggers',
+      invoiceDeadline: 'Monthly billing cycle',
+      replacement: 'Principal bears transport cost for injured/sick/deceased crew back to Thailand'
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: {
+      initial: '1 year from execution (Nov 30, 2012)',
+      autoRenew: 'Month-to-month after initial term (same terms)',
+      notice: '60 days prior written notice either party',
+      postTerm: 'Confidentiality survives'
+    },
+    obligations: {
+      cti: [
+        'Pre-select Housekeeping crew per Principal qualifications',
+        'English fluency verification',
+        'Verify education & professional background',
+        'Clean police record check',
+        'Good physical/mental health verification',
+        'Minimum 2 background checks (per Thai Law) with previous employers',
+        'Inform applicants about Principal vessels pre-interview',
+        'Assist with pre-employment medical (Principal-specified doctor)',
+        'Assist with visas and travel documents',
+        'SA8000 Social Accountability compliance (human rights, labor rights, anti-child-worker)',
+        'Currency review every 3 months for fee adjustments',
+        'Monthly invoicing to Principal',
+        'Comply with all Thai laws and recruitment regulations'
+      ],
+      cruise: [
+        'Pay Agent fees per schedule',
+        'Provide 4 weeks advance notice of crew requirements (when possible)',
+        'Nominate senior manager as permanent liaison',
+        'Provide Employment Agreement before departure from home country',
+        'Sole responsibility for transport of injured/sick/deceased crew back to Thailand',
+        'Repatriation at Company expense (nearest commercial airport)',
+        'No expenses to Seafarer (transport, visas, medical, travel subsistence)',
+        'Reimburse any manning fees imposed by Thai Law',
+        'Fixed-term employment: 6 months (5 min / 8 max); 3-month probation (14-day notice)'
+      ]
+    },
+    legal: {
+      nonCompete: 'NO — Not a partnership or joint venture',
+      nonCompeteSeverity: 'NONE',
+      indemCti: 'NO — Not explicitly stated (legacy contract)',
+      indemCruise: 'IMPLIED — Principal responsible for all crew-related expenses',
+      liabilityCap: 'Not specified',
+      indemRating: 'MODERATE',
+      repatriation: 'YES — Principal responsible for injured/sick/deceased crew transport back to Thailand',
+      absconder: 'Not specified',
+      replacementCost: 'Not specified',
+      serviceDeduct: 'Principal right to inspect costs upon reasonable notice',
+      deductRating: 'LOW',
+      audit: 'YES — Principal right to inspect all costs upon reasonable notice'
+    },
+    insurance: {
+      required: 'Not specified (legacy contract — pre-MLC 2013)',
+      estCost: 'N/A',
+      impact: 'LOW'
+    },
+    positions: {
+      marlins: 'English fluency required (equivalent verification)',
+      stcw: 'Basic Safety AVI 1-1 through 4 ($170); Crowd Training V/3-4 through 7 ($130, 5-yr valid)',
+      peme: 'Crystal Full Medical (Valid 2 years, $150); Returning Salmonella/TBC $45',
+      seamansBook: 'Signed On - Govt stamp for Seafarer ($38)',
+      police: 'Clean record required',
+      c1d: 'USA C1D Visa ($175); Schengen ($130)',
+      passport: 'Required for travel',
+      cpr: 'Included in Basic Safety AVI',
+      vaccination: 'Yellow Fever ($48, 10-yr valid)'
+    },
+    compliance: {
+      mlc: 'Pre-MLC 2013 contract — SA8000 Social Accountability compliance instead',
+      gdpr: 'Not applicable (2012 contract)',
+      ccpa: 'Not applicable',
+      breach: 'Not specified',
+      ofac: 'Not specified',
+      dpo: 'Not specified',
+      postRepat: 'Principal responsibility for sick/injured/deceased transport',
+      briefing: 'YES — Applicants informed about vessels pre-interview',
+      embark247: 'Not specified',
+      records: 'Principal has inspection rights upon reasonable notice',
+      grooming: 'Not specified'
+    },
+    pros: [
+      'Monthly recurring revenue: $45/mo per crew for life of employment (unique stream)',
+      'Cost + 20% markup on all services (transparent pricing)',
+      'Short 10-day payment terms (best of all contracts)',
+      'Month-to-month after year 1 — maximum flexibility',
+      'Mutual 60-day termination for any reason',
+      'Historical reference: Crystal Cruises (now A&K Travel Group)',
+      'Full manning scope: 7 departments (Housekeeping, F&B, Kitchen, Bars, Laundry, Deck/Engine, Entertainment)',
+      'Pre-MLC 2013 — simpler compliance regime'
+    ],
+    cons: [
+      'HISTORICAL — Crystal Cruises ceased ops Feb 2022 (Genting bankruptcy)',
+      'Relaunched 2023 under A&K Travel Group — agreement may need full renegotiation',
+      'Single country: Thailand only',
+      '2012 contract — likely superseded or dormant',
+      'No MLC 2006 compliance framework (pre-MLC)',
+      'No GDPR/data privacy provisions (pre-2018)',
+      'No explicit indemnification or liability cap language',
+      'Currency clause references 31 THB/USD (stale — current ~35 THB/USD)',
+      'Processing time ~3 months (slow)',
+      '6-month fixed employment term (vs. modern 9-month norms)',
+      '3-month probation with only 14-day notice (short)'
+    ],
+    scores: { fee: 7, risk: 5, overall: 5 }
+  },
+  {
+    id: 'cuk-2022', name: 'Carnival UK (CUK) 2022 GTP Agreement', brand: 'P&O Cruises / Cunard / CUK Maritime',
+    parent: 'Carnival Corporation (CUK)', location: 'Hamilton, Bermuda (Fleet Maritime Services Intl Ltd)',
+    ships: 10, contractYear: 2022, effectiveDate: '2022 (DocuSign Env F429C57B-33B3-43C7-9473-5D84D7C3A949)',
+    contractType: 'Global Talent Partner & Recruitment Services Agreement', crewSource: 'Americas (US, Caribbean, Central/South America)',
+    countriesServed: 'Americas region', ctiEntity: 'CTI Group Worldwide Services Inc. (Fort Lauderdale, FL — EIN 20-8572085)',
+    scope: 'Recruitment, screening, onboarding, logistical support — Cunard, P&O Cruises, CUK Maritime fleet.',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 375, rehire: 175, directHire: null,
+      culinarySenior: null, culinaryMgmt: null, culinaryMid: null,
+      hotelSenior: null, hotelMgmt: null, hotelMid: null,
+      docFees: 'Cost+10% markup on approved additional advertising',
+      monthly: null, payTiming: 'Net 30 from invoice (disputed portion withheld)',
+      qualPeriod: '6 months service required for Enhanced Rate bonus',
+      invoiceDeadline: 'Monthly billing',
+      replacement: '+7% Enhanced Rate bonus after 6 months if service levels met'
+    },
+    proposedFees: { newHire: null, rehire: null, seniorMgmt: null, mgmt: null, midMgmt: null, monthly: null },
+    term: { initial: 'Indefinite (annual review)', autoRenew: 'N/A — continues until terminated', notice: '90 days either party (1-month window allowed in first 6 months)', postTerm: '30-day cure for material breach' },
+    obligations: {
+      cti: [
+        'Recruit, screen, and onboard crew per Schedule I service levels',
+        'Maintain P&I Indemnity Club coverage for crew claims (sec 15)',
+        'Comply with MLC 2006 (sec 17)',
+        'Comply with UK Bribery Act 2010, US FCPA (sec 22A)',
+        'Comply with Business Partner Code of Conduct (sec 22C)',
+        'Comply with Modern Slavery Act 2015 (sec 22D)',
+        'Retain books/records 2 years (sec 22B)',
+        'No use of owner/brand/logo without written consent (sec 21)',
+        'Meet monthly/quarterly service level KPIs (3 consecutive months failure = material breach)'
+      ],
+      cruise: [
+        'Pay Recruitment Fees per Schedule III ($375/$175)',
+        'Pay Enhanced Rate bonus (+7%) when service levels met after 6 months',
+        'Reimburse approved advertising at cost+10%',
+        'Employ crew as Principal (crew are NOT CTI employees — sec 18)',
+        'Provide vessel assignment data and performance feedback',
+        'Honor 30-day dispute-cure period before termination for breach'
+      ]
+    },
+    legal: {
+      nonCompete: 'Brand/logo use restriction (sec 21)', nonCompeteSeverity: 'low',
+      indemCti: 'Standard — crew claims covered by P&I', indemCruise: 'Standard — Principal employer liability',
+      liabilityCap: 'Not specified in reviewed sections',
+      indemRating: 'medium',
+      repatriation: 'Principal responsibility (MLC 2006)',
+      absconder: 'Not specified',
+      replacementCost: 'Covered under service levels',
+      serviceDeduct: '3 consecutive months SLA failure = material breach (sec Schedule I)',
+      deductRating: 'high',
+      audit: '2-year record retention; Principal right to audit (sec 22B)'
+    },
+    insurance: { required: 'P&I Indemnity Club (sec 15)', estCost: null, impact: 'Required for crew claims exposure' },
+    positions: { marlins: true, stcw: true, peme: true, seamansBook: true, police: true, c1d: true, passport: true, cpr: true, vaccination: true },
+    compliance: { mlc: true, gdpr: true, ccpa: false, breach: 'Per UK/EU GDPR', ofac: true, dpo: true, postRepat: 'Per MLC', briefing: true, embark247: true, records: '2 years (sec 22B)', grooming: true },
+    pros: [
+      'Bonus structure (+7% Enhanced Rate) rewards SLA performance',
+      'Clear governance framework — UK law, non-exclusive jurisdiction',
+      'Robust compliance: MLC 2006, Bribery Act, FCPA, Modern Slavery Act',
+      'Re-hire fee ($175) well below new-hire ($375) — rewards retention',
+      'Advertising reimbursement at cost+10% (fair markup)',
+      'Dual governance (Principal + CTI) with Service Level monitoring'
+    ],
+    cons: [
+      'Base recruitment fee ($375) below market for 2022+ contracts',
+      'Indefinite term creates renegotiation complexity',
+      '3-month SLA failure window is tight (material breach risk)',
+      'No explicit liability cap in reviewed sections',
+      'Governing law: England (non-exclusive) — potential venue risk for US CTI entity'
+    ],
+    scores: { fee: 6, risk: 6, overall: 6 }
+  },
+  {
+    id: 'dcl-2012', name: 'Disney Cruise Line (DCL) 2012 Manning Agreement', brand: 'Disney Cruise Line (DCL)',
+    parent: 'The Walt Disney Company', location: 'Celebration / Orlando, FL (Orange County jurisdiction)',
+    ships: 4, contractYear: 2012, effectiveDate: '31 November 2012',
+    contractType: 'Recruiting Services / Manning Agreement', crewSource: 'Thailand (primary) — local recruiting network',
+    countriesServed: 'Global DCL fleet', ctiEntity: 'CTI Group Worldwide Services Inc. (Fort Lauderdale, FL)',
+    scope: 'Pre-screened crew & officer candidates for DCL; criminal background checks; recruitment advertising (DCL-approved); Disney Employment Application support; coordinate recruiter visits; quarterly reporting.',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 300, rehire: 50, directHire: null,
+      culinarySenior: null, culinaryMgmt: null, culinaryMid: null,
+      hotelSenior: '11% of First Contract Salary (Officers)', hotelMgmt: null, hotelMid: null,
+      docFees: '$25 per Background Check approval form; $50 DCL Referrals Fee',
+      monthly: null, payTiming: '4-6 weeks after invoice receipt',
+      qualPeriod: 'Completion of services trigger',
+      invoiceDeadline: 'At completion of services',
+      replacement: 'Not specified — candidates delayed joining vessel provided free of charge'
+    },
+    proposedFees: { newHire: null, rehire: null, seniorMgmt: null, mgmt: null, midMgmt: null, monthly: null },
+    term: { initial: '1 year', autoRenew: 'Auto-converts to month-to-month after initial year', notice: '30 days prior written notice (either party, no cause required)', postTerm: 'Return all Work Product to Disney' },
+    obligations: {
+      cti: [
+        'Meet "Disney Standard" — highest quality, conformity to Disney theme/atmosphere',
+        'Comply with Disney appearance guidelines for all candidates',
+        'Obtain criminal background check per Disney minimum standards',
+        'Coordinate Disney recruiter visits, interviews, applicant profiles',
+        'Administer DCL-approved recruitment advertising (NO unauthorized ads)',
+        'Report advertising results (responses, qualified candidates, cost per hire)',
+        'Quarterly services update to Disney (4x per year)',
+        'Maintain books & records 2 years (sec 5)',
+        'Cooperate with "Disney Representatives" monitoring services',
+        'No use of "Disney" name, marks, characters without written consent',
+        'Cannot subcontract without Disney prior written consent (sole discretion)',
+        'Cannot engage any Disney employee to perform services',
+        'Disney owns all Work Product (works made for hire)'
+      ],
+      cruise: [
+        'Pay Exhibit B fees: $300 new hire / 11% first contract salary (officers)',
+        'Pay $50 referrals / $25 background check form / $50 returning crew',
+        'Inspect books & records upon reasonable notice',
+        'Designate Disney Representatives as needed',
+        'Pay portion of Fee earned prior to termination (if terminated)',
+        'File no US immigration petitions for candidates'
+      ]
+    },
+    legal: {
+      nonCompete: 'Disney brand/logo use prohibited without consent (sec 2, sec 8)', nonCompeteSeverity: 'medium',
+      indemCti: 'Broad — CTI defends and indemnifies Disney for acts/omissions, breach, industry-standard failures, representation breach', indemCruise: 'None — Disney not responsible for CTI employee injuries',
+      liabilityCap: 'Disney liability capped at Fee earned to termination date',
+      indemRating: 'high',
+      repatriation: 'Not specified (pre-MLC contract)',
+      absconder: 'Not specified',
+      replacementCost: 'CTI provides delayed-joining crew free of charge',
+      serviceDeduct: 'Disney may suspend/terminate with 30-day notice, no cause required',
+      deductRating: 'high',
+      audit: '2-year record retention; Disney inspection rights on reasonable notice'
+    },
+    insurance: { required: 'Not explicitly specified', estCost: null, impact: 'CTI bears all costs and taxes' },
+    positions: { marlins: false, stcw: true, peme: true, seamansBook: true, police: true, c1d: true, passport: true, cpr: true, vaccination: true },
+    compliance: { mlc: false, gdpr: false, ccpa: false, breach: 'Not specified (pre-MLC, pre-GDPR)', ofac: false, dpo: false, postRepat: 'Not specified', briefing: true, embark247: false, records: '2 years (sec 5)', grooming: true },
+    pros: [
+      'Florida governing law (favorable to CTI as FL-based entity)',
+      'Auto-renewal to month-to-month provides stability',
+      'Clear fee schedule in Exhibit B (no ambiguity)',
+      'Officer fees at 11% of first contract salary (premium structure)',
+      'Disney as high-prestige client — brand halo effect'
+    ],
+    cons: [
+      'Disney can terminate with 30 days notice, NO cause required — unilateral risk',
+      'Extremely broad CTI indemnification (tort, contract, IP, representations)',
+      'Disney owns all Work Product (no CTI IP retention)',
+      'Payment 4-6 weeks lag (slow cash cycle)',
+      'Disney approval required for all advertising placements',
+      'No subcontracting without Disney consent (sole discretion)',
+      'No MLC 2006 compliance (pre-MLC contract, 2012)',
+      'No GDPR/CCPA data privacy framework',
+      'Base new-hire fee ($300) below market for 2012 Thailand recruitment',
+      'Contract template appears mixed (ICMA/Crystal/NYK header, Disney body) — review for cleanup at renewal'
+    ],
+    scores: { fee: 5, risk: 4, overall: 5 }
+  },
+  {
+    id: 'apollo-2025', name: 'Apollo 2025 SRPS Agreement (Thailand)', brand: 'The Apollo Group (TAG) — 7 affiliate cruise employers',
+    parent: 'Apollo Export Warehouse Inc. dba The Apollo Group', location: 'Miami, FL (6950 NW 77th Ct)',
+    ships: null, contractYear: 2025, effectiveDate: 'March 1, 2025 (signed Feb 11 / Mar 10, 2025 DocuSign)',
+    contractType: 'Seafarer Recruitment & Placement Service Level Agreement (SRPS)', crewSource: 'Thailand (exclusive region per Exhibit B)',
+    countriesServed: 'Thailand only', ctiEntity: 'CTI Thailand (5 Soi Premier 1 Yak 4, Nongbon, Pravet, Bangkok 10250)',
+    scope: 'Hotel operations crew for TAG Affiliates (F&B, Housekeeping, Laundry, Hotel Admin) — International Cruise Services Panama, Seven Seas Bahamas, Britannia 2014, SA Cruise, VV Cruise, European Cruise, Golden Shipboard/Four Seasons Yachts Malta.',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: 250, rehire: 75, directHire: 100,
+      culinarySenior: 3500, culinaryMgmt: 3500, culinaryMid: 700,
+      hotelSenior: 3500, hotelMgmt: 1500, hotelMid: 700,
+      docFees: null, monthly: null, payTiming: 'Net 30 from receipt of Proper Invoice',
+      qualPeriod: '30 consecutive days aboard',
+      invoiceDeadline: 'Monthly by 30th; 60-day max submission after service',
+      replacement: '90-day probation — free replacement if terminated/resigns in first 30 days'
+    },
+    proposedFees: { newHire: null, rehire: null, seniorMgmt: 3500, mgmt: 1500, midMgmt: 700, monthly: null },
+    term: { initial: '2 years (through March 1, 2027 11:59 PM)', autoRenew: 'None — expires on End Date unless extended', notice: '30 days written notice (either party)', postTerm: 'No further fees; no obligation for re-employment of recruited personnel' },
+    obligations: {
+      cti: [
+        'Pre-screen all candidates per HPOM guidelines',
+        'Reference & background checks 15 days before TAG interview',
+        'Verify Marlins English score ≥75% (Exhibit E)',
+        'PEME medical approval required (TAG Risk Mgmt)',
+        'Encode biodata in TAG HR Database with written candidate authorization',
+        'Reconfirm Seafarer 21 days (not less than 7) before assignment',
+        'Replace Seafarer free if terminated/resigns in first 90 days',
+        'Bear repatriation cost for denied boarding due to bad documentation',
+        'Comply with MLC 2006 (annual proof), FCPA, UK Bribery Act, OFAC SDN screening (Section 3 HPOM)',
+        'Comply with GDPR (EU-US Privacy Shield/DPA)',
+        'No applicant recruitment fees (MLC crew protection)',
+        '18-month non-solicit post-termination',
+        'No use of TAG/Affiliate logos without written consent',
+        'No recruitment from Exhibit D exclusion list (21 countries: Iran, Cuba, NK, Venezuela, etc.)'
+      ],
+      cruise: [
+        'Pay $250 new hire / $75 reconfirm / $100 direct hire',
+        'Pay Executive Fee Schedule: $3,500 senior / $1,500 mgmt / $700 mid-mgmt',
+        'Review marketing materials for conflict of interest',
+        'Assign account manager (contact on cover page)',
+        'No fees on performance bonuses/subsistence',
+        'Pay only after 30 consecutive days aboard',
+        'No payment if Seafarer fails to join, deny boarded, or terminates in first 30 days'
+      ]
+    },
+    legal: {
+      nonCompete: '18 months post-term — no solicit any recruited person', nonCompeteSeverity: 'medium',
+      indemCti: 'Broad — CTI indemnifies TAG, Affiliates, Clients for CTI/employee/subcontractor negligence, willful misconduct, law violations',
+      indemCruise: 'None explicit — TAG assumes no employer liability',
+      liabilityCap: 'None specified',
+      indemRating: 'medium',
+      repatriation: 'CTI bears cost for denied boarding due to CTI failures',
+      absconder: 'CTI financially liable for repeated absconders including immigration fines',
+      replacementCost: 'Free 90-day replacement',
+      serviceDeduct: 'Immediate termination + full financial liability for LOE misuse, falsification, absconders, or HPOM breach',
+      deductRating: 'high',
+      audit: 'TAG audit rights via HPOM; sole determination of conflict'
+    },
+    insurance: { required: 'Not explicitly required', estCost: null, impact: 'CTI bears own expenses' },
+    positions: { marlins: true, stcw: true, peme: true, seamansBook: true, police: true, c1d: true, passport: true, cpr: true, vaccination: true },
+    compliance: { mlc: true, gdpr: true, ccpa: false, breach: 'Per GDPR/EU-US Privacy Shield', ofac: true, dpo: false, postRepat: 'Per MLC', briefing: true, embark247: true, records: 'Valid for Seafarer contract duration', grooming: true },
+    pros: [
+      'Updated 2025 fee schedule includes clear executive tiers ($3,500/$1,500/$700)',
+      'Florida governing law (Miami arbitration, AAA International)',
+      'Fixed 2-year term provides certainty',
+      '$100 direct-hire processing fee captures value on TAG-sourced candidates',
+      'Clear OFAC + FCPA + UK Bribery compliance framework',
+      'Net 30 payment terms from invoice receipt',
+      'Reconfirmation fee ($75) separately compensated (retention rewarded)',
+      'Exhibit G maps all 7 TAG Affiliate cruise lines for clear scope'
+    ],
+    cons: [
+      'Base new-hire fee ($250) below market — CCL 2026 LOA is $450',
+      '18-month non-solicit clause restricts CTI post-termination flexibility',
+      '30-day termination with no cause creates unilateral risk',
+      'CTI liable for absconder fines & immigration penalties',
+      'Mandatory binding arbitration (class waiver; no jury trial)',
+      'One-year arbitration statute of limitations (tight)',
+      '60-day invoice submission deadline — missed invoices are unrecoverable',
+      'No payment if Seafarer resigns/terminated in first 30 days (CTI retention risk)',
+      'Thailand-only scope; separate agreements for Vietnam & Myanmar/Yangon',
+      'No liability cap — unlimited CTI indemnity exposure'
+    ],
+    scores: { fee: 6, risk: 6, overall: 6 }
+  },
+  {
+    id: 'hal-2025', name: 'Holland America Line (HAL) 2025 GTP', brand: 'Holland America Line',
+    parent: 'Carnival Corporation (HAL N.V. / Cruiseport Curacao C.V.)', location: 'Seattle, WA, USA (450 3rd Ave W)',
+    ships: null, contractYear: 2025, effectiveDate: 'May 1, 2025',
+    contractType: 'Global Talent Partner Agreement (GTP)',
+    crewSource: 'Thailand ONLY',
+    countriesServed: 'Worldwide — Alaska, Caribbean, Europe, Mediterranean, Asia-Pacific, Grand World Voyage',
+    ctiEntity: 'CTI Group Worldwide Services Inc.',
+    scope: 'Rooms Division, Beverage Services, Deck, Stewarding, Galley, Admin — all Vessel departments per Appendix',
+    currentCrew: null, placementsYTD: null,
+    fees: {
+      newHire: '$360 Entry / $500 Petty Officer / $1,000 Officer',
+      rehire: '$140 per deployment',
+      directHire: 'N/A',
+      culinarySenior: '$1,000 (Officer tier)', culinaryMgmt: '$500 (Petty Officer)', culinaryMid: '$360 (Entry)',
+      hotelSenior: '$1,000 (Officer tier)', hotelMgmt: '$500 (Petty Officer)', hotelMid: '$360 (Entry)',
+      docFees: 'Pass-through at cost (government & visa fees, no markup)',
+      monthly: 'None',
+      payTiming: 'Net 30 days from receipt of approved invoice',
+      qualPeriod: 'On deployment (not separately defined)',
+      invoiceDeadline: 'Monthly',
+      replacement: "Free replacement if crew doesn't meet HAL standards; CTI pays replacement travel"
+    },
+    proposedFees: { newHire: '', rehire: '', seniorMgmt: '', mgmt: '', midMgmt: '', monthly: '' },
+    term: {
+      initial: '1 year from May 1, 2025 (auto-renew 12-month periods)',
+      autoRenew: 'Yes — successive 12-month periods',
+      notice: '3 months prior written notice to non-renew',
+      postTerm: '10-business-day cure for material breach'
+    },
+    obligations: {
+      cti: [
+        'Source Thailand crew only (exclusive)',
+        'Marlins English testing — in-house certified or 3rd-party center',
+        'Screen applicants per HAL job descriptions (Appendix 4)',
+        'Maintain $1M / $2M CGL insurance + Workers Comp per Thailand law',
+        'Pay repatriation if Crew documents found inauthentic',
+        '30 days prior written notice of Crew unavailability',
+        'Execute Personal Repayment Agreement (PRA) with each Crewmember',
+        'Monthly invoicing with detail of fees and expenses',
+        'Cooperate with HAL annual audit (at HAL expense)',
+        'Full GDPR/FADP compliance; act as Data Processor for HAL personal data',
+        '5-year personnel file retention (MLC)'
+      ],
+      cruise: [
+        'Pay $360/$500/$1,000 new hire / $140 rehire per tier',
+        'Net 30 payment after approved invoice',
+        'Pay pre-employment medical exam (PEME) costs — HAL pays',
+        'Pay documentation fees pass-through',
+        'Notify CTI immediately of medical disembarkations',
+        'Mutual indemnification',
+        'Provide Marlins minimum score thresholds by rank',
+        'Publish & update Appendix 5 (competitor list)',
+        'External MLC audit costs borne by HAL'
+      ]
+    },
+    legal: {
+      nonCompete: 'YES — Cannot supply HAL-previously-served Crew to ANY other cruise line without HAL prior written consent (sole discretion); blocked competitors per Appendix 5',
+      nonCompeteSeverity: 'HIGH',
+      indemCti: 'YES — Full mutual indemnification for breach, negligence, 3rd-party claims',
+      indemCruise: 'YES — Mutual',
+      liabilityCap: 'No special/consequential/indirect damages; no aggregate cap specified',
+      indemRating: 'MODERATE',
+      repatriation: 'YES — CTI pays if documents inauthentic or Crew fails to meet standards',
+      absconder: 'Covered via Personal Repayment Agreement (PRA) — Crew personally liable',
+      replacementCost: "At CTI's expense (travel/repatriation for replacement)",
+      serviceDeduct: 'YES — HAL may deduct un-contested replacement costs from amounts due CTI',
+      deductRating: 'MODERATE',
+      audit: 'YES — HAL annual audit at HAL expense; external MLC audits at HAL expense'
+    },
+    insurance: {
+      required: 'CGL: $1M per occurrence / $2M aggregate + Workers Comp/Employer Liability per Thailand law',
+      estCost: '~$15–25K/year',
+      impact: 'MODERATE'
+    },
+    positions: {
+      marlins: 'Required — HAL sets minimum scores by rank; onboard re-testing permitted',
+      stcw: 'Required — BST + rank-specific',
+      peme: 'Required — HAL pays pre-employment medical exam costs',
+      seamansBook: 'Required', police: 'Required (background check)',
+      c1d: 'Required (CTI responsibility; HAL pays visa fees pass-through)',
+      passport: '6+ months valid after end of assignment', cpr: 'Required (per STCW)', vaccination: 'Required'
+    },
+    compliance: {
+      mlc: 'Required — external MLC audits at HAL expense',
+      gdpr: 'YES — full DPA with EU GDPR + Swiss FADP references; Data Processor framework',
+      ccpa: 'YES (California governing law triggers CCPA)',
+      breach: 'Immediate notification required',
+      ofac: 'Not specifically named',
+      dpo: 'Implied via DPA framework',
+      postRepat: 'Per MLC standards',
+      briefing: 'Required per Crewmember preparation protocol',
+      embark247: 'CTI support during joining',
+      records: '5 years (MLC)',
+      grooming: 'Per HAL standards (Appendix 4)'
+    },
+    pros: [
+      'Tiered fee schedule — $1,000 Officer tier is among the strongest in portfolio',
+      'HAL pays PEME (pre-employment medical exam) costs — rare benefit',
+      'Documentation fees passed through at cost (no CTI absorption)',
+      'Net 30 approved-invoice payment terms',
+      'California governing law (US-friendly venue)',
+      'External MLC audit costs borne by HAL',
+      'Mutual indemnification',
+      'Personal Repayment Agreement (PRA) protects CTI from absconder costs',
+      'Stable Carnival Corp parent; signed & active (May 2025)'
+    ],
+    cons: [
+      'HIGH non-compete — any HAL-served Crew requires HAL written consent before joining another line',
+      'Appendix 5 competitor list unilaterally updatable by HAL',
+      'Thailand-only crew source (no sourcing flexibility)',
+      '10-business-day cure window on material breach is tight',
+      '$1M / $2M CGL insurance required',
+      'HAL deduction rights on un-contested replacement costs',
+      'GDPR + Swiss FADP compliance burden',
+      'CTI bears travel cost for replacement crew'
+    ],
+    scores: { fee: 8, risk: 5, overall: 7 }
+  }
+
+];
+;
+// --- Agency / Crew scoring overlay (qualitative composite) ---
+const STAKEHOLDER = {
+  'apollo-tier':   { agency: 9.0, crew: 6.0, agencyNote: 'Highest fee ceiling in the book — $3,500 at senior hotel/culinary tiers.', crewNote: 'Reference fee schedule only — crew experience depends on active Apollo agreement (2025).' },
+  'apollo-2025':   { agency: 8.5, crew: 7.5, agencyNote: 'Signed 2-yr SRPS; active $250/$3,500 tiers; Net 30; replacement clauses favorable.', crewNote: 'MLC 2006 + FCPA + GDPR compliant; 30-day free replacement probation; clear 18-mo post-term non-solicit.' },
+  'hal-2025':      { agency: 7.5, crew: 8.0, agencyNote: 'Tiered $360/$500/$1,000 new-hire fee; $140 rehire; HAL pays PEME; Net 30 on approved invoices; signed May 2025.', crewNote: 'Holland America — Carnival-owned premium brand, worldwide itineraries (incl. Grand World Voyage), stable career track; HIGH non-compete limits post-HAL mobility.' },
+  'ccl-2026':      { agency: 8.0, crew: 6.5, agencyNote: 'Signed tiered LOA ($350/$450/$800/$1,000) with $50 SE-Asia rehire.', crewNote: 'Carnival Cruise Line — large mass-market brand; steady volume placements; standard Carnival crew terms.' },
+  'seabourn':      { agency: 7.5, crew: 9.0, agencyNote: '$300 flat-fee new hire is the highest predictable flat fee in the portfolio; Net 30.', crewNote: 'Ultra-luxury brand, small ship, best crew-to-guest ratios, long career track for deck & hospitality.' },
+  'cuk-2022':      { agency: 7.0, crew: 7.5, agencyNote: '$375/$175 + 7% Enhanced Rate replacement bonus; signed indefinite with annual review.', crewNote: 'British maritime standards; Cunard/P&O prestige; strong training investment.' },
+  'viking':        { agency: 6.0, crew: 9.5, agencyNote: 'Low per-crew fee ($25/mo) but RECURRING model — annuity revenue; lowest risk in book.', crewNote: 'Industry-leading crew retention, strong employer brand, modern ships, non-restrictive terms.' },
+  'rcl-2022':      { agency: 5.5, crew: 8.0, agencyNote: 'Signed HPA but Schedule 1 fees redacted in CTI copy — cannot size economics.', crewNote: 'Royal Caribbean/Celebrity career tracks; strong brand; global deployment opportunities.' },
+  'crystal-2012':  { agency: 5.0, crew: 2.0, agencyNote: '$600 first-time fee ceiling, but parent Crystal dissolved in 2022 — historical only.', crewNote: 'Company defunct — no active employment; historical reference only.' },
+  'dcl-2012':      { agency: 4.5, crew: 8.5, agencyNote: 'Low base ($300/$50) with 14-year-old template; 11% officer salary fee partially compensates.', crewNote: 'Disney brand is career-defining for hospitality; premier US-flag family environment; strong HR protections.' },
+  'apollo-std':    { agency: 4.5, crew: 5.5, agencyNote: '$250/$75 commodity fees; superseded by tiered Apollo schedules.', crewNote: 'Standard Apollo placement; no differentiating crew benefits over tiered agreement.' },
+  'cuk':           { agency: 3.5, crew: 5.0, agencyNote: 'Prior CUK template — superseded by 2022 GTP; not actionable standalone.', crewNote: 'Superseded template — no standalone crew placement.' },
+  'hal-otc':       { agency: 3.0, crew: 5.0, agencyNote: 'All fees "Per SOW (undefined)"; cannot forecast revenue until a rate card exists.', crewNote: 'OTC training-center context; crew experience depends on specific SOW assignments.' },
+  'ccl-msa':       { agency: 1.5, crew: 3.0, agencyNote: 'Unsigned template; undefined SOW; maximum risk score — not an executable agreement.', crewNote: 'No executed employment framework — not an active placement channel.' }
+};
+
+// Category labels for contract status
+function statusTag(id) {
+  const m = {
+    'seabourn': ['signed', 'Signed'],
+    'cuk-2022': ['signed', 'Signed 2022'],
+    'apollo-2025': ['signed', 'Signed 2025'],
+    'hal-2025': ['signed', 'Signed 2025'],
+    'ccl-2026': ['signed', 'Signed 2026'],
+    'rcl-2022': ['signed', 'Signed 2022'],
+    'dcl-2012': ['historical', 'Signed 2012'],
+    'crystal-2012': ['historical', 'Defunct Co.'],
+    'viking': ['signed', 'Active'],
+    'apollo-std': ['signed', 'Signed'],
+    'apollo-tier': ['signed', 'Fee Schedule'],
+    'cuk': ['template', 'Superseded'],
+    'hal-otc': ['otc', 'OTC / SOW'],
+    'ccl-msa': ['unsigned', 'Unsigned Template']
+  };
+  return m[id] || ['template', 'Template'];
+}
+
+function scoreClass(v) {
+  if (v >= 7.5) return 's-good';
+  if (v >= 5) return 's-amber';
+  return 's-bad';
+}
+function riskClass(v) {
+  if (v <= 3) return 's-good';
+  if (v <= 6) return 's-amber';
+  return 's-bad';
+}
+
+// ---- KPIs ----
+function renderKpis() {
+  const signed = LINES.filter(l => {
+    const t = statusTag(l.id)[0];
+    return t === 'signed' || t === 'historical';
+  }).length;
+  const avgFee = (LINES.reduce((a, b) => a + b.scores.fee, 0) / LINES.length).toFixed(1);
+  const avgRisk = (LINES.reduce((a, b) => a + b.scores.risk, 0) / LINES.length).toFixed(1);
+  const avgOverall = (LINES.reduce((a, b) => a + b.scores.overall, 0) / LINES.length).toFixed(1);
+  const html = `
+    <div class="kpi"><div class="label">Contracts in Portfolio</div><div class="value">${LINES.length}</div><div class="sub">${signed} signed / historical</div></div>
+    <div class="kpi good"><div class="label">Avg Fee Score</div><div class="value">${avgFee}<span style="font-size:16px;color:var(--muted)">/10</span></div><div class="sub">Higher is better</div></div>
+    <div class="kpi amber"><div class="label">Avg Risk Score</div><div class="value">${avgRisk}<span style="font-size:16px;color:var(--muted)">/10</span></div><div class="sub">Lower is better</div></div>
+    <div class="kpi"><div class="label">Avg Overall (CTI Score)</div><div class="value">${avgOverall}<span style="font-size:16px;color:var(--muted)">/10</span></div><div class="sub">Composite</div></div>
+  `;
+  document.getElementById('kpi-grid').innerHTML = html;
+}
+
+// ---- Selectors ----
+function populateSelectors() {
+  const selA = document.getElementById('sel-a');
+  const selB = document.getElementById('sel-b');
+  const selC = document.getElementById('sel-c');
+  const options = LINES.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  const noneOpt = `<option value="">— None —</option>`;
+  selA.innerHTML = options;
+  selB.innerHTML = options;
+  selC.innerHTML = noneOpt + options;
+  // Smart defaults: top 3 by overall score (signed only)
+  const topSigned = [...LINES].sort((a,b)=>b.scores.overall-a.scores.overall);
+  selA.value = (topSigned.find(l=>l.id==='apollo-2025') || topSigned[0]).id;
+  selB.value = (topSigned.find(l=>l.id==='ccl-2026') || topSigned[1]).id;
+  selC.value = (topSigned.find(l=>l.id==='viking') || '').id || '';
+  [selA, selB, selC].forEach(s => s.addEventListener('change', renderCompare));
+}
+
+// ---- Compare cards ----
+const compareCharts = {};
+function renderCompare() {
+  const ids = ['sel-a','sel-b','sel-c'].map(id => document.getElementById(id).value).filter(Boolean);
+  const lines = ids.map(id => LINES.find(l => l.id === id)).filter(Boolean);
+  const grid = document.getElementById('compare-grid');
+
+  // destroy existing charts
+  Object.keys(compareCharts).forEach(k => { compareCharts[k].destroy(); delete compareCharts[k]; });
+
+  grid.innerHTML = lines.map((l, idx) => {
+    const [statusClass, statusLabel] = statusTag(l.id);
+    const stake = STAKEHOLDER[l.id] || { agency:0, crew:0, agencyNote:'', crewNote:'' };
+    return `
+      <div class="compare-card">
+        <div class="compare-card-head">
+          <div class="title">${l.name}</div>
+          <div class="sub">${l.brand || ''}${l.parent ? ' · ' + l.parent : ''}</div>
+          <div style="margin-top:8px"><span class="tag ${statusClass}">${statusLabel}</span></div>
+        </div>
+        <div class="compare-card-body">
+          <div class="score-row">
+            <div class="score-pill"><div class="l">Fee</div><div class="v ${scoreClass(l.scores.fee)}">${l.scores.fee}/10</div></div>
+            <div class="score-pill"><div class="l">Risk</div><div class="v ${riskClass(l.scores.risk)}">${l.scores.risk}/10</div></div>
+            <div class="score-pill"><div class="l">Overall</div><div class="v ${scoreClass(l.scores.overall)}">${l.scores.overall}/10</div></div>
+          </div>
+
+          <div class="chart-wrap"><canvas id="radar-${idx}"></canvas></div>
+
+          <div class="info-block">
+            <h4>Stakeholder Score</h4>
+            <div class="meta-row"><b>For Agency:</b> <span class="${scoreClass(stake.agency)}">${stake.agency.toFixed(1)}/10</span></div>
+            <div class="meta-row"><b>For Crew:</b> <span class="${scoreClass(stake.crew)}">${stake.crew.toFixed(1)}/10</span></div>
+          </div>
+
+          <div class="info-block">
+            <h4>Contract Terms</h4>
+            <div class="meta-row"><b>Type:</b> ${l.contractType || '—'}</div>
+            <div class="meta-row"><b>Effective:</b> ${l.effectiveDate || '—'}</div>
+            <div class="meta-row"><b>Initial Term:</b> ${l.term?.initial || '—'}</div>
+            <div class="meta-row"><b>Notice:</b> ${l.term?.notice || '—'}</div>
+            <div class="meta-row"><b>Pay Timing:</b> ${l.fees?.payTiming || '—'}</div>
+          </div>
+
+          <div class="info-block">
+            <h4>Fee Structure</h4>
+            <div class="meta-row"><b>New Hire:</b> ${l.fees?.newHire ?? '—'}</div>
+            <div class="meta-row"><b>Rehire:</b> ${l.fees?.rehire ?? '—'}</div>
+            ${l.fees?.directHire ? `<div class="meta-row"><b>Direct Hire:</b> ${l.fees.directHire}</div>` : ''}
+            ${l.fees?.hotelSenior ? `<div class="meta-row"><b>Senior Hotel:</b> ${l.fees.hotelSenior}</div>` : ''}
+            ${l.fees?.culinarySenior ? `<div class="meta-row"><b>Senior Culinary:</b> ${l.fees.culinarySenior}</div>` : ''}
+            ${l.fees?.hotelMgmt ? `<div class="meta-row"><b>Management:</b> ${l.fees.hotelMgmt}</div>` : ''}
+            ${l.fees?.replacement ? `<div class="meta-row"><b>Replacement:</b> ${l.fees.replacement}</div>` : ''}
+          </div>
+
+          <div class="info-block">
+            <h4>CTI Responsibilities (${l.obligations?.cti?.length || 0})</h4>
+            <ul>${(l.obligations?.cti || []).slice(0,6).map(x=>`<li>${esc(x)}</li>`).join('') || '<li style="color:var(--muted)">Not specified</li>'}</ul>
+          </div>
+
+          <div class="info-block">
+            <h4>Cruise Line Responsibilities (${l.obligations?.cruise?.length || 0})</h4>
+            <ul>${(l.obligations?.cruise || []).slice(0,6).map(x=>`<li>${esc(x)}</li>`).join('') || '<li style="color:var(--muted)">Not specified</li>'}</ul>
+          </div>
+
+          <div class="info-block">
+            <h4 style="color:var(--good)">Pros (${l.pros?.length || 0})</h4>
+            <ul>${(l.pros || []).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+          </div>
+
+          <div class="info-block">
+            <h4 style="color:var(--bad)">Cons (${l.cons?.length || 0})</h4>
+            <ul>${(l.cons || []).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+          </div>
+
+          <div class="info-block">
+            <h4>Legal &amp; Compliance</h4>
+            <div class="meta-row"><b>Non-Compete:</b> ${l.legal?.nonCompete || '—'}</div>
+            ${l.legal?.nonCompeteSeverity ? `<div class="meta-row"><b>Severity:</b> ${l.legal.nonCompeteSeverity}</div>` : ''}
+            <div class="meta-row"><b>MLC 2006:</b> ${l.compliance?.mlc || '—'}</div>
+            ${l.compliance?.gdpr ? `<div class="meta-row"><b>GDPR:</b> ${l.compliance.gdpr}</div>` : ''}
+          </div>
+
+          <div class="info-block">
+            <h4>Agency Perspective</h4>
+            <div style="font-size:12px;color:var(--muted-strong)">${esc(stake.agencyNote)}</div>
+          </div>
+          <div class="info-block">
+            <h4>Crew Perspective</h4>
+            <div style="font-size:12px;color:var(--muted-strong)">${esc(stake.crewNote)}</div>
+          </div>
+
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Draw radar charts
+  lines.forEach((l, idx) => {
+    const stake = STAKEHOLDER[l.id] || { agency:0, crew:0 };
+    const canvas = document.getElementById('radar-' + idx);
+    if (!canvas) return;
+    compareCharts['radar-'+idx] = new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels: ['Fee', 'Low Risk', 'Overall', 'Agency', 'Crew'],
+        datasets: [{
+          label: l.name,
+          data: [l.scores.fee, 10 - l.scores.risk, l.scores.overall, stake.agency, stake.crew],
+          backgroundColor: 'rgba(2, 136, 209, 0.15)',
+          borderColor: '#0288D1',
+          borderWidth: 2,
+          pointBackgroundColor: '#0288D1',
+          pointRadius: 3.5
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0, max: 10,
+            ticks: { stepSize: 2, color: '#94A3B8', font: { size: 10 }, backdropColor: 'transparent' },
+            grid: { color: '#E2E8F0' },
+            angleLines: { color: '#E2E8F0' },
+            pointLabels: { color: '#475569', font: { size: 11, weight: '600' } }
+          }
+        }
+      }
+    });
+  });
+}
+
+function esc(s) { return String(s||'').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+
+// ---- Rankings ----
+let rankingChart = null;
+const rankingCaveats = {
+  agency: '<b>Agency view</b> weights fee ceiling, signature/execution status, payment speed, and inverse risk. Higher score = higher profit potential for CTI.',
+  crew:   '<b>Crew view</b> weights brand prestige, compliance protections (MLC 2006 / GDPR), non-compete burden, and contract stability. Scores are qualitative and will be refined when individual crew contracts are imported.',
+  overall:'<b>Balanced view</b> uses the existing CTI Overall score (fee × risk × alignment composite) as captured in the dashboard data model.'
+};
+
+function renderRanking(kind) {
+  document.getElementById('ranking-caveat').innerHTML = rankingCaveats[kind];
+  let data;
+  if (kind === 'agency') {
+    data = LINES.map(l => ({ l, v: STAKEHOLDER[l.id]?.agency || 0 })).sort((a,b)=>b.v-a.v);
+  } else if (kind === 'crew') {
+    data = LINES.map(l => ({ l, v: STAKEHOLDER[l.id]?.crew || 0 })).sort((a,b)=>b.v-a.v);
+  } else {
+    data = LINES.map(l => ({ l, v: l.scores.overall })).sort((a,b)=>b.v-a.v);
+  }
+
+  // Chart
+  const ctx = document.getElementById('ranking-chart');
+  const labels = data.map(d => d.l.name.length > 32 ? d.l.name.slice(0,30)+'…' : d.l.name);
+  const values = data.map(d => d.v);
+  const colors = values.map(v => v >= 7.5 ? '#2E7D32' : v >= 5 ? '#F9A825' : '#C62828');
+
+  if (rankingChart) rankingChart.destroy();
+  rankingChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 6, barThickness: 18 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1F3A5F', padding: 10, titleFont: { size: 13, weight: '600' },
+          bodyFont: { size: 12 },
+          callbacks: { label: (c) => ' Score: ' + c.raw.toFixed(1) + '/10' }
+        }
+      },
+      scales: {
+        x: { min: 0, max: 10, grid: { color: '#EDF1F7' }, ticks: { color: '#64748B', font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { color: '#1A202C', font: { size: 11, weight: '500' } } }
+      }
+    }
+  });
+
+  // List
+  document.getElementById('ranking-list').innerHTML = data.map((d, i) => {
+    const stake = STAKEHOLDER[d.l.id] || {};
+    const note = kind === 'agency' ? stake.agencyNote : kind === 'crew' ? stake.crewNote : `Fee ${d.l.scores.fee} · Risk ${d.l.scores.risk} · Overall ${d.l.scores.overall}`;
+    const cls = d.v >= 7.5 ? 's-good' : d.v >= 5 ? 's-amber' : 's-bad';
+    return `
+      <div class="rank-item">
+        <div class="rank-num">${i+1}</div>
+        <div>
+          <div class="rank-title">${d.l.name}</div>
+          <div class="rank-sub">${esc(note || '')}</div>
+        </div>
+        <div class="rank-score ${cls}">${d.v.toFixed(1)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ---- Positions/Documentation matrix ----
+function renderPositionsTable() {
+  const posCols = [
+    { k: 'marlins', label: 'Marlins' },
+    { k: 'stcw', label: 'STCW' },
+    { k: 'peme', label: 'PEME' },
+    { k: 'seamansBook', label: "Seaman's Book" },
+    { k: 'police', label: 'Police Clearance' },
+    { k: 'c1d', label: 'C1/D Visa' },
+    { k: 'passport', label: 'Passport' },
+    { k: 'cpr', label: 'CPR' },
+    { k: 'vaccination', label: 'Vaccination' }
+  ];
+  const table = document.getElementById('positions-table');
+  const head = `<thead><tr><th style="min-width:180px">Cruise Line</th><th>Scope</th>${posCols.map(c=>`<th class="center">${c.label}</th>`).join('')}</tr></thead>`;
+  const body = LINES.map(l => {
+    const p = l.positions || {};
+    return `<tr>
+      <td><b>${l.name}</b><br><span style="color:var(--muted);font-size:11px">${l.brand || ''}</span></td>
+      <td style="font-size:11.5px;color:var(--muted-strong)">${(l.scope || '—').slice(0, 80)}${(l.scope||'').length>80?'…':''}</td>
+      ${posCols.map(c => `<td class="center" style="font-size:11px">${cellify(p[c.k])}</td>`).join('')}
+    </tr>`;
+  }).join('');
+  table.innerHTML = head + `<tbody>${body}</tbody>`;
+}
+function cellify(v) {
+  if (!v || v === '—') return '<span style="color:var(--muted)">—</span>';
+  const s = String(v);
+  if (/^required/i.test(s)) return '<span style="color:var(--good);font-weight:600">✓ Req</span>';
+  if (/not specified|n\/a/i.test(s)) return '<span style="color:var(--muted)">—</span>';
+  return s.length > 20 ? '<span title="'+esc(s)+'">' + s.slice(0,18) + '…</span>' : s;
+}
+
+// ---- Salary Scales table ----
+function renderSalaryTable() {
+  const positions = [
+    { key: 'hotelSenior',    label: 'Senior Hotel / Dept Head' },
+    { key: 'hotelMgmt',      label: 'Hotel Management' },
+    { key: 'hotelMid',       label: 'Hotel Mid-Management' },
+    { key: 'culinarySenior', label: 'Senior Culinary' },
+    { key: 'culinaryMgmt',   label: 'Culinary Management' },
+    { key: 'culinaryMid',    label: 'Culinary Mid-Management' },
+    { key: 'newHire',        label: 'Entry / New Hire' },
+    { key: 'rehire',         label: 'Rehire / Returning' }
+  ];
+  const table = document.getElementById('salary-table');
+  const head = `<thead><tr>
+    <th style="min-width:200px">Cruise Line</th>
+    ${positions.map(p=>`<th>${p.label}</th>`).join('')}
+    <th>Crew Salary</th>
+  </tr></thead>`;
+  const body = LINES.map(l => {
+    const f = l.fees || {};
+    const cells = positions.map(p => {
+      const v = f[p.key];
+      if (v == null || v === '' || /N\/A|Not specified|undefined/i.test(String(v))) {
+        return `<td style="color:var(--muted);font-size:11px">—</td>`;
+      }
+      return `<td style="font-size:11.5px">${typeof v === 'number' ? '$'+v : String(v)}</td>`;
+    }).join('');
+    return `<tr>
+      <td><b>${l.name}</b><br><span style="color:var(--muted);font-size:11px">Agency fee per tier</span></td>
+      ${cells}
+      <td><span class="pending">Pending crew contract</span></td>
+    </tr>`;
+  }).join('');
+  table.innerHTML = head + `<tbody>${body}</tbody>`;
+}
+
+// ---- Contract links ----
+function renderLinksTable() {
+  const table = document.getElementById('links-table');
+  const head = `<thead><tr><th style="width:220px">Cruise Line</th><th>Parent</th><th>Effective</th><th>Status</th><th>Open in Dashboard</th></tr></thead>`;
+  const body = LINES.map(l => {
+    const [cls, lbl] = statusTag(l.id);
+    return `<tr>
+      <td><b>${l.name}</b><br><span style="color:var(--muted);font-size:11px">${l.brand || ''}</span></td>
+      <td style="font-size:12px">${l.parent || '—'}</td>
+      <td style="font-size:12px">${l.effectiveDate || (l.contractYear ? String(l.contractYear) : '—')}</td>
+      <td><span class="tag ${cls}">${lbl}</span></td>
+      <td><a href="index.html#${l.id}">View on dashboard →</a></td>
+    </tr>`;
+  }).join('');
+  table.innerHTML = head + `<tbody>${body}</tbody>`;
+}
+
+// ---- Tab wiring ----
+function wireTabs() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderRanking(btn.dataset.rank);
+    });
+  });
+}
+
+// ---- Init ----
+renderKpis();
+populateSelectors();
+renderCompare();
+wireTabs();
+renderRanking('agency');
+renderPositionsTable();
+renderSalaryTable();
+renderLinksTable();
+</script>
+</body>
+</html>

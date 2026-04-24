@@ -547,6 +547,54 @@
           title: { type: 'string' }
         }
       }
+    },
+
+    // ─── Long-term memory (cross-session brain) ─────────────────────
+    {
+      type: 'function',
+      name: 'remember',
+      description: 'Save a fact to your long-term memory so you recall it in future conversations. Use this when the user tells you something worth keeping ("remember that...", "by the way...", a preference, a deadline, an important name). Keep facts crisp — one or two sentences.',
+      parameters: {
+        type: 'object',
+        properties: {
+          topic:  { type: 'string', description: 'Short topic tag, e.g. "preference", "person:rachel", "deadline:q2", "vendor:apollo".' },
+          fact:   { type: 'string', description: 'The fact itself, in one or two sentences.' },
+          source: { type: 'string', description: 'Optional context: "user said", "from finance dashboard", etc.' }
+        },
+        required: ['fact']
+      }
+    },
+    {
+      type: 'function',
+      name: 'recall',
+      description: 'Search your memory for a topic or keyword. Always call this BEFORE answering a question that might depend on a prior conversation, a user preference, or a fact about a person/company/vendor. Returns matching live entries plus matching paragraphs from the seed file.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Topic or keyword to search for.' },
+          limit: { type: 'number', description: 'Max live entries to return (default 10).' }
+        },
+        required: ['query']
+      }
+    },
+    {
+      type: 'function',
+      name: 'list_memory',
+      description: 'Dump all current memory entries (most-recent first). Use sparingly — recall() is usually better.',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number', description: 'Default 50.' } }
+      }
+    },
+    {
+      type: 'function',
+      name: 'forget',
+      description: 'Remove a memory entry by id or by topic match. Use when the user explicitly says to forget something.',
+      parameters: {
+        type: 'object',
+        properties: { topic_or_id: { type: 'string' } },
+        required: ['topic_or_id']
+      }
     }
   ];
 
@@ -1002,7 +1050,13 @@
       const target = _findMedia(id, title);
       if (!target) return { ok: false, error: 'No matching media found.' };
       return _command(target, 'stop');
-    }
+    },
+
+    // ─── Long-term memory (uses window.JarvisMemory) ────────────────
+    remember(args)        { if (!window.JarvisMemory) return { ok: false, error: 'Memory module not loaded' }; return window.JarvisMemory.remember(args); },
+    recall({ query, limit }) { if (!window.JarvisMemory) return { ok: false, error: 'Memory module not loaded' }; return window.JarvisMemory.recall(query, limit); },
+    list_memory({ limit } = {}) { if (!window.JarvisMemory) return { ok: false, error: 'Memory module not loaded' }; return window.JarvisMemory.list(limit); },
+    forget({ topic_or_id })  { if (!window.JarvisMemory) return { ok: false, error: 'Memory module not loaded' }; return window.JarvisMemory.forget(topic_or_id); }
   };
 
   // ─── Media helpers ────────────────────────────────────────────────
@@ -1673,9 +1727,23 @@
       'If the user has popped a division out into a separate tab and you need to read what is in that tab, call list_popped_windows then read_popped_window. You can read the popped tab\'s text, iframes, and embed-mode state without the user having to switch back.',
       'For fresh facts you do not know, call web_search (DuckDuckGo Instant Answer). For specific URL contents, call fetch_url — many sites will fail with CORS, so prefer known-friendly endpoints (raw GitHub files, JSON APIs, etc.).',
       'For media playback ("play that video", "pause the song", "stop the audio", "play the X video"), call list_media first to discover what is on the page, then play_media / pause_media / stop_media with id or title. The tools work on native video/audio AND YouTube/Vimeo iframes (and even on media in popped-out tabs).',
+      'You have a long-term memory that persists across browser sessions. When the user tells you something worth keeping ("remember that X", a preference, a name, a deadline), call remember({topic, fact}). Before answering anything that depends on prior context (a person, a vendor, a past conversation, a stated preference), FIRST call recall(query) — your memory may already have it. Only use forget() when the user explicitly asks you to forget something.',
+      _memorySnippet(),
       'Always respond with audio. Keep responses under 25 seconds unless reading a briefing.',
       `Today is ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}.`
-    ].join(' ');
+    ].filter(Boolean).join(' ');
+  }
+  function _memorySnippet() {
+    try {
+      const mem = window.JarvisMemory && window.JarvisMemory.read();
+      if (!mem) return '';
+      const seedExcerpt = (mem.seed || '').slice(0, 1500);
+      const recent = (mem.entries || []).slice(-10).map(e => `[${e.topic}] ${e.fact}`).join(' | ');
+      const parts = [];
+      if (seedExcerpt) parts.push('Memory seed (long-term context): ' + seedExcerpt);
+      if (recent)      parts.push('Recent memory entries: ' + recent);
+      return parts.length ? parts.join(' ') : '';
+    } catch (_) { return ''; }
   }
 
   // ─── Bootstrap + public API ─────────────────────────────────────

@@ -18,6 +18,7 @@
     'poseidon-directory.js',
     'poseidon-version.js',
     'poseidon-llm.js',
+    'poseidon-jarvis-memory.js',
     'poseidon-jarvis-grok.js',
     'poseidon-zoho-books.js',
     'poseidon-toolbar.js'

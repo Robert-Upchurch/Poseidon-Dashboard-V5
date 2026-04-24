@@ -108,19 +108,48 @@
       }
     ],
     recruitingdivision: [
-      { id: 'placement-trend',  label: 'Placement Trend (Synthetic)', type: 'line',
-        data: () => ({ labels: ['Wk1','Wk2','Wk3','Wk4','Wk5','Wk6','Wk7'], datasets: [{ label: 'Placements', data: [120,140,155,170,190,200,210], borderColor: '#14b8a6', backgroundColor: '#14b8a633', borderWidth: 2, tension: 0.35, pointRadius: 3, fill: true }]})
+      { id: 'placement-trend',  label: 'Placement Trend (12-week)', type: 'line',
+        data: () => ({ labels: weeks(12), datasets: [
+          { label: 'Total',  data: [120,135,148,160,175,182,195,205,220,232,245,258], borderColor: '#14b8a6', backgroundColor: '#14b8a622', borderWidth: 2, tension: 0.35, pointRadius: 3, fill: true },
+          { label: 'J1',     data: [70, 78, 85, 92,100,108,115,122,130,138,145,152],  borderColor: '#3b82f6', borderWidth: 2, tension: 0.35, pointRadius: 2 },
+          { label: 'Cruise', data: [50, 57, 63, 68, 75, 74, 80, 83, 90, 94,100,106],  borderColor: '#a855f7', borderWidth: 2, tension: 0.35, pointRadius: 2 }
+        ]})
       },
-      { id: 'category-mix',     label: 'J1 vs Cruise Mix',            type: 'doughnut',
-        data: () => ({ labels: ['J1 Cultural','Cruise Maritime'], datasets: [{ data: [55,45], backgroundColor: ['#14b8a6','#3b82f6'], borderColor: '#0a1628', borderWidth: 2 }]})
+      { id: 'category-mix',     label: 'J1 vs Cruise Mix',          type: 'doughnut',
+        data: () => ({ labels: ['J1 Cultural','Cruise Maritime'], datasets: [{ data: [58,42], backgroundColor: ['#14b8a6','#3b82f6'], borderColor: '#0a1628', borderWidth: 2 }]})
+      },
+      { id: 'source-country',   label: 'Source Country Distribution', type: 'bar',
+        data: () => ({ labels: ['Indonesia','Philippines','Thailand','Myanmar','Vietnam','India','Other'], datasets: [{ label: 'Active Candidates', data: [320,285,210,165,140,95,75], backgroundColor: ['#14b8a6','#3b82f6','#10b981','#f59e0b','#a855f7','#ec4899','#64748b'], borderRadius: 4 }]})
+      },
+      { id: 'funnel-conversion', label: 'Recruiting Funnel — Conversion', type: 'bar',
+        data: () => ({ labels: ['Sourced','Screened','Interviewed','Selected','Placed'], datasets: [{ label: 'Candidates', data: [2400,1450,820,420,310], backgroundColor: ['#14b8a6','#0d9488','#0f766e','#115e59','#134e4a'], borderRadius: 4 }]})
+      },
+      { id: 'time-to-place',     label: 'Time-to-Placement by Source', type: 'bar',
+        data: () => ({ labels: ['Indonesia','Philippines','Thailand','Myanmar','Vietnam'], datasets: [{ label: 'Days (avg)', data: [42,38,55,68,72], backgroundColor: '#a855f7', borderRadius: 4 }]})
       }
     ],
     processingcuk: [
-      { id: 'visa-volume',      label: 'Visa Volume Trend',          type: 'line',
-        data: () => ({ labels: ['Wk1','Wk2','Wk3','Wk4','Wk5','Wk6','Wk7'], datasets: [{ label: 'Volume', data: [45,52,48,56,61,58,65], borderColor: '#14b8a6', borderWidth: 2, tension: 0.35, pointRadius: 3 }]})
+      { id: 'visa-volume',      label: 'Visa Volume Trend (12-week)', type: 'line',
+        data: () => ({ labels: weeks(12), datasets: [
+          { label: 'Submitted', data: [45,52,48,56,61,58,65,68,72,75,78,82], borderColor: '#14b8a6', borderWidth: 2, tension: 0.35, pointRadius: 3 },
+          { label: 'Approved',  data: [38,45,42,49,53,52,58,61,65,68,71,75], borderColor: '#10b981', borderWidth: 2, tension: 0.35, pointRadius: 3 }
+        ]})
       },
-      { id: 'visa-types',       label: 'Visa Type Distribution',     type: 'doughnut',
+      { id: 'visa-types',       label: 'Visa Type Distribution',      type: 'doughnut',
         data: () => ({ labels: ['Maritime','J1 Cultural','H-2B','Other'], datasets: [{ data: [45,30,15,10], backgroundColor: ['#14b8a6','#3b82f6','#10b981','#f59e0b'], borderColor: '#0a1628', borderWidth: 2 }]})
+      },
+      { id: 'approval-vs-reject', label: 'Approval vs Rejection (Stacked)', type: 'bar',
+        data: () => ({ labels: weeks(8), datasets: [
+          { label: 'Approved %', data: [88,87,89,91,90,89,92,93], backgroundColor: '#10b981', borderRadius: 3, stack: 'a' },
+          { label: 'Rejected %', data: [6, 6, 5, 4, 5, 5, 3, 2],  backgroundColor: '#ef4444', borderRadius: 3, stack: 'a' },
+          { label: 'Pending %',  data: [6, 7, 6, 5, 5, 6, 5, 5],  backgroundColor: '#f59e0b', borderRadius: 3, stack: 'a' }
+        ]})
+      },
+      { id: 'avg-processing',   label: 'Avg Processing Days',         type: 'line',
+        data: () => ({ labels: weeks(8), datasets: [{ label: 'Days', data: [18,16,15,14,13,12.5,12,11.5], borderColor: '#f59e0b', backgroundColor: '#f59e0b22', borderWidth: 2, tension: 0.4, pointRadius: 3, fill: true }]})
+      },
+      { id: 'queue-by-stage',   label: 'Active Queue by Stage',       type: 'bar',
+        data: () => ({ labels: ['Document Review','Embassy Submission','Interview','Approval Pending','Issuance'], datasets: [{ label: 'Cases', data: [42,28,18,15,9], backgroundColor: ['#14b8a6','#3b82f6','#a855f7','#f59e0b','#10b981'], borderRadius: 4 }]})
       }
     ],
     ittech: [
@@ -129,19 +158,69 @@
       },
       { id: 'tickets',          label: 'Tickets by Category',        type: 'doughnut',
         data: () => ({ labels: ['Bug','Feature','Infrastructure','Support'], datasets: [{ data: [35,28,22,15], backgroundColor: ['#14b8a6','#3b82f6','#10b981','#f59e0b'], borderColor: '#0a1628', borderWidth: 2 }]})
+      },
+      { id: 'sprint-burndown',  label: 'Sprint Burndown — Ideal vs Actual', type: 'line',
+        data: () => ({ labels: ['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10'], datasets: [
+          { label: 'Ideal',  data: [830,747,664,581,498,415,332,249,166,83], borderColor: '#ef4444', borderDash: [4,4], borderWidth: 2, tension: 0, pointRadius: 2 },
+          { label: 'Actual', data: [830,720,620,475,380,340,280,210,135, 60], borderColor: '#14b8a6', borderWidth: 2, tension: 0.3, pointRadius: 3 }
+        ]})
+      },
+      { id: 'portal-progress',  label: 'Portal Build Progress',      type: 'bar',
+        data: () => ({ labels: ['CTI Portal','GHR Portal','CRM Integration','Candidate DB','Mobile App','Admin Console'], datasets: [{ label: 'Completion %', data: [72,64,80,85,25,55], backgroundColor: ['#14b8a6','#3b82f6','#10b981','#f59e0b','#a855f7','#ec4899'], borderRadius: 4 }]})
+      },
+      { id: 'response-time',    label: 'API p50 / p95 / p99 Latency (ms)', type: 'bar',
+        data: () => ({ labels: ['p50','p95','p99'], datasets: [
+          { label: 'CTI API',   data: [120,340,820], backgroundColor: '#14b8a6', borderRadius: 4 },
+          { label: 'GHR API',   data: [145,410,940], backgroundColor: '#3b82f6', borderRadius: 4 },
+          { label: 'Zoho Sync', data: [220,580,1280], backgroundColor: '#a855f7', borderRadius: 4 }
+        ]})
       }
     ],
     masterforecast: [
       { id: 'rev-by-div',       label: 'Revenue by Division',        type: 'bar',
         data: () => ({ labels: ['CTI Cruise','GHR','Marine Travel','UNO','Baron','J1 Placements','J1 Housing'], datasets: [{ label: 'Revenue ($M)', data: [1.8,1.2,0.55,0.32,0.22,0.85,0.38], backgroundColor: ['#14b8a6','#3b82f6','#10b981','#f59e0b','#a855f7','#ef4444','#ec4899'], borderRadius: 4 }]})
       },
-      { id: 'placements',       label: 'Total Placements Trend',     type: 'line',
-        data: () => ({ labels: ['W1','W2','W3','W4','W5','W6','W7'], datasets: [{ label: 'Placements', data: [120,140,155,170,190,200,210], borderColor: '#14b8a6', backgroundColor: '#14b8a633', borderWidth: 2, tension: 0.35, pointRadius: 3, fill: true }]})
+      { id: 'placements',       label: 'Placements Trend by Division', type: 'line',
+        data: () => ({ labels: weeks(12), datasets: [
+          { label: 'J1 Placements',  data: [30,35,40,45,50,55,60,65,70,75,80,85], borderColor: '#ef4444', borderWidth: 2, tension: 0.35, pointRadius: 2 },
+          { label: 'J1 Beds',        data: [25,30,35,40,45,48,52,55,60,62,68,72], borderColor: '#ec4899', borderWidth: 2, tension: 0.35, pointRadius: 2 },
+          { label: 'Cruise',         data: [50,57,63,68,75,74,80,83,90,94,100,106], borderColor: '#14b8a6', borderWidth: 2, tension: 0.35, pointRadius: 2 },
+          { label: 'Marine Travel',  data: [20,25,28,32,38,42,46,50,54,58,62,66],  borderColor: '#3b82f6', borderWidth: 2, tension: 0.35, pointRadius: 2 }
+        ]})
+      },
+      { id: 'all-divisions-cmp', label: 'All Divisions — Cash + AR + Overdue', type: 'bar',
+        data: () => fromZoho(snap => {
+          const k = snap.kpis;
+          return {
+            labels: ['Total Invoiced','Collected','AR Outstanding','Overdue','Net Cash'],
+            datasets: [{
+              label: 'USD',
+              data: [k.total_invoiced, k.total_paid, k.total_outstanding, k.total_overdue, k.net_cash_position],
+              backgroundColor: ['#3b82f6','#10b981','#f59e0b','#ef4444','#14b8a6'],
+              borderRadius: 4
+            }]
+          };
+        })
+      },
+      { id: 'global-hubs',      label: 'Operational Hubs by Country', type: 'doughnut',
+        data: () => ({ labels: ['Indonesia','Greece','Thailand','Myanmar','Vietnam','India','UK'], datasets: [{ data: [120,90,75,50,45,35,28], backgroundColor: ['#14b8a6','#3b82f6','#10b981','#f59e0b','#a855f7','#ec4899','#64748b'], borderColor: '#0a1628', borderWidth: 2 }]})
+      },
+      { id: 'q-milestones',     label: 'Quarterly Milestones — Completion %', type: 'bar',
+        data: () => ({ labels: ['Q1','Q2','Q3','Q4'], datasets: [{ label: 'Completion %', data: [82,45,12,0], backgroundColor: ['#10b981','#f59e0b','#64748b','#475569'], borderRadius: 4 }]})
       }
     ],
     j1housing: [
-      { id: 'occupancy',        label: 'Occupancy Trend',            type: 'line',
+      { id: 'occupancy',        label: 'Occupancy Trend (6-month)',  type: 'line',
         data: () => ({ labels: ['Jan','Feb','Mar','Apr','May','Jun'], datasets: [{ label: 'Occupancy %', data: [62,68,71,75,82,88], borderColor: '#14b8a6', backgroundColor: '#14b8a633', borderWidth: 2, tension: 0.35, pointRadius: 3, fill: true }]})
+      },
+      { id: 'sponsor-mix',      label: 'Sponsor Distribution',        type: 'doughnut',
+        data: () => ({ labels: ['CIEE','Greenheart','Cultural Vistas','Spirit','Other'], datasets: [{ data: [38,28,18,10,6], backgroundColor: ['#14b8a6','#3b82f6','#10b981','#f59e0b','#a855f7'], borderColor: '#0a1628', borderWidth: 2 }]})
+      },
+      { id: 'beds-by-property', label: 'Beds by Property',            type: 'bar',
+        data: () => ({ labels: ['Vail','Aspen','Park City','Steamboat','Breckenridge','Big Sky'], datasets: [{ label: 'Beds Available', data: [120,95,80,65,55,42], backgroundColor: '#14b8a6', borderRadius: 4 }]})
+      },
+      { id: 'check-ins',        label: 'Check-Ins by Month',          type: 'bar',
+        data: () => ({ labels: ['Jan','Feb','Mar','Apr','May','Jun'], datasets: [{ label: 'Check-Ins', data: [45,68,85,92,128,156], backgroundColor: '#10b981', borderRadius: 4 }]})
       }
     ]
   };
@@ -161,6 +240,9 @@
     if (s == null) return 0;
     const m = String(s).match(/[\d,]+(?:\.\d+)?/);
     return m ? Number(m[0].replace(/,/g,'')) : 0;
+  }
+  function weeks(n) {
+    return Array.from({ length: n }, (_, i) => 'W' + (i + 1));
   }
 
   // ─── Style injection (palette + modal + dropdown) ───────────────

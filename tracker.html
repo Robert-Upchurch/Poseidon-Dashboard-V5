@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a1628">
+<title>Poseidon Master Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+tailwind.config = { darkMode: 'class', theme: { extend: {
+  fontFamily: { sans:['Inter','sans-serif'], mono:['JetBrains Mono','monospace'] },
+  colors: { brand: { DEFAULT:'#14b8a6', light:'#5eead4', dark:'#0d9488' } }
+}}}
+</script>
+<style>
+body { font-family:'Inter',sans-serif; background:#0a1628; color:#fafafa; min-height:100vh; }
+html:not(.dark) body { background:#f8fafc; color:#0f172a; }
+.task-row { transition: all .15s; }
+.task-row:hover { transform: translateX(2px); }
+.priority-bar { width:4px; align-self:stretch; border-radius:2px; }
+.p0-bar { background:#dc2626; } .p1-bar { background:#ea580c; }
+.p2-bar { background:#ca8a04; } .p3-bar { background:#16a34a; }
+.spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(20,184,166,0.3); border-top-color:#14b8a6; border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 640px) { .task-meta { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+
+<header class="bg-[#0f1e2e] border-b border-zinc-800 sticky top-0 z-10">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🔱</span>
+      <div>
+        <h1 class="text-lg md:text-xl font-bold">Poseidon Master Tracker</h1>
+        <p class="text-xs text-zinc-500" id="meta-line">Loading…</p>
+      </div>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="poseidon-dashboard-v6.html" class="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 transition flex items-center gap-1.5"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Dashboard</a>
+      <button id="btn-add" class="px-3 py-1.5 text-xs rounded-lg bg-brand hover:bg-brand-dark text-white transition flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i> New task</button>
+      <button id="btn-pull" class="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 transition flex items-center gap-1.5"><i data-lucide="download-cloud" class="w-3.5 h-3.5"></i> Pull</button>
+      <button id="btn-push" class="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 transition flex items-center gap-1.5"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Push</button>
+      <button id="btn-token" class="px-2 py-1.5 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700 transition" title="GitHub PAT"><i data-lucide="key" class="w-3.5 h-3.5"></i></button>
+    </div>
+  </div>
+  <div id="status-banner" class="hidden px-4 py-2 text-xs"></div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4">
+
+  <!-- Stats -->
+  <div id="stats" class="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4"></div>
+
+  <!-- Filters -->
+  <div class="bg-[#0f1e2e] border border-zinc-800 rounded-xl p-3 mb-4 flex flex-wrap gap-2">
+    <select id="f-priority" class="px-2 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg flex-1 min-w-[110px]">
+      <option value="">All priorities</option>
+      <option value="P0">🔴 P0 only</option><option value="P1">🟠 P1 only</option>
+      <option value="P2">🟡 P2 only</option><option value="P3">🟢 P3 only</option>
+    </select>
+    <select id="f-status" class="px-2 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg flex-1 min-w-[110px]">
+      <option value="">All statuses</option>
+      <option value="TODO">⏳ TODO</option><option value="DOING">🔄 DOING</option>
+      <option value="DONE">✅ DONE</option><option value="BLOCKED">⏸️ BLOCKED</option>
+    </select>
+    <select id="f-owner" class="px-2 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg flex-1 min-w-[100px]">
+      <option value="">All owners</option><option value="R">Robert</option>
+      <option value="C">Claude</option><option value="R+C">Joint</option>
+    </select>
+    <select id="f-div" class="px-2 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg flex-1 min-w-[120px]">
+      <option value="">All divisions</option>
+    </select>
+    <input id="f-search" type="text" placeholder="Search…" class="px-3 py-1.5 text-xs bg-zinc-900 border border-zinc-700 rounded-lg flex-[2] min-w-[160px]">
+    <button id="btn-clear" class="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700">Clear</button>
+  </div>
+
+  <!-- Task list -->
+  <div id="task-list" class="space-y-1.5"></div>
+
+</main>
+
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <div class="bg-[#0f1e2e] border border-zinc-700 rounded-xl p-5 w-full max-w-md">
+    <h2 id="modal-title" class="text-lg font-bold mb-4">New task</h2>
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs text-zinc-500">ID</label>
+          <input id="m-id" class="w-full mt-1 px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg font-mono">
+        </div>
+        <div>
+          <label class="text-xs text-zinc-500">Priority</label>
+          <select id="m-p" class="w-full mt-1 px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg">
+            <option>P0</option><option>P1</option><option selected>P2</option><option>P3</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs text-zinc-500">Status</label>
+          <select id="m-s" class="w-full mt-1 px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg">
+            <option selected>TODO</option><option>DOING</option><option>DONE</option><option>BLOCKED</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-zinc-500">Owner</label>
+          <select id="m-o" class="w-full mt-1 px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg">
+            <option>R</option><option>C</option><option>R+C</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-zinc-500">Division</label>
+        <input id="m-d" class="w-full mt-1 px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg" list="div-suggest">
+        <datalist id="div-suggest"></datalist>
+      </div>
+      <div>
+        <label class="text-xs text-zinc-500">Title</label>
+        <input id="m-t" class="w-full mt-1 px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg">
+      </div>
+      <div>
+        <label class="text-xs text-zinc-500">Notes</label>
+        <textarea id="m-n" rows="2" class="w-full mt-1 px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg"></textarea>
+      </div>
+    </div>
+    <div class="mt-4 flex justify-between gap-2">
+      <button id="m-delete" class="hidden px-3 py-1.5 text-xs rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50">Delete</button>
+      <div class="flex gap-2 ml-auto">
+        <button id="m-cancel" class="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700">Cancel</button>
+        <button id="m-save" class="px-3 py-1.5 text-xs rounded-lg bg-brand hover:bg-brand-dark text-white">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Token modal -->
+<div id="token-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <div class="bg-[#0f1e2e] border border-zinc-700 rounded-xl p-5 w-full max-w-md">
+    <h2 class="text-lg font-bold mb-2">GitHub Personal Access Token</h2>
+    <p class="text-xs text-zinc-400 mb-3">Required to push changes to GitHub. Token stays local in your browser (never sent anywhere except api.github.com). Generate at <span class="font-mono">github.com/settings/tokens</span> with <strong>repo</strong> scope.</p>
+    <input id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx" class="w-full px-2 py-1.5 text-sm bg-zinc-900 border border-zinc-700 rounded-lg font-mono mb-3">
+    <div class="flex gap-2 justify-between">
+      <button id="token-clear" class="px-3 py-1.5 text-xs rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50">Forget token</button>
+      <div class="flex gap-2">
+        <button id="token-cancel" class="px-3 py-1.5 text-xs rounded-lg bg-zinc-800 hover:bg-zinc-700">Cancel</button>
+        <button id="token-save" class="px-3 py-1.5 text-xs rounded-lg bg-brand hover:bg-brand-dark text-white">Save token</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────── CONFIG ───────────
+const REPO = 'Robert-Upchurch/Poseidon-Dashboard-V5';
+const PATH = 'config/tasks.json';
+const BRANCH = 'main';
+
+// ─────────── STATE ───────────
+let TASKS = [];
+let META = { version:'1.0.0', lastUpdated:'', schema:'' };
+let SHA = null;
+let editingIdx = -1;
+const SI = { TODO:'⏳', DOING:'🔄', DONE:'✅', BLOCKED:'⏸️' };
+
+// ─────────── UTIL ───────────
+const $ = id => document.getElementById(id);
+const tok = () => localStorage.getItem('poseidon-gh-pat');
+const banner = (msg, type='info') => {
+  const b = $('status-banner');
+  b.classList.remove('hidden','bg-green-900/30','bg-red-900/30','bg-yellow-900/30','bg-blue-900/30');
+  const cls = { ok:'bg-green-900/30 text-green-400', err:'bg-red-900/30 text-red-400', warn:'bg-yellow-900/30 text-yellow-400', info:'bg-blue-900/30 text-blue-400' }[type];
+  b.className = 'px-4 py-2 text-xs ' + cls;
+  b.innerHTML = msg;
+  if (type === 'ok') setTimeout(() => b.classList.add('hidden'), 3000);
+};
+const b64encode = str => btoa(unescape(encodeURIComponent(str)));
+const b64decode = str => decodeURIComponent(escape(atob(str.replace(/\s/g,''))));
+
+// ─────────── GITHUB API ───────────
+async function ghPull() {
+  banner('<span class="spinner"></span> Pulling from GitHub…', 'info');
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${PATH}?ref=${BRANCH}`, {
+      headers: tok() ? { Authorization: `token ${tok()}` } : {}
+    });
+    if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+    const data = await r.json();
+    SHA = data.sha;
+    const json = JSON.parse(b64decode(data.content));
+    TASKS = json.tasks || [];
+    META = json._meta || META;
+    persist();
+    render();
+    banner(`✅ Pulled ${TASKS.length} tasks from GitHub`, 'ok');
+  } catch(e) {
+    banner(`❌ Pull failed: ${e.message}`, 'err');
+  }
+}
+
+async function ghPush() {
+  if (!tok()) { banner('No token saved. Click the key icon to set one.', 'warn'); return; }
+  banner('<span class="spinner"></span> Pushing to GitHub…', 'info');
+  try {
+    META.lastUpdated = new Date().toISOString().slice(0,10);
+    const json = JSON.stringify({ _meta: META, tasks: TASKS }, null, 2);
+    const body = {
+      message: `chore(tracker): update tasks (${TASKS.length} items)`,
+      content: b64encode(json),
+      branch: BRANCH
+    };
+    if (SHA) body.sha = SHA;
+    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${PATH}`, {
+      method: 'PUT',
+      headers: { Authorization: `token ${tok()}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+    const result = await r.json();
+    SHA = result.content.sha;
+    banner('✅ Pushed to GitHub. Live in ~60s.', 'ok');
+  } catch(e) {
+    banner(`❌ Push failed: ${e.message}`, 'err');
+  }
+}
+
+// ─────────── PERSIST (local) ───────────
+function persist() {
+  localStorage.setItem('poseidon-tasks', JSON.stringify({ TASKS, META, SHA }));
+}
+function restore() {
+  const s = localStorage.getItem('poseidon-tasks');
+  if (s) { try { const d = JSON.parse(s); TASKS=d.TASKS||[]; META=d.META||META; SHA=d.SHA; } catch(e) {} }
+}
+
+// ─────────── RENDER ───────────
+function render() {
+  $('meta-line').textContent = `${TASKS.length} tasks · last updated ${META.lastUpdated || '—'} ${SHA ? '· synced' : '· local only'}`;
+
+  // Stats
+  const st = { P0:0, P1:0, P2:0, P3:0, DONE:0 };
+  TASKS.forEach(t => { if (t.s === 'DONE') st.DONE++; else st[t.p]++; });
+  $('stats').innerHTML = `
+    <div class="bg-[#0f1e2e] border border-zinc-800 rounded-lg p-2.5 text-center"><div class="text-xl font-bold text-red-400">${st.P0}</div><div class="text-[10px] text-zinc-500 uppercase tracking-wider">P0</div></div>
+    <div class="bg-[#0f1e2e] border border-zinc-800 rounded-lg p-2.5 text-center"><div class="text-xl font-bold text-orange-400">${st.P1}</div><div class="text-[10px] text-zinc-500 uppercase tracking-wider">P1</div></div>
+    <div class="bg-[#0f1e2e] border border-zinc-800 rounded-lg p-2.5 text-center"><div class="text-xl font-bold text-yellow-400">${st.P2}</div><div class="text-[10px] text-zinc-500 uppercase tracking-wider">P2</div></div>
+    <div class="bg-[#0f1e2e] border border-zinc-800 rounded-lg p-2.5 text-center"><div class="text-xl font-bold text-green-400">${st.P3}</div><div class="text-[10px] text-zinc-500 uppercase tracking-wider">P3</div></div>
+    <div class="bg-[#0f1e2e] border border-zinc-800 rounded-lg p-2.5 text-center"><div class="text-xl font-bold text-brand">${st.DONE}</div><div class="text-[10px] text-zinc-500 uppercase tracking-wider">Done</div></div>
+    <div class="bg-[#0f1e2e] border border-zinc-800 rounded-lg p-2.5 text-center"><div class="text-xl font-bold text-zinc-300">${TASKS.length}</div><div class="text-[10px] text-zinc-500 uppercase tracking-wider">Total</div></div>
+  `;
+
+  // Division dropdown + datalist
+  const divs = [...new Set(TASKS.map(t => t.d).filter(Boolean))].sort();
+  $('f-div').innerHTML = '<option value="">All divisions</option>' + divs.map(d => `<option>${d}</option>`).join('');
+  $('div-suggest').innerHTML = divs.map(d => `<option value="${d}">`).join('');
+
+  // Filters
+  const fp = $('f-priority').value, fs = $('f-status').value, fo = $('f-owner').value, fd = $('f-div').value, fq = $('f-search').value.toLowerCase();
+  const filtered = TASKS.filter(t => {
+    if (fp && t.p !== fp) return false;
+    if (fs && t.s !== fs) return false;
+    if (fo && t.o !== fo) return false;
+    if (fd && t.d !== fd) return false;
+    if (fq) { const x=(t.t+' '+t.id+' '+(t.n||'')+' '+t.d).toLowerCase(); if (!x.includes(fq)) return false; }
+    return true;
+  });
+  filtered.sort((a,b) => {
+    const po={P0:0,P1:1,P2:2,P3:3}, so={DOING:0,BLOCKED:1,TODO:2,DONE:3};
+    return po[a.p]-po[b.p] || so[a.s]-so[b.s];
+  });
+
+  $('task-list').innerHTML = filtered.length === 0
+    ? '<div class="text-center py-8 text-zinc-500 bg-[#0f1e2e] border border-dashed border-zinc-700 rounded-xl">No tasks match your filters.</div>'
+    : filtered.map(t => {
+        const realIdx = TASKS.indexOf(t);
+        const oc = t.o === 'R+C' ? 'rc' : t.o.toLowerCase();
+        return `
+          <div class="task-row flex items-center gap-3 bg-[#0f1e2e] border border-zinc-800 rounded-lg p-2.5 cursor-pointer hover:border-brand/50" data-idx="${realIdx}">
+            <div class="priority-bar ${t.p.toLowerCase()}-bar"></div>
+            <button class="status-btn text-base flex-shrink-0" data-idx="${realIdx}" title="Click to toggle">${SI[t.s]}</button>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium ${t.s==='DONE'?'line-through text-zinc-500':''} truncate">${t.t}</div>
+              ${t.n ? `<div class="text-xs text-zinc-500 truncate mt-0.5">${t.n}</div>` : ''}
+            </div>
+            <div class="task-meta flex gap-1 flex-shrink-0 text-[10px]">
+              <span class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">${t.d}</span>
+              <span class="px-1.5 py-0.5 rounded ${oc==='r'?'bg-blue-900/40 text-blue-300':oc==='c'?'bg-pink-900/40 text-pink-300':'bg-purple-900/40 text-purple-300'}">${t.o}</span>
+              <span class="px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-600 font-mono">${t.id}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+  document.querySelectorAll('.task-row').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.closest('.status-btn')) return;
+      openEdit(parseInt(el.dataset.idx));
+    });
+  });
+  document.querySelectorAll('.status-btn').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.idx);
+      const order = ['TODO','DOING','DONE','BLOCKED'];
+      const cur = TASKS[idx].s;
+      TASKS[idx].s = order[(order.indexOf(cur)+1) % 4];
+      TASKS[idx].u = new Date().toISOString().slice(0,10);
+      persist(); render();
+    });
+  });
+
+  lucide.createIcons();
+}
+
+// ─────────── EDIT MODAL ───────────
+function openAdd() {
+  editingIdx = -1;
+  $('modal-title').textContent = 'New task';
+  $('m-id').value = ''; $('m-p').value='P2'; $('m-s').value='TODO'; $('m-o').value='R';
+  $('m-d').value=''; $('m-t').value=''; $('m-n').value='';
+  $('m-delete').classList.add('hidden');
+  $('modal').classList.remove('hidden');
+  $('m-id').focus();
+}
+function openEdit(idx) {
+  editingIdx = idx;
+  const t = TASKS[idx];
+  $('modal-title').textContent = `Edit task ${t.id}`;
+  $('m-id').value=t.id; $('m-p').value=t.p; $('m-s').value=t.s; $('m-o').value=t.o;
+  $('m-d').value=t.d; $('m-t').value=t.t; $('m-n').value=t.n||'';
+  $('m-delete').classList.remove('hidden');
+  $('modal').classList.remove('hidden');
+}
+function closeModal() { $('modal').classList.add('hidden'); }
+function saveModal() {
+  const t = {
+    id: $('m-id').value.trim(),
+    p: $('m-p').value, s: $('m-s').value, o: $('m-o').value,
+    d: $('m-d').value.trim(), t: $('m-t').value.trim(),
+    n: $('m-n').value.trim(),
+    u: new Date().toISOString().slice(0,10)
+  };
+  if (!t.id || !t.t) { alert('ID and Title required'); return; }
+  if (editingIdx >= 0) TASKS[editingIdx] = t;
+  else TASKS.push(t);
+  persist(); render(); closeModal();
+}
+function deleteCurrent() {
+  if (editingIdx >= 0 && confirm('Delete this task?')) {
+    TASKS.splice(editingIdx, 1);
+    persist(); render(); closeModal();
+  }
+}
+
+// ─────────── TOKEN ───────────
+function openToken() {
+  $('token-input').value = tok() || '';
+  $('token-modal').classList.remove('hidden');
+}
+function saveToken() {
+  const v = $('token-input').value.trim();
+  if (v) { localStorage.setItem('poseidon-gh-pat', v); banner('Token saved locally.', 'ok'); }
+  $('token-modal').classList.add('hidden');
+}
+function clearToken() {
+  localStorage.removeItem('poseidon-gh-pat');
+  $('token-input').value = '';
+  banner('Token cleared.', 'info');
+  $('token-modal').classList.add('hidden');
+}
+
+// ─────────── EVENTS ───────────
+$('btn-add').addEventListener('click', openAdd);
+$('btn-pull').addEventListener('click', ghPull);
+$('btn-push').addEventListener('click', ghPush);
+$('btn-token').addEventListener('click', openToken);
+$('m-cancel').addEventListener('click', closeModal);
+$('m-save').addEventListener('click', saveModal);
+$('m-delete').addEventListener('click', deleteCurrent);
+$('token-cancel').addEventListener('click', () => $('token-modal').classList.add('hidden'));
+$('token-save').addEventListener('click', saveToken);
+$('token-clear').addEventListener('click', clearToken);
+$('btn-clear').addEventListener('click', () => {
+  ['f-priority','f-status','f-owner','f-div','f-search'].forEach(id => $(id).value='');
+  render();
+});
+['f-priority','f-status','f-owner','f-div'].forEach(id => $(id).addEventListener('change', render));
+$('f-search').addEventListener('input', render);
+
+// ─────────── BOOT ───────────
+restore();
+if (TASKS.length === 0) {
+  ghPull(); // auto-pull on first load
+} else {
+  render();
+}
+lucide.createIcons();
+</script>
+
+</body>
+</html>

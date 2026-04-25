@@ -4600,7 +4600,42 @@ function rdExportDivisionPDF(divId) {
     w.document.write(`<!DOCTYPE html><html class="dark"><head><title>${panel.querySelector('h2')?.textContent || 'Poseidon'} — ${new Date().toLocaleDateString()}</title>${styles}<style>@media print { body { background:white !important; color:black !important; } canvas { max-width:100% !important; } }</style></head><body class="bg-[#0a1628] text-zinc-100 p-6">`);
     w.document.write(`<p class="text-xs text-zinc-500 mb-4">${new Date().toLocaleString()} · CTI Group Worldwide Services</p>`);
     w.document.write(panel.innerHTML);
-    w.document.write(`</body></html>`);
+    w.document.write(`
+<!-- ═══ POSEIDON TRACKER BRIDGE — exposes tracker tasks to Jarvis ═══ -->
+<div id="poseidon-tracker-summary" style="position:absolute;left:-99999px;top:-99999px;width:1px;height:1px;overflow:hidden" aria-hidden="false"></div>
+<script>
+(async function loadTrackerForJarvis() {
+  try {
+    const url = "config/tasks.json";
+    const r = await fetch(url, { cache: "no-cache" });
+    if (!r.ok) return;
+    const j = await r.json();
+    window.poseidonTasks = j.tasks || [];
+    window.poseidonTasksMeta = j._meta || {};
+    // Build a plain-text summary Jarvis (read_dashboard_state) will pick up
+    const counts = { P0:0, P1:0, P2:0, P3:0, DONE:0 };
+    window.poseidonTasks.forEach(t => { if (t.s === "DONE") counts.DONE++; else counts[t.p] = (counts[t.p]||0)+1; });
+    const lines = [
+      "POSEIDON MASTER TRACKER — full task list (read by Jarvis):",
+      `Last updated: ${j._meta && j._meta.lastUpdated || "unknown"}`,
+      `Counts: ${counts.P0} P0 | ${counts.P1} P1 | ${counts.P2} P2 | ${counts.P3} P3 | ${counts.DONE} DONE | ${window.poseidonTasks.length} TOTAL`,
+      "",
+      "All tasks:"
+    ];
+    window.poseidonTasks.forEach(t => {
+      lines.push(`[${t.p}] [${t.s}] (${t.o}) ${t.d} | ${t.id} — ${t.t}${t.n ? " — " + t.n : ""}`);
+    });
+    const el = document.getElementById("poseidon-tracker-summary");
+    if (el) el.textContent = lines.join("\n");
+    console.log(`[Tracker Bridge] Loaded ${window.poseidonTasks.length} tasks for Jarvis`);
+  } catch (e) {
+    console.warn("[Tracker Bridge] Failed to load tasks.json:", e);
+  }
+})();
+</script>
+<!-- ═══ END TRACKER BRIDGE ═══ -->
+
+</body></html>`);
     w.document.close();
     setTimeout(()=>{ try { w.print(); } catch(e){} }, 600);
 }

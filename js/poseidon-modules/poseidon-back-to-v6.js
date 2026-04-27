@@ -43,6 +43,16 @@
     return false;
   }
 
+  // Don't render inside an iframe — V6's own nav is already visible
+  // above the iframe, so a "Back to V6" button inside the iframe is
+  // redundant AND it covers the iframe page's own title (the J1 Housing
+  // Finder header in particular). The button is still useful when the
+  // sub-page is opened in its own tab or popped out, where window.top
+  // === window.self.
+  function isInsideIframe() {
+    try { return window.top !== window.self; } catch (_) { return true; }
+  }
+
   function injectStyle() {
     if (document.getElementById('poseidon-back-to-v6-style')) return;
     const css = `
@@ -103,6 +113,7 @@
 
   function render() {
     if (isV6DashboardPage()) return;
+    if (isInsideIframe()) return;
     if (document.getElementById('poseidon-back-to-v6')) return;
     injectStyle();
 

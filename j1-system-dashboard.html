@@ -31,6 +31,16 @@
         .page.hidden { display:none !important; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         .page:not(.hidden) { animation: fadeIn 0.25s ease-out; }
+
+        /* J1 Housing Finder — full-bleed: lift the 1500px max-width on the main
+           content area when this page is active so the iframe stretches across
+           the full monitor width. Uses :has() (supported in all modern browsers). */
+        body:has(#j1housingfinder:not(.hidden)) main.main-content {
+            max-width: none !important;
+        }
+        body:has(#j1housingfinder:not(.hidden)) #j1hf-iframe {
+            height: calc(100vh - 140px) !important;
+        }
         /* Calendar grid specifics */
         .cal-month-grid { display:grid; grid-template-columns:repeat(7,1fr); }
         .cal-week-grid-inner { display:grid; grid-template-columns:56px repeat(7,1fr); }

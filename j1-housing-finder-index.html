@@ -1253,23 +1253,48 @@ function renderListings() {
 }
 
 // ===== DEEP LINKS =====
+// State-abbreviation → full-name lookup, used for RentByOwner's
+// canonical /all/usa/{state}/{city} slug routing. (Their old
+// /search?location= path returns 404 as of Apr 2026.)
+const US_STATE_NAMES = {
+    AL:'alabama', AK:'alaska', AZ:'arizona', AR:'arkansas', CA:'california',
+    CO:'colorado', CT:'connecticut', DE:'delaware', FL:'florida', GA:'georgia',
+    HI:'hawaii', ID:'idaho', IL:'illinois', IN:'indiana', IA:'iowa',
+    KS:'kansas', KY:'kentucky', LA:'louisiana', ME:'maine', MD:'maryland',
+    MA:'massachusetts', MI:'michigan', MN:'minnesota', MS:'mississippi',
+    MO:'missouri', MT:'montana', NE:'nebraska', NV:'nevada', NH:'new-hampshire',
+    NJ:'new-jersey', NM:'new-mexico', NY:'new-york', NC:'north-carolina',
+    ND:'north-dakota', OH:'ohio', OK:'oklahoma', OR:'oregon', PA:'pennsylvania',
+    RI:'rhode-island', SC:'south-carolina', SD:'south-dakota', TN:'tennessee',
+    TX:'texas', UT:'utah', VT:'vermont', VA:'virginia', WA:'washington',
+    WV:'west-virginia', WI:'wisconsin', WY:'wyoming', DC:'district-of-columbia'
+};
+
+function slugify(s) {
+    return String(s).toLowerCase().trim().replace(/[\s/]+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
 function getSourceLinks(listing) {
-    const city = encodeURIComponent(listing.city.split(',')[0]);
-    const state = encodeURIComponent(listing.city.split(',')[1]?.trim() || '');
+    const cityRaw = listing.city.split(',')[0].trim();
+    const stateRaw = (listing.city.split(',')[1] || '').trim().toUpperCase();
+    const city = encodeURIComponent(cityRaw);
+    const state = encodeURIComponent(stateRaw);
     const beds = listing.beds;
     const price = listing.price;
 
-    const clCity = city.toLowerCase().replace(/\s/g, '');
+    const clCity = cityRaw.toLowerCase().replace(/\s/g, '');
     const craigslist = `https://${clCity}.craigslist.org/search/apa?min_bedrooms=${beds}&max_price=${price + 200}`;
     const airbnb = `https://www.airbnb.com/s/${city}--${state}/homes?adults=1&min_bedrooms=${beds}&price_max=${Math.round(price * 1.3 / 30)}&monthly=true`;
     const vrbo = `https://www.vrbo.com/search?destination=${city}%2C+${state}&adults=1&startDate=&endDate=`;
-    const owner = `https://www.rentbyowner.com/search?location=${city}+${state}`;
+    const stateSlug = US_STATE_NAMES[stateRaw] || slugify(stateRaw);
+    const citySlug = slugify(cityRaw);
+    const owner = `https://www.rentbyowner.com/all/usa/${stateSlug}/${citySlug}`;
 
     let links = '';
-    links += `<a href="${craigslist}" target="_blank" class="card-link" onclick="event.stopPropagation()">🟣 Craigslist</a>`;
-    links += `<a href="${airbnb}" target="_blank" class="card-link" onclick="event.stopPropagation()">🔴 Airbnb</a>`;
-    links += `<a href="${vrbo}" target="_blank" class="card-link" onclick="event.stopPropagation()">🔵 Vrbo</a>`;
-    links += `<a href="${owner}" target="_blank" class="card-link" onclick="event.stopPropagation()">🟢 RentByOwner</a>`;
+    links += `<a href="${craigslist}" target="_blank" rel="noopener" class="card-link" onclick="event.stopPropagation()">🟣 Craigslist</a>`;
+    links += `<a href="${airbnb}" target="_blank" rel="noopener" class="card-link" onclick="event.stopPropagation()">🔴 Airbnb</a>`;
+    links += `<a href="${vrbo}" target="_blank" rel="noopener" class="card-link" onclick="event.stopPropagation()">🔵 Vrbo</a>`;
+    links += `<a href="${owner}" target="_blank" rel="noopener" class="card-link" onclick="event.stopPropagation()">🟢 RentByOwner</a>`;
     return links;
 }
 

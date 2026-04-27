@@ -734,6 +734,14 @@
       }
     },
 
+    // ─── J1 KPI Scorecard ───────────────────────────────────────────
+    {
+      type: 'function',
+      name: 'read_kpi_scorecard',
+      description: 'Read the live J1 Recruiting KPI Scorecard from the J1 System Dashboard. Returns the Overall Division Score (0-100), 9 individual KPI scores (Orders vs Fulfillments, Time to Placement, Visa Issued, Visa Denied, Past-Due Orders, Office Balance, Country Coverage, Sponsor Mix, Partner Health), per-office breakdown, and per-team scores. Each metric includes its current value, target, and 0-100 score. Use this whenever the user asks "what is our score", "how are we doing", "division health", "team scores", "KPI", "fill rate", "visa rate", "are we meeting our targets", "where are we red/yellow/green", or any operational health question.',
+      parameters: { type: 'object', properties: {} }
+    },
+
     // ─── Web access ─────────────────────────────────────────────────
     {
       type: 'function',
@@ -1371,6 +1379,39 @@
         };
       } catch (e) {
         return { ok: false, error: 'set_housing_work_address failed: ' + e.message };
+      }
+    },
+
+    // ─── J1 KPI Scorecard ───────────────────────────────────────────
+    // Reads the live computed scorecard from the J1 dashboard's
+    // window.computeJ1KpiScorecard() helper (defined in
+    // j1-system-dashboard.html). The scorecard recomputes from the live
+    // Zoho snapshot + sponsor + open-orders datasets every render.
+    read_kpi_scorecard() {
+      try {
+        const fn = (typeof window.computeJ1KpiScorecard === 'function')
+          ? window.computeJ1KpiScorecard
+          : null;
+        if (!fn) {
+          return { ok: false, error: 'KPI scorecard is only available on the J1 System Dashboard. Navigate there first via go_to_page("recruitingdivision").' };
+        }
+        const sc = fn();
+        const grade = (s) => s >= 75 ? 'green' : (s >= 50 ? 'amber' : 'red');
+        return {
+          ok: true,
+          page: 'J1 Recruiting Overview',
+          source: 'Zoho Analytics J1 Programs Dashboard, refreshed Mon/Wed/Fri',
+          overall_division_score: sc.overall,
+          overall_grade: grade(sc.overall),
+          metrics: sc.metrics.map(m => ({
+            id: m.id, label: m.label, value: m.value, sub: m.sub,
+            score: m.score, grade: grade(m.score), target: m.target
+          })),
+          offices: sc.offices.map(o => ({ name: o.name, participants: o.participants, score: o.score, grade: grade(o.score) })),
+          teams: sc.teams.map(t => ({ name: t.name, sponsor: t.sponsor, activity: t.activity, fill_rate_pct: t.fillRate, score: t.score, grade: grade(t.score) }))
+        };
+      } catch (e) {
+        return { ok: false, error: 'read_kpi_scorecard failed: ' + e.message };
       }
     },
 
@@ -2230,6 +2271,8 @@
       'When the user asks for an overall scan of the dashboard ("what is on the dashboard", "scan everything", "summarize the whole thing", "give me a full status", or any question that could span multiple divisions), call read_full_dashboard — it returns every page\'s title + text + iframe content in one call, even for hidden pages.',
       'J1 HOUSING FINDER — this is a full sub-application reachable two ways: (a) as a dedicated top-level page on the J1 System Dashboard via the "J1 Housing Finder" sidebar entry (page id j1housingfinder), and (b) as a nested tab inside the J1 Housing page (page id j1housing) on either dashboard. Both load the same j1-housing-finder-index.html iframe. It aggregates direct-owner rentals (6/12 month leases) for J-1 visa workers across major US cities, sourced from Craigslist, Airbnb, Vrbo, and Rent-by-Owner listings. Each listing has: city, neighborhood/area, beds, baths, monthly price, square footage, address, source tab, tags, internet/electric inclusion, owner notes, and lat/lng on a map. Every dropdown on the page is fully readable AND settable by you: state (50 states + DC, two-letter abbreviation), city (~100 cities, scoped to selected state), area (depends on city), bedrooms (Studio/1/2/3/4+), bathrooms (1/2/3+), max price (up to $3000/mo), internet included, electricity included, utilities (all/any/none — combo of internet+electric), source tab (All / Craigslist / Airbnb / Vrbo / Rent by Owner), and sort (price asc/desc, most beds, distance to work). Every filter triggers an instant re-search the moment its value changes — there is no "submit" lag. There is also a Work Address field that geocodes and computes distance to every listing.',
       'For ANY housing-related question or action — "what is on this page", "what filters are set", "what cities are in the dropdown", "show me Miami listings", "cheapest 2-bedroom under $1500", "filter to owner-direct", "switch to the Airbnb tab", "sort by price", "what is the listing in Brickell", "calculate distances from this employer address", or anything else about housing — use the housing tools (read_housing, set_housing_filters, select_housing_listing, set_housing_work_address). Do NOT use read_full_dashboard for housing questions; it does not understand this page. Always call read_housing first to see the current filter state and the resulting filtered listings, then act on or summarize the data. read_housing returns: active_filters (every dropdown\'s current value), available_options (every value each dropdown can take, including the live city + area lists), counts (total, filtered, returned), the full listings array with structured fields, the selected_listing if any, and the work_address. After calling set_housing_filters always call read_housing to confirm the new filtered result and report it. When summarizing, mention the count, the price range, the cities/areas represented, and call out the owner-direct (cheapest, no broker) listings if relevant.',
+      'J1 RECRUITING — the J1 System Dashboard\'s Recruiting page (page id "recruitingdivision") shows live data scraped from the Zoho Analytics J1 Programs Dashboard. The top of the page has: (1) a teal "Zoho Live Snapshot" block with 12 KPIs and 4 charts (Sources, Stages, Sponsors donut, Top 10 Hosts), (2) a J1-only "Positions by Sponsor" stacked bar (Alliance Abroad Group / CIEE / Green Heart) and an "Open Orders" table of hosting companies with Type / Location / Position / Need / Date Received / Date Due / Status — past-due rows are highlighted red with a PAST DUE badge, (3) an indigo "KPI Scorecard" block with an Overall Division Score, 9 metric cards (Orders vs Fulfillments, Time to Placement, Visas Issued, Visa Denial Rate, Past-Due Orders, Office Balance, Country Coverage, Sponsor Mix Evenness, Partner Sponsor Health) and Team Scores per recruiting team. Cruise-line job openings DO NOT live on this dashboard — they live on the Poseidon Master.',
+      'KPI SCORECARD — for any "score", "rating", "health", "are we on track", "fill rate", "visa rate", "team score", or "division score" question, call read_kpi_scorecard. It returns the Overall Division Score plus all 9 individual KPI scores with grade (green ≥ 75, amber 50-74, red < 50), per-office breakdown, and per-team scores. Lead with the headline overall score and grade, then mention the 1-2 worst-performing metrics so Robert knows where to focus. Do not just read the numbers — interpret them: "We are red on Orders vs Fulfillments at 4 percent fill — that is the biggest pull on the division score."',
       'If the user has popped a division out into a separate tab and you need to read what is in that tab, call list_popped_windows then read_popped_window. You can read the popped tab\'s text, iframes, and embed-mode state without the user having to switch back.',
       'INTERNET ACCESS — you have working web search. Call web_search whenever Robert asks about current events, news, prices, recent updates, partner intel, or anything outside your training data. Never say "I cannot search" or "I do not have internet access" — you do. Use depth: "advanced" for in-depth research questions, "basic" (default) for quick lookups. For specific URL contents, call fetch_url (CORS-limited; works for raw GitHub, JSON APIs, etc.).',
       'For media playback ("play that video", "pause the song", "stop the audio", "play the X video"), call list_media first to discover what is on the page, then play_media / pause_media / stop_media with id or title. The tools work on native video/audio AND YouTube/Vimeo iframes (and even on media in popped-out tabs).',

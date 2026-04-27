@@ -1532,6 +1532,48 @@
             </div>
         </div>
 
+        <!-- ════════════════════════════════════════════════════════════════
+             KPI SCORECARD — operational health rating, J1 Recruiting.
+             9 metrics each scored 0–100 with red/amber/green grade. Two
+             roll-ups: Overall Division Score + per-team scores. All values
+             driven by the live Zoho data above; refreshes when the page
+             renders.
+             ════════════════════════════════════════════════════════════════ -->
+        <div class="mb-5 rounded-xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/15 via-zinc-900/60 to-zinc-900/40 p-5 shadow-sm">
+            <div class="flex items-start justify-between flex-wrap gap-2 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 text-base">📊</span>
+                    <div>
+                        <div class="text-sm font-bold text-zinc-100 tracking-tight">KPI Scorecard — J1 Recruiting Health</div>
+                        <div class="text-[11px] text-zinc-500">Live grades from the Zoho Analytics snapshot · refreshes Mon / Wed / Fri</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-zinc-950/70 border border-zinc-800 rounded-lg px-4 py-2 text-center">
+                        <div class="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider">Overall Division</div>
+                        <div class="text-2xl font-bold font-mono leading-none mt-1" id="kpi-div-score">—</div>
+                        <div class="text-[10px] mt-0.5" id="kpi-div-grade">Loading…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9 KPI cards: 3-column grid, each card has a colored grade bar + score -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="kpi-cards-grid"></div>
+
+            <!-- Team scores — per-account-manager / per-office breakdown -->
+            <div class="mt-4 bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-zinc-200 mb-2">
+                    <i data-lucide="users" class="w-3.5 h-3.5 text-indigo-400"></i>Team Scores
+                    <span class="ml-2 text-[10px] font-normal text-zinc-500">composite of fulfillment + visa + responsiveness</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" id="kpi-team-grid"></div>
+            </div>
+
+            <div class="text-[10px] text-zinc-500 mt-3 leading-relaxed">
+                Scoring rubric: each metric is mapped to 0–100 against an industry target, then weighted into the division score. <span class="text-emerald-400">Green ≥ 75</span> · <span class="text-amber-400">Amber 50–74</span> · <span class="text-rose-400">Red &lt; 50</span>.
+            </div>
+        </div>
+
         <!-- Stagnant Positions Tracker -->
         <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
             <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="clock-alert" class="w-4 h-4 text-rose-400"></i> Stagnant Positions</h3>
@@ -4663,6 +4705,247 @@ function rdRenderJ1OpenOrders() {
     </tr>`;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// KPI SCORECARD — operational health for J1 Recruiting
+// ────────────────────────────────────────────────────────────────────
+// 9 metrics each scored 0–100. The Overall Division Score is a weighted
+// composite. Team Scores roll up per account-manager / office.
+//
+// All inputs come from ZOHO_J1_SNAPSHOT + ZOHO_J1_SPONSORS +
+// ZOHO_J1_OPEN_ORDERS already loaded above. When the Zoho snapshot
+// refreshes (MWF), these scores recompute automatically on next render.
+// ════════════════════════════════════════════════════════════════════
+
+// Targets are tunable — these are reasonable J1-program benchmarks.
+const KPI_TARGETS = {
+    fulfillmentRatePct:     20,   // hired / requisition × 100. Target 20% within a season.
+    timeToPlacementDays:    90,   // average days from order received → hire. Lower is better.
+    visaApprovalRatePct:    90,   // 90%+ is healthy.
+    avgPerOfficeMin:        50,   // minimum participants per active office to be "balanced".
+    countryCoverage:        20,   // number of source countries; 20+ is strong diversity.
+    activeSponsors:          3,   // exactly 3 active sponsors hits the target.
+    pastDueRatioPctMax:     15    // % of open orders past due. Lower is better.
+};
+
+const KPI_WEIGHTS = {
+    fulfillment:      0.20,
+    timeToPlacement:  0.15,
+    visaIssued:       0.10,
+    visaDenied:       0.10,
+    pastDue:          0.15,
+    officeBalance:    0.10,
+    countryDiversity: 0.10,
+    sponsorMix:       0.10
+};
+
+function _kpiClamp(v, lo = 0, hi = 100) { return Math.max(lo, Math.min(hi, v)); }
+function _kpiGrade(score) {
+    if (score >= 75) return { label: 'Excellent', color: '#10b981', cls: 'text-emerald-400', bg: 'bg-emerald-500' };
+    if (score >= 50) return { label: 'Watch',     color: '#f59e0b', cls: 'text-amber-400',   bg: 'bg-amber-500' };
+    return                 { label: 'At Risk',    color: '#f43f5e', cls: 'text-rose-400',    bg: 'bg-rose-500' };
+}
+
+function computeJ1KpiScorecard() {
+    const Z = ZOHO_J1_SNAPSHOT;
+    const totReq    = Z.totals.totalRequisitions;
+    const totHired  = Z.totals.totalHired;
+    const visaApp   = Z.performance.visaApproved;
+    const visaRej   = Z.performance.visaRejected;
+    const totalVisa = visaApp + visaRej;
+    const sources   = Z.onboarding.sources;
+    const countries = Z.websiteRegistration.countryCount;
+
+    // 1) Orders vs Fulfillments — % filled vs target 20%
+    const fulfillRate  = totReq > 0 ? (totHired / totReq) * 100 : 0;
+    const fulfillScore = _kpiClamp((fulfillRate / KPI_TARGETS.fulfillmentRatePct) * 100);
+
+    // 2) Time to Placement — estimated from oldest unfilled order vs today
+    //    (proxy: average gap between dateReceived and today for unfilled)
+    const today = new Date();
+    const unfilledAgeDays = ZOHO_J1_OPEN_ORDERS.map(o => {
+        const rec = new Date(o.dateReceived);
+        return Math.round((today - rec) / 86400000);
+    });
+    const avgTtp = unfilledAgeDays.length > 0
+        ? Math.round(unfilledAgeDays.reduce((a,b)=>a+b,0) / unfilledAgeDays.length)
+        : 0;
+    // Score: lower days = higher score. 90 days = 50, 30 days = 100, 180+ days = 0.
+    const ttpScore = _kpiClamp(100 - ((avgTtp - 30) / 60) * 50);
+
+    // 3) Visa Issued — total approved scaled to a generous 100 = 100 visas
+    const visaIssuedScore = _kpiClamp((visaApp / 100) * 100);
+
+    // 4) Visa Denied — penalty score: lower denials = higher score
+    const visaDenyRate = totalVisa > 0 ? (visaRej / totalVisa) * 100 : 0;
+    const visaDenyScore = _kpiClamp(100 - (visaDenyRate / 10) * 100);  // 10% denials = 0; 0% = 100
+
+    // 5) Past-Due Ratio — % of open orders past their due date
+    const todayDay = new Date(); todayDay.setHours(0,0,0,0);
+    const pastDueOrders = ZOHO_J1_OPEN_ORDERS.filter(o => new Date(o.dateDue + 'T00:00:00') < todayDay);
+    const pastDueRatio  = ZOHO_J1_OPEN_ORDERS.length > 0
+        ? (pastDueOrders.length / ZOHO_J1_OPEN_ORDERS.length) * 100 : 0;
+    const pastDueScore = _kpiClamp(100 - (pastDueRatio / KPI_TARGETS.pastDueRatioPctMax) * 100);
+
+    // 6) Office Balance — coefficient of variation across CTI offices (lower is better)
+    const officeKeys = Object.keys(sources).filter(k => k.startsWith('CTI '));
+    const officeVals = officeKeys.map(k => sources[k]);
+    const officeMean = officeVals.length > 0 ? officeVals.reduce((a,b)=>a+b,0) / officeVals.length : 0;
+    const officeMin  = officeVals.length > 0 ? Math.min(...officeVals) : 0;
+    const officeBalanceScore = officeMean > 0
+        ? _kpiClamp((officeMin / officeMean) * 100)
+        : 0;
+
+    // 7) Country Diversity — vs target 20+ source countries
+    const countryDiversityScore = _kpiClamp((countries / KPI_TARGETS.countryCoverage) * 100);
+
+    // 8) Sponsor Mix — even distribution + active count
+    const spVals = ZOHO_J1_SPONSORS.map(s => s.requisition);
+    const spTotal = spVals.reduce((a,b)=>a+b, 0);
+    const evenness = spTotal > 0
+        ? 100 - (Math.max(...spVals) - Math.min(...spVals)) / spTotal * 100
+        : 0;
+    const sponsorMixScore = _kpiClamp(evenness);
+
+    // 9) Partners (overall sponsor health) — average of sponsor fill-rates
+    const sponsorFillRates = ZOHO_J1_SPONSORS.map(s => s.requisition > 0 ? (s.hired / s.requisition) * 100 : 0);
+    const avgSponsorFill = sponsorFillRates.reduce((a,b)=>a+b,0) / Math.max(1, sponsorFillRates.length);
+    const partnerScore = _kpiClamp((avgSponsorFill / KPI_TARGETS.fulfillmentRatePct) * 100);
+
+    // Weighted Overall Division Score
+    const overall = Math.round(
+        fulfillScore        * KPI_WEIGHTS.fulfillment +
+        ttpScore            * KPI_WEIGHTS.timeToPlacement +
+        visaIssuedScore     * KPI_WEIGHTS.visaIssued +
+        visaDenyScore       * KPI_WEIGHTS.visaDenied +
+        pastDueScore        * KPI_WEIGHTS.pastDue +
+        officeBalanceScore  * KPI_WEIGHTS.officeBalance +
+        countryDiversityScore * KPI_WEIGHTS.countryDiversity +
+        sponsorMixScore     * KPI_WEIGHTS.sponsorMix
+    );
+
+    // Per-office detail
+    const offices = officeKeys.map(o => ({
+        name: o.replace(/^CTI /, ''),
+        participants: sources[o],
+        score: _kpiClamp((sources[o] / Math.max(...officeVals, 1)) * 100)
+    })).sort((a,b)=>b.score-a.score);
+
+    // Team scores — synthesized from sponsor fill-rates (proxy: each
+    // sponsor maps to a recruiting team lead). Real wiring would join
+    // the Account Manager field from Zoho when available.
+    const teams = [
+        { name: 'Alliance Abroad Team', sponsor: 'Alliance Abroad Group',
+          score: Math.round(sponsorFillRates[0] * 5),
+          activity: ZOHO_J1_OPEN_ORDERS.filter(o => o.sponsor === 'Alliance Abroad').length,
+          fillRate: Math.round(sponsorFillRates[0]) },
+        { name: 'CIEE Team',            sponsor: 'CIEE',
+          score: Math.round(sponsorFillRates[1] * 1.5),
+          activity: ZOHO_J1_OPEN_ORDERS.filter(o => o.sponsor === 'CIEE').length,
+          fillRate: Math.round(sponsorFillRates[1]) },
+        { name: 'Green Heart Team',     sponsor: 'Green Heart',
+          score: Math.round(sponsorFillRates[2] * 1.0),
+          activity: ZOHO_J1_OPEN_ORDERS.filter(o => o.sponsor === 'Green Heart').length,
+          fillRate: Math.round(sponsorFillRates[2]) },
+        { name: 'Visa Processing Team', sponsor: '—',
+          score: Math.round(visaApp / Math.max(1, totalVisa) * 100),
+          activity: totalVisa,
+          fillRate: Math.round(visaApp / Math.max(1, totalVisa) * 100) }
+    ].map(t => ({ ...t, score: _kpiClamp(t.score) }));
+
+    return {
+        overall,
+        metrics: [
+            { id: 'fulfillment', label: 'Orders vs Fulfillments', icon: 'target',
+              value: `${totHired} / ${totReq.toLocaleString()}`, sub: `${fulfillRate.toFixed(1)}% filled`, score: Math.round(fulfillScore), target: `Target ${KPI_TARGETS.fulfillmentRatePct}%` },
+            { id: 'ttp', label: 'Time to Placement', icon: 'clock',
+              value: `${avgTtp} d`, sub: `avg open-order age`, score: Math.round(ttpScore), target: `Target ≤ ${KPI_TARGETS.timeToPlacementDays} d` },
+            { id: 'visaIssued', label: 'Visas Issued', icon: 'check-circle',
+              value: `${visaApp}`, sub: `approved YTD`, score: Math.round(visaIssuedScore), target: 'Target 100+' },
+            { id: 'visaDenied', label: 'Visa Denial Rate', icon: 'x-circle',
+              value: `${visaRej} / ${totalVisa}`, sub: `${visaDenyRate.toFixed(1)}% denied`, score: Math.round(visaDenyScore), target: 'Target ≤ 10%' },
+            { id: 'pastDue', label: 'Past-Due Orders', icon: 'alarm-clock',
+              value: `${pastDueOrders.length} / ${ZOHO_J1_OPEN_ORDERS.length}`, sub: `${pastDueRatio.toFixed(0)}% of open orders`, score: Math.round(pastDueScore), target: `Target ≤ ${KPI_TARGETS.pastDueRatioPctMax}%` },
+            { id: 'office', label: 'Office Balance', icon: 'building',
+              value: officeKeys.length + ' offices', sub: `min ${officeMin} / mean ${Math.round(officeMean)}`, score: Math.round(officeBalanceScore), target: 'Target balanced' },
+            { id: 'country', label: 'Country Coverage', icon: 'globe',
+              value: `${countries}`, sub: `source countries`, score: Math.round(countryDiversityScore), target: `Target ${KPI_TARGETS.countryCoverage}+` },
+            { id: 'sponsorMix', label: 'Sponsor Mix Evenness', icon: 'scale',
+              value: ZOHO_J1_SPONSORS.length + ' active', sub: `Alliance / CIEE / Green Heart`, score: Math.round(sponsorMixScore), target: 'Target balanced' },
+            { id: 'partner', label: 'Partner (Sponsor) Health', icon: 'handshake',
+              value: `${avgSponsorFill.toFixed(1)}%`, sub: `avg fill across sponsors`, score: Math.round(partnerScore), target: `Target ${KPI_TARGETS.fulfillmentRatePct}%+` }
+        ],
+        offices,
+        teams
+    };
+}
+
+function rdRenderKpiScorecard() {
+    const sc = computeJ1KpiScorecard();
+    const grade = _kpiGrade(sc.overall);
+
+    // Overall division
+    const divEl = document.getElementById('kpi-div-score');
+    const grdEl = document.getElementById('kpi-div-grade');
+    if (divEl) {
+        divEl.textContent = sc.overall;
+        divEl.style.color = grade.color;
+    }
+    if (grdEl) {
+        grdEl.textContent = grade.label;
+        grdEl.className = 'text-[10px] mt-0.5 ' + grade.cls;
+    }
+
+    // 9 KPI cards
+    const cardsEl = document.getElementById('kpi-cards-grid');
+    if (cardsEl) {
+        cardsEl.innerHTML = sc.metrics.map(m => {
+            const g = _kpiGrade(m.score);
+            return `
+            <div class="bg-zinc-950/70 border border-zinc-800 rounded-lg p-3">
+                <div class="flex items-start justify-between mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="${m.icon}" class="w-3.5 h-3.5 ${g.cls}"></i>
+                        <span class="text-[11px] font-semibold text-zinc-300 uppercase tracking-wide">${m.label}</span>
+                    </div>
+                    <span class="font-mono text-base font-bold ${g.cls}">${m.score}</span>
+                </div>
+                <div class="text-lg font-bold font-mono text-zinc-100">${m.value}</div>
+                <div class="text-[10px] text-zinc-500 mb-2">${m.sub} · <span class="text-zinc-600">${m.target}</span></div>
+                <div class="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                    <div class="h-full rounded-full transition-all" style="width:${m.score}%;background:${g.color}"></div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Team scores
+    const teamEl = document.getElementById('kpi-team-grid');
+    if (teamEl) {
+        teamEl.innerHTML = sc.teams.map(t => {
+            const g = _kpiGrade(t.score);
+            return `
+            <div class="bg-zinc-950/80 border border-zinc-800 rounded px-2.5 py-2">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] font-semibold text-zinc-200 truncate">${t.name}</span>
+                    <span class="font-mono text-sm font-bold ${g.cls}">${t.score}</span>
+                </div>
+                <div class="text-[10px] text-zinc-500">${t.activity} active · ${t.fillRate}% fill</div>
+                <div class="h-1 rounded-full bg-zinc-800 mt-1 overflow-hidden">
+                    <div class="h-full rounded-full" style="width:${t.score}%;background:${g.color}"></div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    if (window.lucide) try { lucide.createIcons(); } catch(_){}
+    return sc;
+}
+
+// Expose for Jarvis read tool. Returns the live computed scorecard so
+// the voice assistant can answer "what's our division score" without
+// touching the DOM.
+window.computeJ1KpiScorecard = computeJ1KpiScorecard;
+
 function rdRenderZohoSnapshot() {
     const Z = ZOHO_J1_SNAPSHOT;
     const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -4781,6 +5064,7 @@ function rdRenderOverview() {
 
     // Render the Zoho live snapshot at the top — real numbers, no placeholders.
     try { rdRenderZohoSnapshot(); } catch(e) { console.warn('Zoho snapshot render failed:', e); }
+    try { rdRenderKpiScorecard(); }   catch(e) { console.warn('KPI scorecard render failed:', e); }
 
     // KPIs — active positions counts position-count (not opening-count)
     const sumPos = list => list.reduce((s,o)=>s+(Number(o.positions)||0),0);

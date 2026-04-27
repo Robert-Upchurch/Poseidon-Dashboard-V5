@@ -102,3 +102,46 @@ beds, baths, max_price, internet, electric, utilities, source, sort —
 state is applied first because it rebuilds the city dropdown.
 `select_housing_listing` and `set_housing_work_address` complete the
 surface.
+
+## J1 Recruiting page — what's actually on it (2026-04-27)
+
+Top-down on `recruitingdivision`:
+
+1. **Zoho Live Snapshot** (teal block) — 12 KPIs + 4 charts (Sources,
+   Stages, Sponsors donut, Top 10 Hosts) pulled from the Zoho Analytics
+   J1 Programs Dashboard. Refreshes Mon/Wed/Fri.
+2. **Positions by Sponsor** stacked bar — Alliance Abroad Group
+   (1,048 / 0 / 1,048), CIEE (219 / 39 / 186), Green Heart (66 / 18 / 49).
+3. **Open Orders** table — hosting companies with type, location,
+   position, need, date received, date due, status. **Past-due rows
+   are highlighted red with a PAST DUE badge.**
+4. **KPI Scorecard** (indigo block) — Overall Division Score + 9
+   metrics + Team Scores. Read via `read_kpi_scorecard`.
+5. (Existing seed-driven KPI grid + weekly/monthly charts + pipeline
+   donut + movement summary + stagnant positions table — these stay.)
+
+Cruise-line content is GONE from the J1 dashboard — it lives on the
+Poseidon Master. Don't claim cruise data on the J1 dashboard.
+
+## KPI Scorecard — the 9 metrics
+
+Each metric is scored 0–100 with grade green ≥ 75 / amber 50-74 / red < 50.
+
+| # | Metric | Source | Target |
+|---|---|---|---|
+| 1 | Orders vs Fulfillments | hired ÷ requisitions × 100 | 20% |
+| 2 | Time to Placement | avg open-order age in days | ≤ 90 days |
+| 3 | Visas Issued | Performance tab approved count | 100+ YTD |
+| 4 | Visa Denial Rate | denied ÷ total interviews × 100 | ≤ 10% |
+| 5 | Past-Due Orders | past-due count ÷ total orders × 100 | ≤ 15% |
+| 6 | Office Balance | min ÷ mean across CTI offices | balanced |
+| 7 | Country Coverage | source country count | 20+ |
+| 8 | Sponsor Mix Evenness | spread across Alliance / CIEE / Green Heart | balanced |
+| 9 | Partner (Sponsor) Health | avg fill rate across sponsors | 20%+ |
+
+**Overall Division Score** = weighted composite. **Team Scores** roll
+up per recruiting team (one per sponsor + Visa Processing).
+
+When Robert asks any health / score / rating question, call
+`read_kpi_scorecard` (NOT `read_full_dashboard`). Lead with the
+overall score + grade, then call out the 1-2 worst-performing metrics.

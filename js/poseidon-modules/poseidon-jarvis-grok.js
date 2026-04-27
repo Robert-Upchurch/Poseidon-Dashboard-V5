@@ -691,10 +691,11 @@
     {
       type: 'function',
       name: 'set_housing_filters',
-      description: 'Set one or more filters on the J1 Housing Finder and apply them. Pass only the filters the user is changing — others stay as they are. After applying, call read_housing to confirm the new state and report it. Use this when the user says things like "show me Miami listings", "filter to 2-bedroom", "only owner direct", "under $1500", "include utilities", "sort by price".',
+      description: 'Set one or more filters on the J1 Housing Finder and apply them. Pass only the filters the user is changing — others stay as they are. After applying, call read_housing to confirm the new state and report it. Use this when the user says things like "show me Florida listings", "narrow to Miami", "filter to 2-bedroom", "only owner direct", "under $1500", "all utilities included", "sort by price".',
       parameters: {
         type: 'object',
         properties: {
+          state:     { type: 'string',  description: 'Two-letter US state abbreviation (FL, TX, NY, CA, DC, etc.). Setting state scopes the City dropdown to only cities in that state and clears any selected City/Area. Pass empty string "" to clear.' },
           city:      { type: 'string',  description: 'Full city name as shown in the dropdown, e.g. "Miami, FL", "Orlando, FL", "Dallas, TX". Pass empty string "" to clear.' },
           area:      { type: 'string',  description: 'Neighborhood within the chosen city, e.g. "Brickell", "Wynwood". Empty string clears.' },
           beds:      { type: 'string',  enum: ['', '0', '1', '2', '3', '4'], description: 'Bedroom count. "0" = Studio, "4" = 4+. Empty = Any.' },
@@ -702,6 +703,7 @@
           max_price: { type: 'string',  enum: ['', '750', '1000', '1250', '1500', '2000', '2500', '3000'], description: 'Max monthly rent in USD. Empty = Any.' },
           internet:  { type: 'string',  enum: ['', 'included', 'not-included'], description: 'Internet inclusion. Empty = Any.' },
           electric:  { type: 'string',  enum: ['', 'included', 'not-included'], description: 'Electricity inclusion. Empty = Any.' },
+          utilities: { type: 'string',  enum: ['', 'all', 'any', 'none'], description: 'Utilities combo filter. "all" = Internet AND Electric included; "any" = at least one included; "none" = neither included. Empty = Any (no constraint).' },
           source:    { type: 'string',  enum: ['all', 'craigslist', 'airbnb', 'vrbo', 'owner'], description: 'Source tab to activate. "owner" = Rent by Owner.' },
           sort:      { type: 'string',  enum: ['price-asc', 'price-desc', 'beds-desc', 'distance'], description: 'Sort order. "distance" requires a work address to be set.' }
         }
@@ -1216,6 +1218,7 @@
         const doc = w.document;
         const get = (id) => doc.getElementById(id);
         const filters = {
+          state:     get('filter-state')?.value || '',
           city:      get('filter-city')?.value || '',
           area:      get('filter-area')?.value || '',
           beds:      get('filter-beds')?.value || '',
@@ -1223,6 +1226,7 @@
           max_price: get('filter-price')?.value || '',
           internet:  get('filter-internet')?.value || '',
           electric:  get('filter-electric')?.value || '',
+          utilities: get('filter-utilities')?.value || '',
           source:    w.activeSource || 'all',
           sort:      get('sort-select')?.value || 'price-asc',
           work_address: get('work-address')?.value || ''
@@ -1241,6 +1245,7 @@
         });
         const selected = w.selectedListingId ? all.find(l => l.id === w.selectedListingId) : null;
         // Available filter options pulled live from the DOM
+        const stateOptions = Array.from(get('filter-state')?.options || []).map(o => o.value).filter(v => v);
         const cityOptions = Array.from(get('filter-city')?.options || []).map(o => o.value).filter(v => v);
         const areaOptions = Array.from(get('filter-area')?.options || []).map(o => o.value).filter(v => v);
         return {
@@ -1254,11 +1259,15 @@
           },
           active_filters: filters,
           available_options: {
-            cities: cityOptions,
+            states: stateOptions,
+            cities_for_current_state: cityOptions,
             areas_for_current_city: areaOptions,
             beds:  ['', '0', '1', '2', '3', '4'],
             baths: ['', '1', '2', '3'],
             max_price: ['', '750', '1000', '1250', '1500', '2000', '2500', '3000'],
+            internet:  ['', 'included', 'not-included'],
+            electric:  ['', 'included', 'not-included'],
+            utilities: ['', 'all', 'any', 'none'],
             sources: ['all', 'craigslist', 'airbnb', 'vrbo', 'owner'],
             sorts:   ['price-asc', 'price-desc', 'beds-desc', 'distance']
           },
@@ -1279,6 +1288,8 @@
         const doc = w.document;
         const setVal = (id, v) => { const el = doc.getElementById(id); if (el && v !== undefined) { el.value = v; return true; } return false; };
         const applied = [];
+        // State must be applied BEFORE city, since state-change rebuilds the City dropdown.
+        if (args.state !== undefined)     { setVal('filter-state', args.state); applied.push('state'); if (typeof w.onStateChange === 'function') w.onStateChange(); }
         if (args.city !== undefined)      { setVal('filter-city', args.city); applied.push('city'); if (typeof w.onCityChange === 'function') w.onCityChange(); }
         if (args.area !== undefined)      { setVal('filter-area', args.area);          applied.push('area'); }
         if (args.beds !== undefined)      { setVal('filter-beds', args.beds);          applied.push('beds'); }
@@ -1286,6 +1297,7 @@
         if (args.max_price !== undefined) { setVal('filter-price', args.max_price);    applied.push('max_price'); }
         if (args.internet !== undefined)  { setVal('filter-internet', args.internet);  applied.push('internet'); }
         if (args.electric !== undefined)  { setVal('filter-electric', args.electric);  applied.push('electric'); }
+        if (args.utilities !== undefined) { setVal('filter-utilities', args.utilities); applied.push('utilities'); }
         if (args.sort !== undefined)      { setVal('sort-select', args.sort);          applied.push('sort'); }
         if (args.source !== undefined && typeof w.filterSource === 'function') {
           // The page's filterSource expects (source, btnEl). We pass the matching tab button.
@@ -2216,7 +2228,7 @@
       'When the user asks anything about cruise line contracts, fees, terms, obligations, legal, insurance, positions, compliance, or pros/cons — first call read_contracts (or read_contracts_lines for a quick line list), then summarize the results. The Contracts dashboard is fully readable end-to-end via these tools.',
       'When the user asks to "open in new tab", "pop out", or "expand" a division, call popout_division. For analytics or chart questions on a division, call list_analytics_reports first to discover available reports, then read_analytics to pull the actual numbers behind the chart.',
       'When the user asks for an overall scan of the dashboard ("what is on the dashboard", "scan everything", "summarize the whole thing", "give me a full status", or any question that could span multiple divisions), call read_full_dashboard — it returns every page\'s title + text + iframe content in one call, even for hidden pages.',
-      'J1 HOUSING FINDER — this is a full sub-application reachable two ways: (a) as a dedicated top-level page on the J1 System Dashboard via the "J1 Housing Finder" sidebar entry (page id j1housingfinder), and (b) as a nested tab inside the J1 Housing page (page id j1housing) on either dashboard. Both load the same j1-housing-finder-index.html iframe. It aggregates direct-owner rentals (6/12 month leases) for J-1 visa workers across major US cities, sourced from Craigslist, Airbnb, Vrbo, and Rent-by-Owner listings. Each listing has: city, neighborhood/area, beds, baths, monthly price, square footage, address, source tab, tags, internet/electric inclusion, owner notes, and lat/lng on a map. Every dropdown on the page is fully readable AND settable by you: city (~100 cities), area (depends on city), bedrooms (Studio/1/2/3/4+), bathrooms (1/2/3+), max price (up to $3000/mo), internet included, electricity included, source tab (All / Craigslist / Airbnb / Vrbo / Rent by Owner), and sort (price asc/desc, most beds, distance to work). There is also a Work Address field that geocodes and computes distance to every listing.',
+      'J1 HOUSING FINDER — this is a full sub-application reachable two ways: (a) as a dedicated top-level page on the J1 System Dashboard via the "J1 Housing Finder" sidebar entry (page id j1housingfinder), and (b) as a nested tab inside the J1 Housing page (page id j1housing) on either dashboard. Both load the same j1-housing-finder-index.html iframe. It aggregates direct-owner rentals (6/12 month leases) for J-1 visa workers across major US cities, sourced from Craigslist, Airbnb, Vrbo, and Rent-by-Owner listings. Each listing has: city, neighborhood/area, beds, baths, monthly price, square footage, address, source tab, tags, internet/electric inclusion, owner notes, and lat/lng on a map. Every dropdown on the page is fully readable AND settable by you: state (50 states + DC, two-letter abbreviation), city (~100 cities, scoped to selected state), area (depends on city), bedrooms (Studio/1/2/3/4+), bathrooms (1/2/3+), max price (up to $3000/mo), internet included, electricity included, utilities (all/any/none — combo of internet+electric), source tab (All / Craigslist / Airbnb / Vrbo / Rent by Owner), and sort (price asc/desc, most beds, distance to work). Every filter triggers an instant re-search the moment its value changes — there is no "submit" lag. There is also a Work Address field that geocodes and computes distance to every listing.',
       'For ANY housing-related question or action — "what is on this page", "what filters are set", "what cities are in the dropdown", "show me Miami listings", "cheapest 2-bedroom under $1500", "filter to owner-direct", "switch to the Airbnb tab", "sort by price", "what is the listing in Brickell", "calculate distances from this employer address", or anything else about housing — use the housing tools (read_housing, set_housing_filters, select_housing_listing, set_housing_work_address). Do NOT use read_full_dashboard for housing questions; it does not understand this page. Always call read_housing first to see the current filter state and the resulting filtered listings, then act on or summarize the data. read_housing returns: active_filters (every dropdown\'s current value), available_options (every value each dropdown can take, including the live city + area lists), counts (total, filtered, returned), the full listings array with structured fields, the selected_listing if any, and the work_address. After calling set_housing_filters always call read_housing to confirm the new filtered result and report it. When summarizing, mention the count, the price range, the cities/areas represented, and call out the owner-direct (cheapest, no broker) listings if relevant.',
       'If the user has popped a division out into a separate tab and you need to read what is in that tab, call list_popped_windows then read_popped_window. You can read the popped tab\'s text, iframes, and embed-mode state without the user having to switch back.',
       'INTERNET ACCESS — you have working web search. Call web_search whenever Robert asks about current events, news, prices, recent updates, partner intel, or anything outside your training data. Never say "I cannot search" or "I do not have internet access" — you do. Use depth: "advanced" for in-depth research questions, "basic" (default) for quick lookups. For specific URL contents, call fetch_url (CORS-limited; works for raw GitHub, JSON APIs, etc.).',

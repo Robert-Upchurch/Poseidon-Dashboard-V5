@@ -717,6 +717,12 @@
     <!-- FILTERS BAR -->
     <div class="filters-bar">
         <div class="filter-group">
+            <label>State</label>
+            <select id="filter-state" onchange="onStateChange()">
+                <option value="">All States</option>
+            </select>
+        </div>
+        <div class="filter-group">
             <label>City</label>
             <select id="filter-city" onchange="onCityChange()">
                 <option value="">All Cities</option>
@@ -724,13 +730,13 @@
         </div>
         <div class="filter-group">
             <label>Area / Neighborhood</label>
-            <select id="filter-area">
+            <select id="filter-area" onchange="applyFilters()">
                 <option value="">All Areas</option>
             </select>
         </div>
         <div class="filter-group">
             <label>Bedrooms</label>
-            <select id="filter-beds">
+            <select id="filter-beds" onchange="applyFilters()">
                 <option value="">Any</option>
                 <option value="0">Studio</option>
                 <option value="1">1 BR</option>
@@ -741,7 +747,7 @@
         </div>
         <div class="filter-group">
             <label>Bathrooms</label>
-            <select id="filter-baths">
+            <select id="filter-baths" onchange="applyFilters()">
                 <option value="">Any</option>
                 <option value="1">1 BA</option>
                 <option value="2">2 BA</option>
@@ -750,7 +756,7 @@
         </div>
         <div class="filter-group">
             <label>Max Price</label>
-            <select id="filter-price">
+            <select id="filter-price" onchange="applyFilters()">
                 <option value="">Any</option>
                 <option value="750">$750/mo</option>
                 <option value="1000">$1,000/mo</option>
@@ -763,7 +769,7 @@
         </div>
         <div class="filter-group">
             <label>Internet</label>
-            <select id="filter-internet">
+            <select id="filter-internet" onchange="applyFilters()">
                 <option value="">Any</option>
                 <option value="included">Included</option>
                 <option value="not-included">Not Included</option>
@@ -771,10 +777,19 @@
         </div>
         <div class="filter-group">
             <label>Electricity</label>
-            <select id="filter-electric">
+            <select id="filter-electric" onchange="applyFilters()">
                 <option value="">Any</option>
                 <option value="included">Included</option>
                 <option value="not-included">Not Included</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Utilities</label>
+            <select id="filter-utilities" onchange="applyFilters()">
+                <option value="">Any</option>
+                <option value="all">All Included (Internet + Electric)</option>
+                <option value="any">Any Included</option>
+                <option value="none">None Included</option>
             </select>
         </div>
         <button class="btn-search" onclick="applyFilters()">&#x1F50D; Search</button>
@@ -1006,6 +1021,7 @@ let selectedListingId = null;
 
 // ===== INIT =====
 function init() {
+    populateStateDropdown();
     populateCityDropdown();
     try {
         initMap();
@@ -1057,13 +1073,64 @@ function toggleTheme() {
 
 // ===== CITY DROPDOWN =====
 function populateCityDropdown() {
+    populateCityDropdown();  // initial population — all cities, no state filter
+}
+
+// ===== STATE DROPDOWN =====
+// 50 states + DC. Value = abbreviation (matches "Miami, FL" → "FL"); label = full name.
+const US_STATES = [
+    {abbr:'AL',name:'Alabama'},{abbr:'AK',name:'Alaska'},{abbr:'AZ',name:'Arizona'},
+    {abbr:'AR',name:'Arkansas'},{abbr:'CA',name:'California'},{abbr:'CO',name:'Colorado'},
+    {abbr:'CT',name:'Connecticut'},{abbr:'DE',name:'Delaware'},{abbr:'DC',name:'District of Columbia'},
+    {abbr:'FL',name:'Florida'},{abbr:'GA',name:'Georgia'},{abbr:'HI',name:'Hawaii'},
+    {abbr:'ID',name:'Idaho'},{abbr:'IL',name:'Illinois'},{abbr:'IN',name:'Indiana'},
+    {abbr:'IA',name:'Iowa'},{abbr:'KS',name:'Kansas'},{abbr:'KY',name:'Kentucky'},
+    {abbr:'LA',name:'Louisiana'},{abbr:'ME',name:'Maine'},{abbr:'MD',name:'Maryland'},
+    {abbr:'MA',name:'Massachusetts'},{abbr:'MI',name:'Michigan'},{abbr:'MN',name:'Minnesota'},
+    {abbr:'MS',name:'Mississippi'},{abbr:'MO',name:'Missouri'},{abbr:'MT',name:'Montana'},
+    {abbr:'NE',name:'Nebraska'},{abbr:'NV',name:'Nevada'},{abbr:'NH',name:'New Hampshire'},
+    {abbr:'NJ',name:'New Jersey'},{abbr:'NM',name:'New Mexico'},{abbr:'NY',name:'New York'},
+    {abbr:'NC',name:'North Carolina'},{abbr:'ND',name:'North Dakota'},{abbr:'OH',name:'Ohio'},
+    {abbr:'OK',name:'Oklahoma'},{abbr:'OR',name:'Oregon'},{abbr:'PA',name:'Pennsylvania'},
+    {abbr:'RI',name:'Rhode Island'},{abbr:'SC',name:'South Carolina'},{abbr:'SD',name:'South Dakota'},
+    {abbr:'TN',name:'Tennessee'},{abbr:'TX',name:'Texas'},{abbr:'UT',name:'Utah'},
+    {abbr:'VT',name:'Vermont'},{abbr:'VA',name:'Virginia'},{abbr:'WA',name:'Washington'},
+    {abbr:'WV',name:'West Virginia'},{abbr:'WI',name:'Wisconsin'},{abbr:'WY',name:'Wyoming'}
+];
+
+function populateStateDropdown() {
+    const sel = document.getElementById('filter-state');
+    if (!sel) return;
+    US_STATES.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.abbr;
+        opt.textContent = `${s.name} (${s.abbr})`;
+        sel.appendChild(opt);
+    });
+}
+
+// Populate (or re-populate) the City dropdown, optionally scoped to a state.
+function populateCityDropdown(stateAbbr) {
     const sel = document.getElementById('filter-city');
-    TOP_CITIES.forEach(c => {
+    if (!sel) return;
+    sel.innerHTML = '<option value="">All Cities</option>';
+    const cities = stateAbbr
+        ? TOP_CITIES.filter(c => c.name.endsWith(', ' + stateAbbr))
+        : TOP_CITIES;
+    cities.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.name;
         opt.textContent = c.name;
         sel.appendChild(opt);
     });
+}
+
+function onStateChange() {
+    const stateAbbr = document.getElementById('filter-state').value;
+    populateCityDropdown(stateAbbr);
+    // Clear City + Area selections since City list just changed.
+    document.getElementById('filter-area').innerHTML = '<option value="">All Areas</option>';
+    applyFilters();
 }
 
 function onCityChange() {
@@ -1154,6 +1221,7 @@ function updateMapMarkers() {
 
 // ===== FILTERS =====
 function applyFilters() {
+    const state = document.getElementById('filter-state')?.value || '';
     const city = document.getElementById('filter-city').value;
     const area = document.getElementById('filter-area').value;
     const beds = document.getElementById('filter-beds').value;
@@ -1161,10 +1229,16 @@ function applyFilters() {
     const maxPrice = document.getElementById('filter-price').value;
     const internet = document.getElementById('filter-internet').value;
     const electric = document.getElementById('filter-electric').value;
+    const utilities = document.getElementById('filter-utilities')?.value || '';
     const sort = document.getElementById('sort-select').value;
 
     filteredListings = ALL_LISTINGS.filter(l => {
         if (activeSource !== 'all' && l.source !== activeSource) return false;
+        // State match: listing.city is "Miami, FL"; state filter is "FL" (abbr).
+        if (state) {
+            const listingState = (l.city.split(',')[1] || '').trim().toUpperCase();
+            if (listingState !== state) return false;
+        }
         if (city && l.city !== city) return false;
         if (area && l.area !== area) return false;
         if (beds !== '') {
@@ -1182,6 +1256,15 @@ function applyFilters() {
         if (internet === 'not-included' && l.utilities.internet) return false;
         if (electric === 'included' && !l.utilities.electric) return false;
         if (electric === 'not-included' && l.utilities.electric) return false;
+        // Utilities combo filter — applied on top of (and consistent with) the
+        // individual internet/electric filters above.
+        if (utilities) {
+            const i = !!l.utilities.internet;
+            const e = !!l.utilities.electric;
+            if (utilities === 'all'  && !(i && e)) return false;
+            if (utilities === 'any'  && !(i || e)) return false;
+            if (utilities === 'none' &&  (i || e)) return false;
+        }
         return true;
     });
 

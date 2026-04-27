@@ -115,9 +115,12 @@ surface.
 - **Partner Onboarding** (`partneronboarding`) — pipeline of host companies moving through 5 stages (New Lead → MOU/NDA → Documentation → System Setup → Active) with a stalled-60-day flag and standard onboarding checklist
 - **J1 Contract Analysis** (`j1contractanalysis`) — side-by-side comparison of Alliance Abroad / CIEE / Green Heart contracts (fees, terms, insurance, response time) plus fill-rate + pipeline-volume charts
 - J1 Housing Finder (`j1housingfinder`)
-- Sponsor Contracts (`contracts`)
 - Partners (`partners`)
 - Recruitment Videos (`videos`)
+- (Sponsor Contracts entry was removed from the J1 dashboard sidebar
+  on 2026-04-27. Cruise Line Contract Negotiation Dashboard +
+  J1 Contract Analysis launcher both live on the Poseidon Master
+  → Sponsor Contracts page only.)
 
 **Other group (utility pages, was "Workspace"):**
 - Home (`dashboard`), Tasks, Calendar, Tracker, Settings

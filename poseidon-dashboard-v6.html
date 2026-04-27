@@ -786,6 +786,28 @@
         </div>
         <div id="contracts-frame-wrap"></div>
     </div>
+
+    <!-- ═════ J1 Contract Analysis (relocated from J1 Division on 2026-04-27) ═════ -->
+    <div class="mt-5 bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30">
+                <i data-lucide="file-search" class="w-4 h-4 text-amber-400"></i>
+            </span>
+            <div>
+                <h3 class="text-sm font-bold text-zinc-100 tracking-tight">J1 Contract Analysis</h3>
+                <div class="text-[11px] text-zinc-500">Sponsor agreement comparison · CTI Command Center workspace</div>
+            </div>
+        </div>
+        <div id="con-launcher" class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-6 text-center">
+            <p class="text-sm text-zinc-400 max-w-xl mx-auto mb-4">CTI Command Center — competitive intelligence and J-1 sponsor contract analysis. Hosted at <code class="text-zinc-300">robert-upchurch.github.io/cti-command-center</code>.</p>
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+                <button onclick="rdLaunchEmbed('con','https://robert-upchurch.github.io/cti-command-center/','J1 Contract Analysis')" class="px-4 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1.5"><i data-lucide="play" class="w-4 h-4"></i> Load in Dashboard</button>
+                <a href="https://robert-upchurch.github.io/cti-command-center/" target="_blank" rel="noopener" class="px-4 py-2 text-sm font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 flex items-center gap-1.5"><i data-lucide="external-link" class="w-4 h-4"></i> Open in New Tab</a>
+            </div>
+            <p class="text-[10px] text-zinc-600 mt-4">If the dashboard embed is empty, the external site may be offline or blocking iframe embedding. Use "Open in New Tab" as a fallback.</p>
+        </div>
+        <div id="con-frame-wrap" class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 hidden"></div>
+    </div>
 </div>
 
 <!-- ═══════════ PAGE: J1 HOUSING (promoted to top-level) ═══════════ -->
@@ -1005,7 +1027,7 @@
         <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-accommodations">J1 Accommodations</button>
         <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-housing-finder">J1 Housing Finder</button>
         <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-onboarding">Partner Onboarding</button>
-        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-contracts">J1 Contract Analysis</button>
+        <!-- J1 Contract Analysis tab moved to Sponsor Contracts → Contracts Dashboard (2026-04-27) -->
     </div>
     <!-- J1 Housing Finder — embeds the local file in this repo (j1-housing-finder-index.html) -->
     <div class="j1-content" id="j1-housing-finder" style="display:none">
@@ -1036,22 +1058,7 @@
         <div id="onb-frame-wrap" class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 hidden"></div>
     </div>
 
-    <!-- J1 Contract Analysis — launcher -->
-    <div class="j1-content" id="j1-contracts" style="display:none">
-        <div id="con-launcher" class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-8 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="file-search" class="w-7 h-7 text-amber-400"></i>
-            </div>
-            <h3 class="text-lg font-bold text-zinc-100 mb-1">J1 Contract Analysis</h3>
-            <p class="text-sm text-zinc-400 max-w-xl mx-auto mb-5">CTI Command Center — competitive intelligence and J-1 contract analysis workspace. Hosted at <code class="text-zinc-300">robert-upchurch.github.io/cti-command-center</code>.</p>
-            <div class="flex items-center justify-center gap-2 flex-wrap">
-                <button onclick="rdLaunchEmbed('con','https://robert-upchurch.github.io/cti-command-center/','J1 Contract Analysis')" class="px-4 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1.5"><i data-lucide="play" class="w-4 h-4"></i> Load in Dashboard</button>
-                <a href="https://robert-upchurch.github.io/cti-command-center/" target="_blank" rel="noopener" class="px-4 py-2 text-sm font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 flex items-center gap-1.5"><i data-lucide="external-link" class="w-4 h-4"></i> Open in New Tab</a>
-            </div>
-            <p class="text-[10px] text-zinc-600 mt-4">If the dashboard embed is empty, the external site may be offline or blocking iframe embedding. Use "Open in New Tab" as a fallback.</p>
-        </div>
-        <div id="con-frame-wrap" class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 hidden"></div>
-    </div>
+    <!-- (J1 Contract Analysis launcher relocated to the Sponsor Contracts page on 2026-04-27.) -->
 
     <!-- ═══════════ J1 HOUSING (intake + pricing) ═══════════ -->
     <div class="j1-content active" id="j1-housing">

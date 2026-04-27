@@ -344,16 +344,32 @@
   }
   function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  // Find the J1 Housing Finder application window — either the iframe
-  // mounted on the j1housing dashboard page, or a popped-out window
-  // pointing at j1-housing-finder-index.html. Returns the contentWindow
-  // (where ALL_LISTINGS, applyFilters(), etc. live).
+  // Find the J1 Housing Finder application window. The finder is reachable
+  // from THREE different mount points across the two CTI dashboards:
+  //   1) j1housingfinder page (J1 System Dashboard) — full-page iframe
+  //      with id="j1hf-iframe" loading j1-housing-finder-index.html
+  //   2) j1housing page (both dashboards) — nested tab "J1 Housing Finder"
+  //      that lazy-loads the same iframe
+  //   3) Popped-out browser window pointing at j1-housing-finder-index.html
+  // Returns the contentWindow (where ALL_LISTINGS, applyFilters(), etc.
+  // live). Same-origin since both come from GitHub Pages, so
+  // contentWindow access works.
   //
-  // Auto-loads when needed: navigates to the j1housing page, clicks the
-  // "J1 Housing Finder" tab to reveal the lazy iframe, and waits for
-  // the iframe to finish loading. Same-origin since both come from
-  // GitHub Pages, so contentWindow access works.
+  // Auto-loads when needed: prefers the full-page route on the J1 System
+  // Dashboard (no extra clicks), otherwise navigates to j1housing and
+  // reveals the nested tab.
   function _findHousingWindowSync() {
+    // 1) Full-page route on the J1 System Dashboard
+    try {
+      const fullPage = document.getElementById('j1housingfinder');
+      if (fullPage) {
+        const frame = fullPage.querySelector('#j1hf-iframe, iframe[src*="j1-housing"]');
+        if (frame && frame.contentWindow && frame.contentWindow.ALL_LISTINGS) {
+          return { win: frame.contentWindow, location: 'iframe-on-j1housingfinder-page' };
+        }
+      }
+    } catch (_) {}
+    // 2) Nested tab on the legacy j1housing page (Poseidon Master)
     try {
       const page = document.getElementById('j1housing');
       if (page) {
@@ -363,6 +379,7 @@
         }
       }
     } catch (_) {}
+    // 3) Popped-out window
     try {
       const popouts = (window.PoseidonToolbar && window.PoseidonToolbar.activePopouts && window.PoseidonToolbar.activePopouts()) || [];
       for (const p of popouts) {
@@ -380,20 +397,29 @@
   }
 
   async function _findHousingWindow() {
-    // Fast path — already loaded.
+    // Fast path — already loaded somewhere.
     let found = _findHousingWindowSync();
     if (found.win) return found;
-    // Auto-load: navigate, reveal tab, wait for iframe ALL_LISTINGS.
+    // Auto-load: prefer the full-page j1housingfinder route (J1 System
+    // Dashboard) — it's a single click. Fall back to the nested tab on
+    // j1housing (Poseidon Master).
     try {
-      // 1. Navigate to j1housing page if not already active.
-      const j1housingLink = document.querySelector('.nav-link[data-page="j1housing"]');
-      if (j1housingLink) j1housingLink.click();
-      await new Promise(r => setTimeout(r, 250));
-      // 2. Reveal the J1 Housing Finder tab content (it's display:none until clicked).
-      const tabBtn = document.querySelector('.j1-tab[data-tab="j1-housing-finder"]');
-      if (tabBtn) tabBtn.click();
-      await new Promise(r => setTimeout(r, 250));
-      // 3. Wait up to 8 seconds for the iframe to finish loading and ALL_LISTINGS to appear.
+      const j1hfLink = document.querySelector('.nav-link[data-page="j1housingfinder"]');
+      if (j1hfLink) {
+        j1hfLink.click();
+        await new Promise(r => setTimeout(r, 250));
+      } else {
+        // Legacy path: j1housing page + click the nested tab.
+        const j1housingLink = document.querySelector('.nav-link[data-page="j1housing"]');
+        if (j1housingLink) j1housingLink.click();
+        await new Promise(r => setTimeout(r, 250));
+        const tabBtn = document.querySelector('.j1-tab[data-tab="j1-housing-finder"]');
+        if (tabBtn) tabBtn.click();
+        await new Promise(r => setTimeout(r, 250));
+      }
+      // Wait up to 8 seconds for the iframe to finish loading and
+      // ALL_LISTINGS to appear (the housing finder loads Leaflet, fetches
+      // tiles, and bootstraps a map — first paint can take a moment).
       const start = Date.now();
       while (Date.now() - start < 8000) {
         found = _findHousingWindowSync();
@@ -401,7 +427,7 @@
         await new Promise(r => setTimeout(r, 200));
       }
     } catch (_) {}
-    return { win: null, error: 'Could not load the J1 Housing Finder iframe. The user may need to open the J1 page manually.' };
+    return { win: null, error: 'Could not load the J1 Housing Finder iframe. The user may need to open the J1 Housing Finder page manually.' };
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -415,7 +441,7 @@
       parameters: {
         type: 'object',
         properties: {
-          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'], description: 'The page ID to open.' }
+          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','j1housingfinder','dashboard','tasks','calendar','videos','projects','partners','settings'], description: 'The page ID to open.' }
         },
         required: ['page_id']
       }
@@ -476,7 +502,7 @@
         properties: {
           page_id: {
             type: 'string',
-            enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','dashboard','tasks','calendar','videos','projects','partners','settings'],
+            enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','j1housingfinder','dashboard','tasks','calendar','videos','projects','partners','settings'],
             description: 'The page whose content to read.'
           },
           max_len_per_field: {
@@ -2190,8 +2216,8 @@
       'When the user asks anything about cruise line contracts, fees, terms, obligations, legal, insurance, positions, compliance, or pros/cons — first call read_contracts (or read_contracts_lines for a quick line list), then summarize the results. The Contracts dashboard is fully readable end-to-end via these tools.',
       'When the user asks to "open in new tab", "pop out", or "expand" a division, call popout_division. For analytics or chart questions on a division, call list_analytics_reports first to discover available reports, then read_analytics to pull the actual numbers behind the chart.',
       'When the user asks for an overall scan of the dashboard ("what is on the dashboard", "scan everything", "summarize the whole thing", "give me a full status", or any question that could span multiple divisions), call read_full_dashboard — it returns every page\'s title + text + iframe content in one call, even for hidden pages.',
-      'J1 HOUSING FINDER — this is a full sub-application on the j1housing page. It aggregates direct-owner rentals (6/12 month leases) for J-1 visa workers across major US cities, sourced from Craigslist, Airbnb, Vrbo, and Rent-by-Owner listings. Each listing has: city, neighborhood/area, beds, baths, monthly price, square footage, address, source tab, tags, internet/electric inclusion, owner notes, and lat/lng on a map. Filters: city (~100 cities), area (depends on city), bedrooms (Studio/1/2/3/4+), bathrooms (1/2/3+), max price (up to $3000/mo), internet included, electricity included, source tab (All / Craigslist / Airbnb / Vrbo / Rent by Owner), and sort (price asc/desc, most beds, distance to work). There is also a Work Address field that geocodes and computes distance to every listing.',
-      'For any housing-related question — "what is on this page", "show me Miami listings", "cheapest 2-bedroom under $1500", "what cities are covered", "filter to owner-direct", "what is the listing in Brickell", "calculate distances from this employer address", or anything else about housing — use the housing tools (read_housing, set_housing_filters, select_housing_listing, set_housing_work_address). Do NOT use read_full_dashboard for housing questions; it does not understand this page. Always call read_housing first to see the current filter state and listings, then act. When summarizing, mention the count, the price range, the cities/areas represented, and call out the owner-direct (cheapest, no broker) listings if relevant.',
+      'J1 HOUSING FINDER — this is a full sub-application reachable two ways: (a) as a dedicated top-level page on the J1 System Dashboard via the "J1 Housing Finder" sidebar entry (page id j1housingfinder), and (b) as a nested tab inside the J1 Housing page (page id j1housing) on either dashboard. Both load the same j1-housing-finder-index.html iframe. It aggregates direct-owner rentals (6/12 month leases) for J-1 visa workers across major US cities, sourced from Craigslist, Airbnb, Vrbo, and Rent-by-Owner listings. Each listing has: city, neighborhood/area, beds, baths, monthly price, square footage, address, source tab, tags, internet/electric inclusion, owner notes, and lat/lng on a map. Every dropdown on the page is fully readable AND settable by you: city (~100 cities), area (depends on city), bedrooms (Studio/1/2/3/4+), bathrooms (1/2/3+), max price (up to $3000/mo), internet included, electricity included, source tab (All / Craigslist / Airbnb / Vrbo / Rent by Owner), and sort (price asc/desc, most beds, distance to work). There is also a Work Address field that geocodes and computes distance to every listing.',
+      'For ANY housing-related question or action — "what is on this page", "what filters are set", "what cities are in the dropdown", "show me Miami listings", "cheapest 2-bedroom under $1500", "filter to owner-direct", "switch to the Airbnb tab", "sort by price", "what is the listing in Brickell", "calculate distances from this employer address", or anything else about housing — use the housing tools (read_housing, set_housing_filters, select_housing_listing, set_housing_work_address). Do NOT use read_full_dashboard for housing questions; it does not understand this page. Always call read_housing first to see the current filter state and the resulting filtered listings, then act on or summarize the data. read_housing returns: active_filters (every dropdown\'s current value), available_options (every value each dropdown can take, including the live city + area lists), counts (total, filtered, returned), the full listings array with structured fields, the selected_listing if any, and the work_address. After calling set_housing_filters always call read_housing to confirm the new filtered result and report it. When summarizing, mention the count, the price range, the cities/areas represented, and call out the owner-direct (cheapest, no broker) listings if relevant.',
       'If the user has popped a division out into a separate tab and you need to read what is in that tab, call list_popped_windows then read_popped_window. You can read the popped tab\'s text, iframes, and embed-mode state without the user having to switch back.',
       'INTERNET ACCESS — you have working web search. Call web_search whenever Robert asks about current events, news, prices, recent updates, partner intel, or anything outside your training data. Never say "I cannot search" or "I do not have internet access" — you do. Use depth: "advanced" for in-depth research questions, "basic" (default) for quick lookups. For specific URL contents, call fetch_url (CORS-limited; works for raw GitHub, JSON APIs, etc.).',
       'For media playback ("play that video", "pause the song", "stop the audio", "play the X video"), call list_media first to discover what is on the page, then play_media / pause_media / stop_media with id or title. The tools work on native video/audio AND YouTube/Vimeo iframes (and even on media in popped-out tabs).',

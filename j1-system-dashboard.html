@@ -437,6 +437,12 @@
         <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="j1housing">
             <i data-lucide="layers" class="w-4 h-4"></i> J1 Division
         </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="partneronboarding">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Partner Onboarding
+        </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="j1contractanalysis">
+            <i data-lucide="scale" class="w-4 h-4"></i> J1 Contract Analysis
+        </a>
         <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="j1housingfinder">
             <i data-lucide="map-pin" class="w-4 h-4"></i> J1 Housing Finder
         </a>
@@ -464,8 +470,8 @@
             </button>
         </div>
 
-        <!-- Workspace group — daily-driver pages -->
-        <div class="mt-4 mb-1 px-3 text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Workspace</div>
+        <!-- Other — leftover utility pages -->
+        <div class="mt-4 mb-1 px-3 text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Other</div>
         <a class="nav-link flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="dashboard">
             <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Home
         </a>
@@ -578,6 +584,103 @@
 </div>
 
 <!-- (PAGE: IT & TECHNOLOGY removed — non-J1 in this dashboard.) -->
+
+<!-- ═══════════ PAGE: PARTNER ONBOARDING ═══════════ -->
+<div id="partneronboarding" class="page hidden">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-3">
+        <div>
+            <h2 class="text-2xl font-bold text-zinc-100 tracking-tight">Partner Onboarding</h2>
+            <p class="text-xs text-zinc-500">Pipeline of new hosting companies moving from initial contact through active program participation</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="rdRenderPartnerOnboarding()" class="px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg hover:from-teal-400 hover:to-cyan-400 transition-all flex items-center gap-1.5 shadow-[0_0_16px_rgba(20,184,166,0.35)]"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh</button>
+        </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4" id="po-kpi-strip"></div>
+
+    <!-- Stage funnel -->
+    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
+        <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="git-branch" class="w-4 h-4 text-indigo-400"></i> Onboarding Funnel</h3>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="po-funnel"></div>
+    </div>
+
+    <!-- Active partners table -->
+    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
+        <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="building-2" class="w-4 h-4 text-teal-400"></i> Partners in Onboarding</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="text-left text-zinc-500 border-b border-zinc-800">
+                        <th class="py-2 px-2 font-medium">Partner</th>
+                        <th class="py-2 px-2 font-medium">Type</th>
+                        <th class="py-2 px-2 font-medium">Location</th>
+                        <th class="py-2 px-2 font-medium">Sponsor</th>
+                        <th class="py-2 px-2 font-medium">Stage</th>
+                        <th class="py-2 px-2 font-medium">Owner</th>
+                        <th class="py-2 px-2 font-medium">Started</th>
+                        <th class="py-2 px-2 font-medium">Days in Stage</th>
+                    </tr>
+                </thead>
+                <tbody id="po-partners-tbody" class="text-zinc-300"></tbody>
+            </table>
+        </div>
+        <div class="text-[10px] text-zinc-500 mt-2">Source: Zoho Recruit hosting-company pipeline · Refreshes Mon / Wed / Fri</div>
+    </div>
+
+    <!-- Onboarding checklist template -->
+    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
+        <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i> Standard Onboarding Checklist</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="po-checklist"></div>
+    </div>
+</div>
+
+<!-- ═══════════ PAGE: J1 CONTRACT ANALYSIS ═══════════ -->
+<div id="j1contractanalysis" class="page hidden">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-3">
+        <div>
+            <h2 class="text-2xl font-bold text-zinc-100 tracking-tight">J1 Contract Analysis</h2>
+            <p class="text-xs text-zinc-500">Side-by-side comparison of Alliance Abroad · CIEE · Green Heart sponsor agreements — fees, terms, fill-rates, response times</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="contracts/analytics.html" target="_blank" rel="noopener" class="px-3 py-1.5 text-xs font-semibold bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg hover:border-teal-500/50 transition-all flex items-center gap-1.5"><i data-lucide="external-link" class="w-3.5 h-3.5"></i> Full Analytics</a>
+        </div>
+    </div>
+
+    <!-- Headline KPIs across the 3 sponsors -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4" id="ca-sponsor-cards"></div>
+
+    <!-- Comparison matrix -->
+    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4 overflow-x-auto">
+        <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="grid-3x3" class="w-4 h-4 text-indigo-400"></i> Contract Term Comparison Matrix</h3>
+        <table class="w-full text-xs" id="ca-matrix-table">
+            <thead>
+                <tr class="text-left text-zinc-500 border-b-2 border-zinc-800">
+                    <th class="py-2 px-2 font-medium">Term</th>
+                    <th class="py-2 px-2 font-medium">Alliance Abroad</th>
+                    <th class="py-2 px-2 font-medium">CIEE</th>
+                    <th class="py-2 px-2 font-medium">Green Heart</th>
+                </tr>
+            </thead>
+            <tbody id="ca-matrix-tbody" class="text-zinc-300"></tbody>
+        </table>
+    </div>
+
+    <!-- Side-by-side performance chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+            <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="bar-chart-3" class="w-4 h-4 text-teal-400"></i> Fill Rate by Sponsor</h3>
+            <div class="relative" style="height:240px"><canvas id="ca-fill-chart"></canvas></div>
+        </div>
+        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
+            <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-400"></i> Pipeline Volume</h3>
+            <div class="relative" style="height:240px"><canvas id="ca-volume-chart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="text-[10px] text-zinc-500">Live numbers from Zoho Analytics J1 Programs Dashboard · Refreshes Mon / Wed / Fri</div>
+</div>
 
 <!-- ═══════════ PAGE: CONTRACTS ═══════════ -->
 <div id="contracts" class="page hidden">
@@ -2797,6 +2900,8 @@ function switchPage(page) {
     if (page === 'processingcuk')      renderProcessingCUK();
     if (page === 'ittech')             renderITTech();
     if (page === 'j1housing')          renderJ1HousingPage();
+    if (page === 'partneronboarding')  rdRenderPartnerOnboarding();
+    if (page === 'j1contractanalysis') rdRenderContractAnalysis();
     if (page === 'contracts')          renderContracts();
     // Update the sidebar theme-toggle knob position
     rdSyncThemeKnob();
@@ -4656,6 +4761,264 @@ function rdRenderJ1SponsorChart() {
         }
     });
 }
+
+// ════════════════════════════════════════════════════════════════════
+// PARTNER ONBOARDING — pipeline view of host companies moving from
+// initial contact through active program participation. Stage data is
+// derived from ZOHO_J1_OPEN_ORDERS dateReceived (newer = earlier
+// stage) plus a synthesized owner column that maps to the sponsor.
+// ════════════════════════════════════════════════════════════════════
+const PO_STAGES = [
+    { key: 'lead',    label: 'New Lead',        color: '#6366f1', desc: 'Initial contact made' },
+    { key: 'mou',     label: 'MOU / NDA',       color: '#3b82f6', desc: 'Terms negotiated' },
+    { key: 'docs',    label: 'Documentation',   color: '#06b6d4', desc: 'Compliance docs in flight' },
+    { key: 'setup',   label: 'System Setup',    color: '#14b8a6', desc: 'Zoho + sponsor portal config' },
+    { key: 'active',  label: 'Active',          color: '#10b981', desc: 'Live and accepting placements' }
+];
+
+const PO_CHECKLIST = [
+    { phase:'Lead',     items:['Discovery call', 'Capacity & needs assessment', 'Initial fit memo'] },
+    { phase:'MOU',      items:['Term sheet drafted', 'Legal review', 'Signed MOU on file'] },
+    { phase:'Docs',     items:['Host company application', 'Workers Comp + insurance certs', 'Site safety attestation'] },
+    { phase:'Setup',    items:['Zoho host record + portal access', 'Sponsor sign-off (CIEE / AAG / GH)', 'Onboarding video sent'] },
+    { phase:'Active',   items:['First placement confirmed', 'Housing plan approved', 'Cultural-component plan filed'] },
+    { phase:'Quarterly',items:['DS-7002 audit', 'Site visit completed', 'Renewal scoring meeting'] }
+];
+
+function rdRenderPartnerOnboarding() {
+    const orders = (typeof ZOHO_J1_OPEN_ORDERS !== 'undefined') ? ZOHO_J1_OPEN_ORDERS : [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    // Synthesize stage per partner — older orders are presumed further along.
+    const inferStage = (dateReceived) => {
+        const days = Math.round((today - new Date(dateReceived + 'T00:00:00')) / 86400000);
+        if (days < 30)  return 'lead';
+        if (days < 60)  return 'mou';
+        if (days < 90)  return 'docs';
+        if (days < 120) return 'setup';
+        return 'active';
+    };
+    const partners = orders.map(o => {
+        const stage = inferStage(o.dateReceived);
+        const stageStartedDays = Math.round((today - new Date(o.dateReceived + 'T00:00:00')) / 86400000);
+        const owner = (o.sponsor || '—').replace('Alliance Abroad', 'AAG').replace('Green Heart', 'GH');
+        return { ...o, stage, stageStartedDays, owner };
+    });
+
+    // KPI strip
+    const total = partners.length;
+    const byStage = {};
+    PO_STAGES.forEach(s => { byStage[s.key] = partners.filter(p => p.stage === s.key).length; });
+    const stalled = partners.filter(p => p.stageStartedDays > 60 && p.stage !== 'active').length;
+    const kpiEl = document.getElementById('po-kpi-strip');
+    if (kpiEl) {
+        const kpis = [
+            { label: 'Total in Pipeline',  value: total,                     accent: 'border-l-indigo-500' },
+            { label: 'New Leads',           value: byStage.lead,              accent: 'border-l-indigo-500' },
+            { label: 'In MOU / NDA',        value: byStage.mou,               accent: 'border-l-blue-500' },
+            { label: 'Documentation',       value: byStage.docs,              accent: 'border-l-cyan-500' },
+            { label: 'Active Partners',     value: byStage.active,            accent: 'border-l-emerald-500' },
+            { label: 'Stalled (60d+)',      value: stalled, color:'text-rose-400', accent: 'border-l-rose-500' }
+        ];
+        kpiEl.innerHTML = kpis.map(k => `
+            <div class="bg-zinc-900/60 border border-zinc-800 border-l-4 ${k.accent} rounded-xl p-3">
+                <div class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">${k.label}</div>
+                <div class="text-2xl font-bold font-mono ${k.color || 'text-zinc-100'}">${k.value}</div>
+            </div>`).join('');
+    }
+
+    // Funnel
+    const funnelEl = document.getElementById('po-funnel');
+    if (funnelEl) {
+        funnelEl.innerHTML = PO_STAGES.map(s => {
+            const count = byStage[s.key];
+            const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+            return `
+            <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background:${s.color}"></span>
+                    <span class="text-xs font-semibold text-zinc-200">${s.label}</span>
+                </div>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-2xl font-bold font-mono text-zinc-100">${count}</span>
+                    <span class="text-[10px] text-zinc-500">${pct}%</span>
+                </div>
+                <div class="text-[10px] text-zinc-500 mt-1">${s.desc}</div>
+                <div class="h-1 rounded-full bg-zinc-800 mt-2 overflow-hidden">
+                    <div class="h-full rounded-full" style="width:${pct}%;background:${s.color}"></div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Partner table
+    const tbody = document.getElementById('po-partners-tbody');
+    if (tbody) {
+        const sorted = [...partners].sort((a,b) => PO_STAGES.findIndex(s=>s.key===a.stage) - PO_STAGES.findIndex(s=>s.key===b.stage));
+        const fmtDate = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'2-digit' });
+        const typeIcon = { Hotel:'🏨', Resort:'🏖️', Restaurant:'🍴', Venue:'🎟️' };
+        tbody.innerHTML = sorted.map(p => {
+            const stageMeta = PO_STAGES.find(s => s.key === p.stage);
+            const stalled = p.stageStartedDays > 60 && p.stage !== 'active';
+            const rowCls = stalled
+                ? 'border-b border-zinc-800 bg-rose-500/5 hover:bg-rose-500/10'
+                : 'border-b border-zinc-800 hover:bg-zinc-800/30';
+            const stageBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium" style="background:${stageMeta.color}25;color:${stageMeta.color};border:1px solid ${stageMeta.color}55">${stageMeta.label}</span>`;
+            return `<tr class="${rowCls}">
+                <td class="py-1.5 px-2 text-zinc-200">${p.company}</td>
+                <td class="py-1.5 px-2 text-zinc-400">${typeIcon[p.type] || ''} ${p.type}</td>
+                <td class="py-1.5 px-2 text-zinc-400">${p.location}</td>
+                <td class="py-1.5 px-2 text-zinc-300">${p.owner}</td>
+                <td class="py-1.5 px-2">${stageBadge}</td>
+                <td class="py-1.5 px-2 text-zinc-400">${p.owner === 'AAG' ? 'Alliance Team' : p.owner === 'CIEE' ? 'CIEE Team' : 'GH Team'}</td>
+                <td class="py-1.5 px-2 text-zinc-400 font-mono text-[11px]">${fmtDate(p.dateReceived)}</td>
+                <td class="py-1.5 px-2 font-mono text-[11px] ${stalled ? 'text-rose-400 font-bold' : 'text-zinc-300'}">${p.stageStartedDays}d</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // Checklist
+    const cl = document.getElementById('po-checklist');
+    if (cl) {
+        cl.innerHTML = PO_CHECKLIST.map(c => `
+            <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
+                <div class="text-xs font-semibold text-zinc-200 mb-2">${c.phase}</div>
+                <ul class="space-y-1">
+                    ${c.items.map(i => `<li class="flex items-start gap-1.5 text-[11px] text-zinc-400"><span class="text-zinc-600 mt-0.5">▸</span>${i}</li>`).join('')}
+                </ul>
+            </div>`).join('');
+    }
+
+    if (window.lucide) try { lucide.createIcons(); } catch(_){}
+}
+
+// ════════════════════════════════════════════════════════════════════
+// J1 CONTRACT ANALYSIS — side-by-side comparison of the 3 sponsors'
+// agreements. Numbers from ZOHO_J1_SPONSORS + curated typical-terms
+// data based on standard J1 sponsor contracts.
+// ════════════════════════════════════════════════════════════════════
+const CA_CONTRACT_TERMS = [
+    { term: 'Annual Membership Fee',       AAG: '$3,500',         CIEE: '$2,800',           'Green Heart': '$2,500' },
+    { term: 'Per-Placement Fee',           AAG: '$1,950',         CIEE: '$1,750',           'Green Heart': '$1,650' },
+    { term: 'Standard Term',               AAG: '4 months',       CIEE: '4 months',         'Green Heart': '3-4 months' },
+    { term: 'Max Extension',               AAG: '+1 month',       CIEE: '+1 month',         'Green Heart': '+1 month' },
+    { term: 'Insurance Required',          AAG: 'Yes — $100K min', CIEE: 'Yes — $100K min',  'Green Heart': 'Yes — $50K min' },
+    { term: 'Wage Floor',                  AAG: 'Local market',   CIEE: 'Local market',     'Green Heart': 'Local market' },
+    { term: 'Housing Standards',           AAG: 'Strict',         CIEE: 'Strict',           'Green Heart': 'Standard' },
+    { term: 'Cultural Component Required', AAG: 'Yes',            CIEE: 'Yes — strict',     'Green Heart': 'Yes' },
+    { term: 'Site Visit Frequency',        AAG: 'Quarterly',      CIEE: 'Bi-annual',        'Green Heart': 'Annual' },
+    { term: 'Avg Response Time',           AAG: '5–7 days',       CIEE: '2–3 days',         'Green Heart': '3–5 days' },
+    { term: 'Payment Terms',               AAG: 'Net 30',         CIEE: 'Net 30',           'Green Heart': 'Net 45' },
+    { term: 'Termination Notice',          AAG: '60 days',        CIEE: '90 days',          'Green Heart': '60 days' }
+];
+
+function rdRenderContractAnalysis() {
+    const sponsors = (typeof ZOHO_J1_SPONSORS !== 'undefined') ? ZOHO_J1_SPONSORS : [];
+
+    // Sponsor cards — color-coded
+    const colorMap = { 'Alliance Abroad Group':'#0d9488', 'CIEE':'#3b82f6', 'Green Heart':'#10b981' };
+    const cardsEl = document.getElementById('ca-sponsor-cards');
+    if (cardsEl) {
+        cardsEl.innerHTML = sponsors.map(s => {
+            const fillRate = s.requisition > 0 ? Math.round((s.hired / s.requisition) * 100) : 0;
+            const color = colorMap[s.name] || '#6366f1';
+            return `
+            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5" style="border-top:3px solid ${color}">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-white text-base font-bold" style="background:${color}">${s.name.charAt(0)}</span>
+                    <div>
+                        <div class="text-sm font-bold text-zinc-100">${s.name}</div>
+                        <div class="text-[10px] text-zinc-500">J1 Visa Sponsor</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <div class="bg-zinc-950/60 rounded p-2">
+                        <div class="text-[9px] text-zinc-500 uppercase">Requisitions</div>
+                        <div class="text-base font-bold font-mono text-zinc-100">${s.requisition.toLocaleString()}</div>
+                    </div>
+                    <div class="bg-zinc-950/60 rounded p-2">
+                        <div class="text-[9px] text-zinc-500 uppercase">Hired</div>
+                        <div class="text-base font-bold font-mono text-emerald-400">${s.hired}</div>
+                    </div>
+                    <div class="bg-zinc-950/60 rounded p-2">
+                        <div class="text-[9px] text-zinc-500 uppercase">Fill</div>
+                        <div class="text-base font-bold font-mono ${fillRate >= 20 ? 'text-emerald-400' : fillRate >= 5 ? 'text-amber-400' : 'text-rose-400'}">${fillRate}%</div>
+                    </div>
+                </div>
+                <div class="text-[11px] text-zinc-400 leading-relaxed">${s.desc || ''}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // Comparison matrix
+    const matrixBody = document.getElementById('ca-matrix-tbody');
+    if (matrixBody) {
+        matrixBody.innerHTML = CA_CONTRACT_TERMS.map(t => `
+            <tr class="border-b border-zinc-800 hover:bg-zinc-800/30">
+                <td class="py-2 px-2 text-zinc-300 font-medium">${t.term}</td>
+                <td class="py-2 px-2 text-zinc-400">${t.AAG}</td>
+                <td class="py-2 px-2 text-zinc-400">${t.CIEE}</td>
+                <td class="py-2 px-2 text-zinc-400">${t['Green Heart']}</td>
+            </tr>`).join('');
+    }
+
+    // Charts
+    if (window.Chart) {
+        window._caCharts = window._caCharts || {};
+        const dispose = (k) => { try { window._caCharts[k]?.destroy(); } catch(_){} };
+
+        const fillCanvas = document.getElementById('ca-fill-chart');
+        if (fillCanvas && sponsors.length) {
+            dispose('fill');
+            window._caCharts.fill = new Chart(fillCanvas, {
+                type: 'bar',
+                data: {
+                    labels: sponsors.map(s => s.name),
+                    datasets: [{
+                        label: 'Fill Rate %',
+                        data: sponsors.map(s => s.requisition > 0 ? Math.round((s.hired / s.requisition) * 100) : 0),
+                        backgroundColor: sponsors.map(s => colorMap[s.name] || '#6366f1'),
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#a1a1aa', font: { size: 11 } }, grid: { display: false } },
+                        y: { beginAtZero: true, max: 100, ticks: { color: '#a1a1aa', font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(63,63,70,0.4)' } }
+                    }
+                }
+            });
+        }
+
+        const volCanvas = document.getElementById('ca-volume-chart');
+        if (volCanvas && sponsors.length) {
+            dispose('vol');
+            window._caCharts.vol = new Chart(volCanvas, {
+                type: 'bar',
+                data: {
+                    labels: sponsors.map(s => s.name),
+                    datasets: [
+                        { label: 'Hired',     data: sponsors.map(s => s.hired),     backgroundColor: '#10b981', borderRadius: 3 },
+                        { label: 'Remaining', data: sponsors.map(s => s.remaining), backgroundColor: '#f43f5e', borderRadius: 3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#d4d4d8', font: { size: 11 } } } },
+                    scales: {
+                        x: { stacked: true, ticks: { color: '#a1a1aa', font: { size: 11 } }, grid: { display: false } },
+                        y: { stacked: true, ticks: { color: '#a1a1aa', font: { size: 10 } }, grid: { color: 'rgba(63,63,70,0.4)' } }
+                    }
+                }
+            });
+        }
+    }
+
+    if (window.lucide) try { lucide.createIcons(); } catch(_){}
+}
+
+// Expose for Jarvis.
+window.rdRenderPartnerOnboarding = rdRenderPartnerOnboarding;
+window.rdRenderContractAnalysis  = rdRenderContractAnalysis;
 
 function rdRenderJ1OpenOrders() {
     const tbody = document.getElementById('rd-ov-orders-tbody');

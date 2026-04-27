@@ -106,6 +106,22 @@ state is applied first because it rebuilds the city dropdown.
 `select_housing_listing` and `set_housing_work_address` complete the
 surface.
 
+## J1 System Dashboard sidebar (2026-04-27)
+
+**J1 Division group (primary):**
+- J1 Overview (`j1division`)
+- Recruiting (`recruitingdivision`)
+- **J1 Division** (`j1housing`) — housing & accommodations management + embedded J1 Housing Finder tab. Sidebar label was renamed from "J1 Housing" on 2026-04-27; underlying page id is unchanged.
+- **Partner Onboarding** (`partneronboarding`) — pipeline of host companies moving through 5 stages (New Lead → MOU/NDA → Documentation → System Setup → Active) with a stalled-60-day flag and standard onboarding checklist
+- **J1 Contract Analysis** (`j1contractanalysis`) — side-by-side comparison of Alliance Abroad / CIEE / Green Heart contracts (fees, terms, insurance, response time) plus fill-rate + pipeline-volume charts
+- J1 Housing Finder (`j1housingfinder`)
+- Sponsor Contracts (`contracts`)
+- Partners (`partners`)
+- Recruitment Videos (`videos`)
+
+**Other group (utility pages, was "Workspace"):**
+- Home (`dashboard`), Tasks, Calendar, Tracker, Settings
+
 ## J1 Recruiting page — what's actually on it (2026-04-27)
 
 Top-down on `recruitingdivision`:

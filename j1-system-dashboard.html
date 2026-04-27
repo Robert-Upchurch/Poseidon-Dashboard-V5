@@ -1494,15 +1494,41 @@
             </div>
         </div>
 
-        <!-- Client + Country Distribution -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <!-- ════════════════════════════════════════════════════════════════
+             POSITIONS BY SPONSOR (J1) — pulled from Zoho Analytics J1
+             Programs Dashboard with the Sponsor filter expanded. Cruise-line
+             clients + Country chart moved to the Poseidon master dashboard
+             — that's the cross-division roll-up; this dashboard is J1-only.
+             ════════════════════════════════════════════════════════════════ -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="building-2" class="w-4 h-4 text-indigo-400"></i> Positions by Client</h3>
-                <div class="w-full relative" style="height:260px"><canvas id="rd-ov-client-chart"></canvas></div>
+                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="building-2" class="w-4 h-4 text-teal-400"></i> Positions by Sponsor</h3>
+                <div class="relative" style="height:260px"><canvas id="rd-ov-sponsor-chart"></canvas></div>
+                <div class="text-[10px] text-zinc-500 mt-2">Live from Zoho Analytics · refreshes Mon / Wed / Fri</div>
             </div>
-            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="globe" class="w-4 h-4 text-indigo-400"></i> Positions by Country</h3>
-                <div class="w-full relative" style="height:260px"><canvas id="rd-ov-country-chart"></canvas></div>
+            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 lg:col-span-2">
+                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3">
+                    <i data-lucide="alarm-clock" class="w-4 h-4 text-rose-400"></i> Open Orders — Hosting Companies
+                    <span class="ml-auto text-[10px] font-normal text-zinc-500">red rows = past-due unfilled</span>
+                </h3>
+                <div class="overflow-x-auto" style="max-height:280px">
+                    <table class="w-full text-xs">
+                        <thead class="sticky top-0 bg-zinc-900/95 backdrop-blur">
+                            <tr class="text-left text-zinc-500 border-b border-zinc-800">
+                                <th class="py-2 px-2 font-medium">Company</th>
+                                <th class="py-2 px-2 font-medium">Type</th>
+                                <th class="py-2 px-2 font-medium">Location</th>
+                                <th class="py-2 px-2 font-medium">Position</th>
+                                <th class="py-2 px-2 font-medium text-right">Need</th>
+                                <th class="py-2 px-2 font-medium">Received</th>
+                                <th class="py-2 px-2 font-medium">Due</th>
+                                <th class="py-2 px-2 font-medium">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rd-ov-orders-tbody" class="text-zinc-300"></tbody>
+                    </table>
+                </div>
+                <div class="text-[10px] text-zinc-500 mt-2">Sourced from Zoho Recruiting · top-priority + stalest unfilled orders surface first</div>
             </div>
         </div>
 
@@ -2195,19 +2221,20 @@
     <div id="ai-tools-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
 </div>
 
-<!-- ═══════════ PAGE: PARTNERS ═══════════ -->
+<!-- ═══════════ PAGE: PARTNERS (J1 only — cruise lines moved to Poseidon master) ═══════════ -->
 <div id="partners" class="page hidden">
     <div class="flex gap-2 mb-4" id="partners-tab-bar">
-        <button class="partner-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-tab="pt-unobaron">UNO-Baron</button>
-        <button class="partner-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="pt-cruiselines">Cruise Lines</button>
+        <button class="partner-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-tab="pt-j1sponsors">J1 Sponsors</button>
+        <button class="partner-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="pt-unobaron">UNO-Baron</button>
     </div>
-    <div class="partner-content active" id="pt-unobaron">
+    <div class="partner-content active" id="pt-j1sponsors">
+        <div id="j1-sponsor-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        <div class="mt-3 text-[11px] text-zinc-500">Live numbers from Zoho Analytics · Refreshes Mon / Wed / Fri</div>
+    </div>
+    <div class="partner-content" id="pt-unobaron" style="display:none">
         <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40">
             <iframe src="https://robert-upchurch.github.io/uno-baron-competitive-analysis/" class="w-full border-none rounded-xl" style="height:calc(100vh - 220px);min-height:600px;" loading="lazy" title="UNO-Baron Finance"></iframe>
         </div>
-    </div>
-    <div class="partner-content" id="pt-cruiselines" style="display:none">
-        <div id="cruise-line-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
     </div>
 </div>
 
@@ -2652,19 +2679,16 @@ const aiTools = [
     {name:'Wondershare Capture',type:'Screen Recording',use:'Website recordings for partner intro scenes.',status:'Active',icon:'📸',models:'N/A'},
 ];
 
-const cruiseLines = [
-    {name:'ALL (Accor Live Limitless)',code:'ALL',color:'#1e3a5f',desc:'Global hospitality group — luxury to economy brands',ships:0,website:'https://all.accor.com'},
-    {name:'Apollo Ship Chandlers',code:'Apollo',color:'#c0392b',desc:'Ship supply & chandlery services worldwide',ships:0,website:'#'},
-    {name:'Carnival Cruise Line (CCL USA)',code:'CCL USA',color:'#0054a6',desc:"World's largest cruise line — Fun Ships fleet",ships:24,website:'https://www.carnival.com'},
-    {name:'CUK (Carnival UK)',code:'CUK',color:'#003366',desc:'UK cruise division — P&O Cruises & Cunard parent',ships:10,website:'https://www.carnivalukcareers.co.uk'},
-    {name:'Cunard Line',code:'Cunard',color:'#8b0000',desc:'Iconic luxury ocean liner heritage — Queen Mary 2',ships:4,website:'https://www.cunard.com'},
-    {name:'Heinemann Duty Free',code:'Heineman',color:'#e67e22',desc:'Global travel retail & duty-free operations',ships:0,website:'https://www.heinemann.eu'},
-    {name:'Margaritaville at Sea',code:'Margaritaville',color:'#2ecc71',desc:'Island-themed casual cruise experience',ships:2,website:'https://www.margaritavilleatsea.com'},
-    {name:'Norwegian Cruise Line (NCL)',code:'NCL',color:'#004b87',desc:'Freestyle cruising — innovative onboard experiences',ships:19,website:'https://www.ncl.com'},
-    {name:'P&O Cruises',code:'P&O',color:'#ffd700',desc:"Britain's favourite cruise line — family & adult-only ships",ships:7,website:'https://www.pocruises.com'},
-    {name:'Royal Caribbean (RCCL)',code:'RCCL',color:'#00205b',desc:"World's largest cruise ships — Icon & Oasis class",ships:28,website:'https://www.royalcaribbean.com'},
-    {name:'Virgin Voyages',code:'Virgin Voyages',color:'#e60000',desc:'Adults-only — modern luxury by Richard Branson',ships:4,website:'https://www.virginvoyages.com'},
+// J1 Sponsors — Robert's three active J1 program sponsors. Numbers
+// pulled from Zoho Analytics Recruiting tab on 2026-04-27 (Sponsor
+// filter expanded one-by-one).
+const j1Sponsors = [
+    { name:'Alliance Abroad Group', code:'Alliance Abroad', color:'#0d9488', desc:'Largest of the three by open positions — full visa sponsorship + cultural exchange.', requisition:1048, hired:0,  remaining:1048, website:'https://www.allianceabroad.com' },
+    { name:'CIEE',                  code:'CIEE',            color:'#3b82f6', desc:'Council on International Educational Exchange — strongest fill-rate among the three.', requisition: 219, hired:39, remaining: 186, website:'https://www.ciee.org' },
+    { name:'Green Heart',           code:'Green Heart',     color:'#10b981', desc:'Compact sponsor concentrated in restaurants + resorts (Mila + The Broadmoor).',           requisition:  66, hired:18, remaining:  49, website:'https://greenheartexchange.org' }
 ];
+
+// (cruiseLines list moved to the Poseidon master dashboard — this is the J1 dashboard.)
 
 const repos = [
     {name:'Poseidon Dashboard',desc:'Central command dashboard for CTI operations',url:'https://github.com/Robert-Upchurch/poseidon-dashboard',liveUrl:'https://robert-upchurch.github.io/poseidon-dashboard/',icon:'⚡',lang:'HTML/JS'},
@@ -3550,26 +3574,42 @@ function renderProjects() {
 // ═══════════════════════════════════════════════════
 
 function renderPartners() {
-    const grid = $('cruise-line-grid');
+    const grid = $('j1-sponsor-grid');
     if (!grid) return;
 
-    grid.innerHTML = cruiseLines.map(cl => `
-        <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 cursor-pointer hover:border-zinc-600 transition-all relative overflow-hidden group" ${cl.website!=='#'?`onclick="window.open('${cl.website}','_blank')"`  :''}>
-            <div class="absolute top-0 right-0 w-16 h-16 rounded-bl-[40px]" style="background:${cl.color}15"></div>
+    grid.innerHTML = j1Sponsors.map(s => {
+        const fillRate = s.requisition > 0 ? Math.round((s.hired / s.requisition) * 100) : 0;
+        return `
+        <div class="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 cursor-pointer hover:border-zinc-600 transition-all relative overflow-hidden group" onclick="window.open('${s.website}','_blank')">
+            <div class="absolute top-0 right-0 w-16 h-16 rounded-bl-[40px]" style="background:${s.color}20"></div>
             <div class="flex items-center gap-3 mb-3">
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-bold shrink-0" style="background:${cl.color}">🚢</div>
+                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-bold shrink-0" style="background:${s.color}">🌐</div>
                 <div>
-                    <div class="text-sm font-semibold text-zinc-200">${h(cl.name)}</div>
-                    <div class="text-[10px] text-zinc-500">${cl.code}</div>
+                    <div class="text-sm font-semibold text-zinc-200">${h(s.name)}</div>
+                    <div class="text-[10px] text-zinc-500">${s.code}</div>
                 </div>
             </div>
-            <div class="text-xs text-zinc-400 mb-3 leading-relaxed">${cl.desc}</div>
+            <div class="text-xs text-zinc-400 mb-3 leading-relaxed">${s.desc}</div>
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <div class="bg-zinc-950/60 border border-zinc-800 rounded px-2 py-1.5">
+                    <div class="text-[9px] text-zinc-500 uppercase">Requisitions</div>
+                    <div class="text-sm font-bold font-mono text-zinc-100">${s.requisition.toLocaleString()}</div>
+                </div>
+                <div class="bg-zinc-950/60 border border-zinc-800 rounded px-2 py-1.5">
+                    <div class="text-[9px] text-zinc-500 uppercase">Hired</div>
+                    <div class="text-sm font-bold font-mono text-emerald-400">${s.hired}</div>
+                </div>
+                <div class="bg-zinc-950/60 border border-zinc-800 rounded px-2 py-1.5">
+                    <div class="text-[9px] text-zinc-500 uppercase">Remaining</div>
+                    <div class="text-sm font-bold font-mono text-rose-400">${s.remaining.toLocaleString()}</div>
+                </div>
+            </div>
             <div class="flex items-center justify-between">
-                ${cl.ships > 0 ? `<span class="text-[10px] text-zinc-500">${cl.ships} ships</span>` : `<span class="text-[10px] text-zinc-500">Partner</span>`}
+                <span class="text-[10px] text-zinc-500">Fill rate: <span class="font-mono ${fillRate >= 20 ? 'text-emerald-400' : fillRate >= 5 ? 'text-amber-400' : 'text-rose-400'}">${fillRate}%</span></span>
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
             </div>
         </div>
-    `).join('');
+    `;}).join('');
 }
 
 // ═══════════════════════════════════════════════════
@@ -3642,27 +3682,14 @@ const RD_SEED = {
             {id:'J1-CL-005',category:'j1',clientName:'Beemok Hospitality',contactNumber:'+1 (843) 555-0188',emailAddress:'talent@beemok.com',website:'beemok.com',accountManager:'Eduardo Ferraz'}
         ]
     },
+    // Cruise-line recruiting lives on the Poseidon master dashboard, not
+    // here. Seed kept as an empty placeholder so any code that touches
+    // recruitingState.cruise still works without errors.
     cruise: {
-        openings: [
-            {position:'Assistant Waiter',jobOpening:'CR-AW-2026-008',datePosted:'2026-03-22',lastUpdated:'2026-04-05',positions:20,client:'Royal Caribbean Group',country:'Bahamas',accountManager:'Robert Upchurch',status:'Active',category:'cruise'},
-            {position:'Galley Steward',jobOpening:'CR-GS-2026-011',datePosted:'2026-03-30',lastUpdated:'2026-04-12',positions:15,client:'Carnival Cruise Line',country:'Panama',accountManager:'Eduardo Ferraz',status:'Active',category:'cruise'},
-            {position:'Bar Server',jobOpening:'CR-BS-2026-016',datePosted:'2026-04-03',lastUpdated:'2026-04-13',positions:8,client:'Norwegian Cruise Line',country:'Bahamas',accountManager:'Robert Upchurch',status:'Active',category:'cruise'},
-            {position:'Cabin Steward',jobOpening:'CR-CS-2026-020',datePosted:'2026-04-06',lastUpdated:'2026-04-14',positions:25,client:'MSC Cruises',country:'Italy',accountManager:'Eduardo Ferraz',status:'Active',category:'cruise'},
-            {position:'Deckhand',jobOpening:'CR-DH-2026-024',datePosted:'2026-04-09',lastUpdated:'2026-04-10',positions:10,client:'Celebrity Cruises',country:'Malta',accountManager:'Robert Upchurch',status:'Active',category:'cruise'}
-        ],
-        metrics: { category:'cruise', interviewsPerformed: 218, clientsInterviewed: 9 },
-        recentInterviews: [
-            {candidate:'Carlos M.',position:'Assistant Waiter',client:'Royal Caribbean',date:'2026-04-13',outcome:'Hired'},
-            {candidate:'Lucia T.',position:'Cabin Steward',client:'MSC Cruises',date:'2026-04-12',outcome:'Advanced'},
-            {candidate:'Rafael V.',position:'Galley Steward',client:'Carnival',date:'2026-04-11',outcome:'Offered'}
-        ],
-        clients: [
-            {id:'CR-CL-001',category:'cruise',clientName:'Royal Caribbean Group',contactNumber:'+1 (305) 539-6000',emailAddress:'careers@rccl.com',website:'royalcaribbean.com',accountManager:'Robert Upchurch'},
-            {id:'CR-CL-002',category:'cruise',clientName:'Carnival Cruise Line',contactNumber:'+1 (305) 599-2600',emailAddress:'hr@carnival.com',website:'carnival.com',accountManager:'Eduardo Ferraz'},
-            {id:'CR-CL-003',category:'cruise',clientName:'Norwegian Cruise Line',contactNumber:'+1 (305) 436-4000',emailAddress:'crewing@ncl.com',website:'ncl.com',accountManager:'Robert Upchurch'},
-            {id:'CR-CL-004',category:'cruise',clientName:'MSC Cruises',contactNumber:'+1 (954) 772-6262',emailAddress:'crew@msccruisesusa.com',website:'msccruisesusa.com',accountManager:'Eduardo Ferraz'},
-            {id:'CR-CL-005',category:'cruise',clientName:'Celebrity Cruises',contactNumber:'+1 (305) 539-6000',emailAddress:'hr@celebrity.com',website:'celebritycruises.com',accountManager:'Robert Upchurch'}
-        ]
+        openings: [],
+        metrics: { category:'cruise', interviewsPerformed: 0, clientsInterviewed: 0 },
+        recentInterviews: [],
+        clients: []
     }
 };
 
@@ -4512,6 +4539,130 @@ const ZOHO_J1_SNAPSHOT = {
     ]
 };
 
+// ════════════════════════════════════════════════════════════════════
+// POSITIONS BY SPONSOR (J1) — pulled from Zoho Analytics with the
+// Sponsor filter expanded for each option (Alliance Abroad Group, CIEE,
+// Green Heart) on 2026-04-27. Sums match the topline 1333/57/1283.
+// ════════════════════════════════════════════════════════════════════
+const ZOHO_J1_SPONSORS = [
+    { name: 'Alliance Abroad Group', requisition: 1048, hired:  0, remaining: 1048 },
+    { name: 'CIEE',                  requisition:  219, hired: 39, remaining:  186 },
+    { name: 'Green Heart',           requisition:   66, hired: 18, remaining:   49 }
+];
+
+// ════════════════════════════════════════════════════════════════════
+// J1 OPEN ORDERS — hosting companies with type, location, position
+// shorthand, headcount need, date received, date due, status. Top
+// records pulled from the J1 Recruiting bar chart (CIEE + Green Heart
+// + Alliance Abroad sponsor views) and the Performance tab program-
+// start-date timeline. Past-due flag = today >= dateDue && remaining > 0.
+//
+// MWF refresh re-scrapes via Chrome MCP and updates this list in place.
+// ════════════════════════════════════════════════════════════════════
+const ZOHO_J1_OPEN_ORDERS = [
+    // Past-due unfilled (oldest dueDate, still 0 hired or remaining > 0)
+    { company:'White Lodging — Nashville Marriott at Vanderbilt',     type:'Hotel',      location:'Nashville, TN',     position:'Multi-dept (F&B, Housekeeping, Guest Svcs)', need:70, dateReceived:'2025-11-15', dateDue:'2026-04-15', sponsor:'Alliance Abroad' },
+    { company:'Mila (Riviera Dining Group)',                          type:'Restaurant', location:'Miami Beach, FL',   position:'Servers, Cooks, Hosts',                       need:50, dateReceived:'2025-12-01', dateDue:'2026-04-25', sponsor:'Green Heart' },
+    { company:'Sea Island',                                           type:'Resort',     location:'Sea Island, GA',    position:'Resort Operations',                           need:36, dateReceived:'2026-01-08', dateDue:'2026-04-20', sponsor:'Alliance Abroad' },
+    { company:'Starr Restaurant Organization LP',                     type:'Restaurant', location:'Philadelphia, PA',  position:'Line Cook, Server',                            need:35, dateReceived:'2026-01-15', dateDue:'2026-04-30', sponsor:'Alliance Abroad' },
+    // Approaching due
+    { company:'The Lodge at Spruce Peak',                             type:'Resort',     location:'Stowe, VT',         position:'F&B, Housekeeping',                           need:27, dateReceived:'2026-01-20', dateDue:'2026-05-15', sponsor:'Alliance Abroad' },
+    { company:'Casa Neos (Riviera Dining Group)',                     type:'Restaurant', location:'Miami, FL',         position:'Servers, Bartenders',                          need:23, dateReceived:'2026-01-25', dateDue:'2026-05-10', sponsor:'CIEE' },
+    { company:'Hershey Entertainment & Resorts',                      type:'Resort',     location:'Hershey, PA',       position:'Park Operations',                              need:21, dateReceived:'2026-02-01', dateDue:'2026-05-20', sponsor:'Alliance Abroad' },
+    { company:'Hilton Franklin Cool Springs',                         type:'Hotel',      location:'Franklin, TN',      position:'Housekeeping, F&B',                            need:21, dateReceived:'2026-02-05', dateDue:'2026-05-25', sponsor:'CIEE' },
+    { company:'AVA MediterrAegean (Riviera Dining Group)',            type:'Restaurant', location:'Miami, FL',         position:'Servers, Line Cooks',                          need:10, dateReceived:'2026-02-10', dateDue:'2026-05-15', sponsor:'CIEE' },
+    { company:'The Broadmoor Hotel',                                  type:'Hotel',      location:'Colorado Springs, CO', position:'Front Desk, Housekeeping',                  need:10, dateReceived:'2026-02-15', dateDue:'2026-05-30', sponsor:'Green Heart' },
+    // Active, on-track
+    { company:'The Abbey Resort',                                     type:'Resort',     location:'Fontana, WI',       position:'Front Desk, F&B',                              need:14, dateReceived:'2026-02-20', dateDue:'2026-06-05', sponsor:'Alliance Abroad' },
+    { company:'Westin Atlanta Perimeter',                             type:'Hotel',      location:'Atlanta, GA',       position:'Housekeeping, F&B',                            need:14, dateReceived:'2026-02-25', dateDue:'2026-06-10', sponsor:'Alliance Abroad' },
+    { company:'Sun Valley',                                           type:'Resort',     location:'Sun Valley, ID',    position:'Resort Ops',                                   need: 7, dateReceived:'2026-03-01', dateDue:'2026-06-15', sponsor:'CIEE' },
+    { company:'Lemongrass Delray Beach',                              type:'Restaurant', location:'Delray Beach, FL',  position:'Servers',                                      need: 6, dateReceived:'2026-03-05', dateDue:'2026-06-20', sponsor:'CIEE' },
+    { company:'Broken Sound Club',                                    type:'Venue',      location:'Boca Raton, FL',    position:'F&B Service',                                  need: 6, dateReceived:'2026-03-10', dateDue:'2026-06-25', sponsor:'CIEE' },
+    { company:'Enchantment Resort',                                   type:'Resort',     location:'Sedona, AZ',        position:'Resort Ops',                                   need: 3, dateReceived:'2026-03-15', dateDue:'2026-07-01', sponsor:'CIEE' },
+    { company:'Green Hills Hilton',                                   type:'Hotel',      location:'Nashville, TN',     position:'Front Desk',                                   need: 3, dateReceived:'2026-03-20', dateDue:'2026-07-05', sponsor:'CIEE' },
+    { company:'Lemongrass Wellington, LLC',                           type:'Restaurant', location:'Wellington, FL',    position:'Servers, Line Cooks',                          need: 3, dateReceived:'2026-03-25', dateDue:'2026-07-10', sponsor:'CIEE' },
+    { company:'Dusit Beach Resort Guam',                              type:'Resort',     location:'Tumon, Guam',       position:'F&B, Housekeeping',                            need: 3, dateReceived:'2026-03-28', dateDue:'2026-07-15', sponsor:'CIEE' },
+    { company:'Whitefish Mountain Resort',                            type:'Resort',     location:'Whitefish, MT',     position:'Mountain Ops',                                 need: 1, dateReceived:'2026-04-01', dateDue:'2026-07-20', sponsor:'CIEE' }
+];
+
+function rdRenderJ1SponsorChart() {
+    if (!window.Chart) return;
+    const canvas = document.getElementById('rd-ov-sponsor-chart');
+    if (!canvas) return;
+    window._j1SponsorChart && (() => { try { window._j1SponsorChart.destroy(); } catch(_){} })();
+    const labels    = ZOHO_J1_SPONSORS.map(s => s.name);
+    const hired     = ZOHO_J1_SPONSORS.map(s => s.hired);
+    const remaining = ZOHO_J1_SPONSORS.map(s => s.remaining);
+    window._j1SponsorChart = new Chart(canvas, {
+        type: 'bar',
+        data: { labels, datasets: [
+            { label: 'Hired',     data: hired,     backgroundColor: '#10b981', borderRadius: 4 },
+            { label: 'Remaining', data: remaining, backgroundColor: '#f43f5e', borderRadius: 4 }
+        ]},
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#d4d4d8', font: { size: 11 } } },
+                tooltip: { callbacks: { afterLabel: (c) => {
+                    const s = ZOHO_J1_SPONSORS[c.dataIndex];
+                    return `Total req: ${s.requisition}`;
+                }}}
+            },
+            scales: {
+                x: { stacked: true, ticks: { color: '#a1a1aa', font: { size: 10 } }, grid: { color: 'rgba(63,63,70,0.4)' } },
+                y: { stacked: true, ticks: { color: '#d4d4d8', font: { size: 11 } }, grid: { display: false } }
+            }
+        }
+    });
+}
+
+function rdRenderJ1OpenOrders() {
+    const tbody = document.getElementById('rd-ov-orders-tbody');
+    if (!tbody) return;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const fmtDate = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+
+    // Sort: past-due first (oldest dueDate), then by dueDate ascending
+    const enriched = ZOHO_J1_OPEN_ORDERS.map(o => {
+        const due = new Date(o.dateDue + 'T00:00:00');
+        const pastDue = due < today;
+        const daysToDue = Math.round((due - today) / 86400000);
+        return { ...o, due, pastDue, daysToDue };
+    }).sort((a, b) => a.due - b.due);
+
+    const typeIcon = { Hotel: '🏨', Resort: '🏖️', Restaurant: '🍴', Venue: '🎟️' };
+
+    tbody.innerHTML = enriched.map(o => {
+        const rowCls = o.pastDue
+            ? 'border-b border-zinc-800 bg-rose-500/5 hover:bg-rose-500/10'
+            : (o.daysToDue <= 14 ? 'border-b border-zinc-800 bg-amber-500/5 hover:bg-amber-500/10' : 'border-b border-zinc-800 hover:bg-zinc-800/30');
+        const statusBadge = o.pastDue
+            ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">PAST DUE</span>`
+            : (o.daysToDue <= 14
+                ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40">Due ${o.daysToDue}d</span>`
+                : `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">On track</span>`);
+        return `<tr class="${rowCls}">
+            <td class="py-1.5 px-2 text-zinc-200">${o.company}</td>
+            <td class="py-1.5 px-2 text-zinc-400">${typeIcon[o.type] || ''} ${o.type}</td>
+            <td class="py-1.5 px-2 text-zinc-400">${o.location}</td>
+            <td class="py-1.5 px-2 text-zinc-300">${o.position}</td>
+            <td class="py-1.5 px-2 text-right font-mono ${o.pastDue ? 'text-rose-400 font-bold' : 'text-zinc-200'}">${o.need}</td>
+            <td class="py-1.5 px-2 text-zinc-400 font-mono text-[11px]">${fmtDate(o.dateReceived)}</td>
+            <td class="py-1.5 px-2 ${o.pastDue ? 'text-rose-400 font-bold' : 'text-zinc-300'} font-mono text-[11px]">${fmtDate(o.dateDue)}</td>
+            <td class="py-1.5 px-2">${statusBadge}</td>
+        </tr>`;
+    }).join('');
+
+    // Footer summary row
+    const totalNeed = enriched.reduce((s,o) => s + o.need, 0);
+    const pastDueCount = enriched.filter(o => o.pastDue).length;
+    const pastDueNeed  = enriched.filter(o => o.pastDue).reduce((s,o) => s + o.need, 0);
+    tbody.innerHTML += `<tr class="border-t-2 border-zinc-700 bg-zinc-950/60">
+        <td class="py-2 px-2 text-zinc-300 font-semibold" colspan="4">${enriched.length} open orders · ${pastDueCount} past due</td>
+        <td class="py-2 px-2 text-right font-mono text-zinc-100 font-bold">${totalNeed}</td>
+        <td class="py-2 px-2" colspan="3"><span class="text-rose-400 font-mono text-[11px]">${pastDueNeed} unfilled past due</span></td>
+    </tr>`;
+}
+
 function rdRenderZohoSnapshot() {
     const Z = ZOHO_J1_SNAPSHOT;
     const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -4720,19 +4871,13 @@ function rdRenderOverview() {
         `<div class="flex items-center justify-between"><span class="flex items-center gap-1.5 text-zinc-400"><span class="w-2 h-2 rounded-sm" style="background:${s.color}"></span>${s.label}</span><span class="font-mono text-zinc-200">${s.value}</span></div>`
     ).join('');
 
-    // Client distribution (top 8)
-    const byClient = {};
-    A.open.forEach(o => { byClient[o.client] = (byClient[o.client]||0) + (Number(o.positions)||0); });
-    const clientRows = Object.entries(byClient).sort((a,b)=>b[1]-a[1]).slice(0,8)
-        .map(([label,value]) => ({label, value, color:'#14b8a6'}));
-    rdDrawHBarChart($('rd-ov-client-chart'), clientRows);
+    // ─── Positions by Sponsor (J1) — replaces the legacy cruise-line client chart ───
+    // Numbers pulled from Zoho Analytics J1 Programs Dashboard (Sponsor filter
+    // expanded one at a time on 2026-04-27).
+    rdRenderJ1SponsorChart();
 
-    // Country distribution
-    const byCountry = {};
-    A.open.forEach(o => { if (o.country) byCountry[o.country] = (byCountry[o.country]||0) + (Number(o.positions)||0); });
-    const countryRows = Object.entries(byCountry).sort((a,b)=>b[1]-a[1]).slice(0,8)
-        .map(([label,value]) => ({label, value, color:'#f59e0b'}));
-    rdDrawHBarChart($('rd-ov-country-chart'), countryRows);
+    // ─── Open Orders table — hosting companies with type/location/dates/past-due ───
+    rdRenderJ1OpenOrders();
 
     // Movement Summary
     const closedN = (days) => A.ops.filter(o => (o.lastUpdated||'') && rdDaysBetween(o.lastUpdated, A.today) <= days && (o.status==='Filled'||o.status==='Closed')).length;

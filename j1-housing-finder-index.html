@@ -100,6 +100,19 @@
             box-shadow: 0 2px 20px rgba(0,0,0,0.2);
         }
 
+        /* When the floating "Back to Poseidon V6" button is rendered (direct
+           visit only — it self-suppresses inside iframes), pad the header so
+           the title isn't covered by the pill. Uses :has() — supported in all
+           modern browsers. */
+        body:has(#poseidon-back-to-v6) .header {
+            padding-left: 220px;
+        }
+        @media (max-width: 640px) {
+            body:has(#poseidon-back-to-v6) .header {
+                padding-left: 60px;
+            }
+        }
+
         .header-left {
             display: flex;
             align-items: center;

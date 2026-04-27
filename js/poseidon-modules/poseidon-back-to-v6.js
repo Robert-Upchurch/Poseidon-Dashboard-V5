@@ -4,20 +4,20 @@
    floating button linking back to the Poseidon V6 Dashboard.
 
    Usage (any dashboard):
-     <script src="https://robert-upchurch.github.io/Poseidon-Dashboard-V5/js/poseidon-modules/poseidon-back-to-v6.js" defer></script>
+     <script src="https://robert-upchurch.github.io/Poseidon/js/poseidon-modules/poseidon-back-to-v6.js" defer></script>
 
    Auto-detects the V6 URL via (in order):
      1) window.POSEIDON_V6_URL   ← highest priority, set before the script loads
      2) sessionStorage.poseidon_v6_origin  ← set by the V6 Directory when launching this page
      3) query param ?poseidon_return_to=<url>   ← set by V6 Directory as a fallback
-     4) https://robert-upchurch.github.io/Poseidon-Dashboard-V5/poseidon-dashboard-v6.html  ← production default
+     4) https://robert-upchurch.github.io/Poseidon/poseidon-dashboard-v6.html  ← production default
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
   if (window.__POSEIDON_BACK_BTN_LOADED__) return;
   window.__POSEIDON_BACK_BTN_LOADED__ = true;
 
-  const DEFAULT_V6 = 'https://robert-upchurch.github.io/Poseidon-Dashboard-V5/poseidon-dashboard-v6.html';
+  const DEFAULT_V6 = 'https://robert-upchurch.github.io/Poseidon/poseidon-dashboard-v6.html';
 
   function getQueryParam(name) {
     try { return new URLSearchParams(location.search).get(name); } catch (_) { return null; }

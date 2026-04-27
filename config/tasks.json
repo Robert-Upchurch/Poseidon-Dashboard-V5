@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "lastUpdated": "2026-04-25",
-    "schema": "https://github.com/Robert-Upchurch/Poseidon-Dashboard-V5/blob/main/docs/tasks-schema.md",
+    "schema": "https://github.com/Robert-Upchurch/Poseidon/blob/main/docs/tasks-schema.md",
     "source": "Generated from OPML platform 2026-04-25"
   },
   "tasks": [
@@ -24,7 +24,7 @@
 
     {"id":"P0.1","p":"P0","s":"TODO","o":"R","d":"Foundation","t":"Review docs (PROJECT-STATUS, ROADMAP, architecture v3)","n":"~15 min."},
     {"id":"P0.2","p":"P0","s":"TODO","o":"R","d":"Partner Intake","t":"Decide partner intake architecture","n":"Recommend Microsoft Forms MVP."},
-    {"id":"P0.3","p":"P0","s":"TODO","o":"R","d":"Foundation","t":"Rename GitHub repo Poseidon-Dashboard-V5 to Poseidon-Dashboard","n":"Settings -> Repository name."},
+    {"id":"P0.3","p":"P0","s":"DONE","o":"R","d":"Foundation","t":"Rename GitHub repo Poseidon-Dashboard-V5 to Poseidon","n":"Renamed to Poseidon (not Poseidon-Dashboard). Pages URL is now https://robert-upchurch.github.io/Poseidon/. Old URL 404s — no auto-redirect from GitHub Pages on rename.","u":"2026-04-26"},
     {"id":"P0.4","p":"P0","s":"TODO","o":"R","d":"Foundation","t":"Push README update","n":"PowerShell."},
     {"id":"P0.5","p":"P0","s":"TODO","o":"R","d":"Foundation","t":"Delete obsolete feat/v6.1-jarvis-release branch","n":"main is 10 commits ahead."},
     {"id":"P0.6","p":"P0","s":"TODO","o":"R","d":"Foundation","t":"Confirm corporate architecture v3","n":"Foundation for everything else."},

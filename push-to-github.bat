@@ -1,7 +1,7 @@
 @echo off
 REM ================================================================
 REM  Poseidon Dashboard — sync local work with GitHub
-REM  Repo: https://github.com/Robert-Upchurch/Poseidon-Dashboard-V5
+REM  Repo: https://github.com/Robert-Upchurch/Poseidon
 REM
 REM  Handles diverged branches: fetch + rebase + push.
 REM  Double-click this file, or run from a command prompt.
@@ -60,10 +60,10 @@ if errorlevel 1 goto :fail
 echo.
 echo ================================================================
 echo  SUCCESS
-echo  Repo:       https://github.com/Robert-Upchurch/Poseidon-Dashboard-V5
-echo  Landing:    https://robert-upchurch.github.io/Poseidon-Dashboard-V5/
-echo  V5 direct:  https://robert-upchurch.github.io/Poseidon-Dashboard-V5/poseidon-dashboard-v5.html
-echo  V6 direct:  https://robert-upchurch.github.io/Poseidon-Dashboard-V5/poseidon-dashboard-v6.html
+echo  Repo:       https://github.com/Robert-Upchurch/Poseidon
+echo  Landing:    https://robert-upchurch.github.io/Poseidon/
+echo  V5 direct:  https://robert-upchurch.github.io/Poseidon/poseidon-dashboard-v5.html
+echo  V6 direct:  https://robert-upchurch.github.io/Poseidon/poseidon-dashboard-v6.html
 echo  (Pages rebuild takes ~60 seconds.)
 echo ================================================================
 pause

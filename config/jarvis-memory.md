@@ -37,7 +37,7 @@
 - Always reference GitHub Pages live URL when announcing features
   (never bare localhost).
 - PR-per-change workflow via the `gh` CLI on
-  Robert-Upchurch/Poseidon-Dashboard-V5.
+  Robert-Upchurch/Poseidon (renamed from Poseidon-Dashboard-V5 on 2026-04-25).
 
 ## How to use this memory
 - The first time Robert asks about a topic, check `recall("topic")`

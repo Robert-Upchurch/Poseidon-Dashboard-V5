@@ -344,6 +344,66 @@
   }
   function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+  // Find the J1 Housing Finder application window — either the iframe
+  // mounted on the j1housing dashboard page, or a popped-out window
+  // pointing at j1-housing-finder-index.html. Returns the contentWindow
+  // (where ALL_LISTINGS, applyFilters(), etc. live).
+  //
+  // Auto-loads when needed: navigates to the j1housing page, clicks the
+  // "J1 Housing Finder" tab to reveal the lazy iframe, and waits for
+  // the iframe to finish loading. Same-origin since both come from
+  // GitHub Pages, so contentWindow access works.
+  function _findHousingWindowSync() {
+    try {
+      const page = document.getElementById('j1housing');
+      if (page) {
+        const frame = page.querySelector('iframe[src*="j1-housing"]');
+        if (frame && frame.contentWindow && frame.contentWindow.ALL_LISTINGS) {
+          return { win: frame.contentWindow, location: 'iframe-on-j1housing-page' };
+        }
+      }
+    } catch (_) {}
+    try {
+      const popouts = (window.PoseidonToolbar && window.PoseidonToolbar.activePopouts && window.PoseidonToolbar.activePopouts()) || [];
+      for (const p of popouts) {
+        if (!p.win || p.win.closed) continue;
+        try {
+          if (p.win.ALL_LISTINGS) return { win: p.win, location: 'popped-window-direct' };
+          const frame = p.win.document.querySelector('iframe[src*="j1-housing"]');
+          if (frame && frame.contentWindow && frame.contentWindow.ALL_LISTINGS) {
+            return { win: frame.contentWindow, location: 'popped-window-iframe' };
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    return { win: null };
+  }
+
+  async function _findHousingWindow() {
+    // Fast path — already loaded.
+    let found = _findHousingWindowSync();
+    if (found.win) return found;
+    // Auto-load: navigate, reveal tab, wait for iframe ALL_LISTINGS.
+    try {
+      // 1. Navigate to j1housing page if not already active.
+      const j1housingLink = document.querySelector('.nav-link[data-page="j1housing"]');
+      if (j1housingLink) j1housingLink.click();
+      await new Promise(r => setTimeout(r, 250));
+      // 2. Reveal the J1 Housing Finder tab content (it's display:none until clicked).
+      const tabBtn = document.querySelector('.j1-tab[data-tab="j1-housing-finder"]');
+      if (tabBtn) tabBtn.click();
+      await new Promise(r => setTimeout(r, 250));
+      // 3. Wait up to 8 seconds for the iframe to finish loading and ALL_LISTINGS to appear.
+      const start = Date.now();
+      while (Date.now() - start < 8000) {
+        found = _findHousingWindowSync();
+        if (found.win) return found;
+        await new Promise(r => setTimeout(r, 200));
+      }
+    } catch (_) {}
+    return { win: null, error: 'Could not load the J1 Housing Finder iframe. The user may need to open the J1 page manually.' };
+  }
+
   // ══════════════════════════════════════════════════════════════════
   // TOOL DEFINITIONS — what Jarvis can do on the dashboard
   // ══════════════════════════════════════════════════════════════════
@@ -581,6 +641,68 @@
         properties: {
           div_id: { type: 'string', description: 'Optional division id of the popped-out window to read.' }
         }
+      }
+    },
+
+    // ─── J1 Housing Finder — page-aware tools ───────────────────────
+    // The J1 Housing Finder is a full sub-application embedded as an
+    // iframe on the j1housing page. It has filters, a Leaflet map,
+    // listings cards, source tabs, sort, and a work-address distance
+    // calculator. These tools let Jarvis read its full state and
+    // operate it programmatically. Always use these (not generic
+    // read_full_dashboard) when the user asks about housing.
+    {
+      type: 'function',
+      name: 'read_housing',
+      description: 'Read the J1 Housing Finder page state. Returns active filters (city, area, beds, baths, max price, internet, electric, source tab, sort), counts (total vs filtered), all currently visible listings with structured fields (id, source, price, address, city, area, beds, baths, sqft, tags, utilities, note, distance to work if calculated), the currently selected listing if any, and the work address if set. Call this FIRST whenever the user asks about housing, listings, prices, cities, beds, neighborhoods, or anything visible on this page. Do NOT use read_full_dashboard for housing questions — it does not understand this page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          max_listings: { type: 'number', description: 'Cap the number of listings returned (default 25). Use a smaller number for quick summaries.' }
+        }
+      }
+    },
+    {
+      type: 'function',
+      name: 'set_housing_filters',
+      description: 'Set one or more filters on the J1 Housing Finder and apply them. Pass only the filters the user is changing — others stay as they are. After applying, call read_housing to confirm the new state and report it. Use this when the user says things like "show me Miami listings", "filter to 2-bedroom", "only owner direct", "under $1500", "include utilities", "sort by price".',
+      parameters: {
+        type: 'object',
+        properties: {
+          city:      { type: 'string',  description: 'Full city name as shown in the dropdown, e.g. "Miami, FL", "Orlando, FL", "Dallas, TX". Pass empty string "" to clear.' },
+          area:      { type: 'string',  description: 'Neighborhood within the chosen city, e.g. "Brickell", "Wynwood". Empty string clears.' },
+          beds:      { type: 'string',  enum: ['', '0', '1', '2', '3', '4'], description: 'Bedroom count. "0" = Studio, "4" = 4+. Empty = Any.' },
+          baths:     { type: 'string',  enum: ['', '1', '2', '3'], description: 'Bathroom count. "3" = 3+. Empty = Any.' },
+          max_price: { type: 'string',  enum: ['', '750', '1000', '1250', '1500', '2000', '2500', '3000'], description: 'Max monthly rent in USD. Empty = Any.' },
+          internet:  { type: 'string',  enum: ['', 'included', 'not-included'], description: 'Internet inclusion. Empty = Any.' },
+          electric:  { type: 'string',  enum: ['', 'included', 'not-included'], description: 'Electricity inclusion. Empty = Any.' },
+          source:    { type: 'string',  enum: ['all', 'craigslist', 'airbnb', 'vrbo', 'owner'], description: 'Source tab to activate. "owner" = Rent by Owner.' },
+          sort:      { type: 'string',  enum: ['price-asc', 'price-desc', 'beds-desc', 'distance'], description: 'Sort order. "distance" requires a work address to be set.' }
+        }
+      }
+    },
+    {
+      type: 'function',
+      name: 'select_housing_listing',
+      description: 'Select a specific listing on the J1 Housing Finder so the map zooms to it and its card highlights. Then call read_housing to get the selected listing details. Use when the user says "show me listing 5", "tell me about the Brickell apartment", "the one on Coral Gables", "the cheapest in Miami".',
+      parameters: {
+        type: 'object',
+        properties: {
+          id:               { type: 'number', description: 'Numeric listing id (1-35 in current sample data).' },
+          address_contains: { type: 'string', description: 'Substring to match in the listing address — case-insensitive. Falls back to first match if multiple.' }
+        }
+      }
+    },
+    {
+      type: 'function',
+      name: 'set_housing_work_address',
+      description: 'Set the work-address on the J1 Housing Finder and trigger distance calculations to all currently filtered listings. Then call read_housing to retrieve the listings with their distance fields populated. Use when the user provides an employer address or says "calculate distances from [address]".',
+      parameters: {
+        type: 'object',
+        properties: {
+          address: { type: 'string', description: 'Restaurant/hotel/employer address to compute distances from.' }
+        },
+        required: ['address']
       }
     },
 
@@ -1052,6 +1174,165 @@
         };
       } catch (e) {
         return { ok: false, error: 'Could not read popped window: ' + e.message };
+      }
+    },
+
+    // ─── J1 Housing Finder — page-aware operations ──────────────────
+    // The housing finder is loaded as an iframe inside the j1housing
+    // page (or as a popped-out window). Both are same-origin, so we
+    // reach into contentWindow / frame and call the page's own
+    // applyFilters() / selectListing() / calcDistances() to operate it.
+    async read_housing({ max_listings = 25 } = {}) {
+      const target = await _findHousingWindow();
+      if (!target.win) return { ok: false, error: target.error };
+      try {
+        const w = target.win;
+        const doc = w.document;
+        const get = (id) => doc.getElementById(id);
+        const filters = {
+          city:      get('filter-city')?.value || '',
+          area:      get('filter-area')?.value || '',
+          beds:      get('filter-beds')?.value || '',
+          baths:     get('filter-baths')?.value || '',
+          max_price: get('filter-price')?.value || '',
+          internet:  get('filter-internet')?.value || '',
+          electric:  get('filter-electric')?.value || '',
+          source:    w.activeSource || 'all',
+          sort:      get('sort-select')?.value || 'price-asc',
+          work_address: get('work-address')?.value || ''
+        };
+        const all = Array.isArray(w.ALL_LISTINGS) ? w.ALL_LISTINGS : [];
+        const filtered = Array.isArray(w.filteredListings) ? w.filteredListings : [];
+        const cap = Math.max(0, Math.min(max_listings, 50));
+        // Distances may be attached to the listing objects after calcDistances()
+        const shape = (l) => ({
+          id: l.id, source: l.source, price: l.price, address: l.address,
+          city: l.city, area: l.area, beds: l.beds, baths: l.baths,
+          sqft: l.sqft, tags: l.tags || [], note: l.note || '',
+          internet_included: !!(l.utilities && l.utilities.internet),
+          electric_included: !!(l.utilities && l.utilities.electric),
+          ...(typeof l.distance === 'number' ? { distance_miles: Math.round(l.distance * 10) / 10 } : {})
+        });
+        const selected = w.selectedListingId ? all.find(l => l.id === w.selectedListingId) : null;
+        // Available filter options pulled live from the DOM
+        const cityOptions = Array.from(get('filter-city')?.options || []).map(o => o.value).filter(v => v);
+        const areaOptions = Array.from(get('filter-area')?.options || []).map(o => o.value).filter(v => v);
+        return {
+          ok: true,
+          page: 'J1 Housing Finder',
+          purpose: 'Direct-owner rentals across major US cities for J1 visa workers — 6/12 month leases. Aggregates Craigslist, Airbnb, Vrbo, and Rent-by-Owner listings on one map + filterable list.',
+          counts: {
+            total_listings: all.length,
+            filtered_listings: filtered.length,
+            returned: Math.min(filtered.length, cap)
+          },
+          active_filters: filters,
+          available_options: {
+            cities: cityOptions,
+            areas_for_current_city: areaOptions,
+            beds:  ['', '0', '1', '2', '3', '4'],
+            baths: ['', '1', '2', '3'],
+            max_price: ['', '750', '1000', '1250', '1500', '2000', '2500', '3000'],
+            sources: ['all', 'craigslist', 'airbnb', 'vrbo', 'owner'],
+            sorts:   ['price-asc', 'price-desc', 'beds-desc', 'distance']
+          },
+          listings: filtered.slice(0, cap).map(shape),
+          selected_listing: selected ? shape(selected) : null,
+          location_source: target.location
+        };
+      } catch (e) {
+        return { ok: false, error: 'read_housing failed: ' + e.message };
+      }
+    },
+
+    async set_housing_filters(args = {}) {
+      const target = await _findHousingWindow();
+      if (!target.win) return { ok: false, error: target.error };
+      try {
+        const w = target.win;
+        const doc = w.document;
+        const setVal = (id, v) => { const el = doc.getElementById(id); if (el && v !== undefined) { el.value = v; return true; } return false; };
+        const applied = [];
+        if (args.city !== undefined)      { setVal('filter-city', args.city); applied.push('city'); if (typeof w.onCityChange === 'function') w.onCityChange(); }
+        if (args.area !== undefined)      { setVal('filter-area', args.area);          applied.push('area'); }
+        if (args.beds !== undefined)      { setVal('filter-beds', args.beds);          applied.push('beds'); }
+        if (args.baths !== undefined)     { setVal('filter-baths', args.baths);        applied.push('baths'); }
+        if (args.max_price !== undefined) { setVal('filter-price', args.max_price);    applied.push('max_price'); }
+        if (args.internet !== undefined)  { setVal('filter-internet', args.internet);  applied.push('internet'); }
+        if (args.electric !== undefined)  { setVal('filter-electric', args.electric);  applied.push('electric'); }
+        if (args.sort !== undefined)      { setVal('sort-select', args.sort);          applied.push('sort'); }
+        if (args.source !== undefined && typeof w.filterSource === 'function') {
+          // The page's filterSource expects (source, btnEl). We pass the matching tab button.
+          const btn = doc.querySelector(`.source-tab[data-source="${args.source}"]`);
+          w.filterSource(args.source, btn);
+          applied.push('source');
+        }
+        if (typeof w.applyFilters === 'function') w.applyFilters();
+        return {
+          ok: true,
+          applied,
+          new_filtered_count: Array.isArray(w.filteredListings) ? w.filteredListings.length : null,
+          note: 'Call read_housing to see the new filtered listings.'
+        };
+      } catch (e) {
+        return { ok: false, error: 'set_housing_filters failed: ' + e.message };
+      }
+    },
+
+    async select_housing_listing({ id, address_contains } = {}) {
+      const target = await _findHousingWindow();
+      if (!target.win) return { ok: false, error: target.error };
+      try {
+        const w = target.win;
+        const all = Array.isArray(w.ALL_LISTINGS) ? w.ALL_LISTINGS : [];
+        let listing = null;
+        if (typeof id === 'number') listing = all.find(l => l.id === id);
+        if (!listing && address_contains) {
+          const q = String(address_contains).toLowerCase();
+          listing = all.find(l => (l.address || '').toLowerCase().includes(q) || (l.area || '').toLowerCase().includes(q) || (l.city || '').toLowerCase().includes(q));
+        }
+        if (!listing) return { ok: false, error: 'No matching listing — try a different id or substring.' };
+        if (typeof w.selectListing === 'function') w.selectListing(listing.id);
+        return {
+          ok: true,
+          selected: {
+            id: listing.id, source: listing.source, price: listing.price,
+            address: listing.address, city: listing.city, area: listing.area,
+            beds: listing.beds, baths: listing.baths, sqft: listing.sqft,
+            tags: listing.tags || [], note: listing.note || '',
+            internet_included: !!(listing.utilities && listing.utilities.internet),
+            electric_included: !!(listing.utilities && listing.utilities.electric),
+            ...(typeof listing.distance === 'number' ? { distance_miles: Math.round(listing.distance * 10) / 10 } : {})
+          }
+        };
+      } catch (e) {
+        return { ok: false, error: 'select_housing_listing failed: ' + e.message };
+      }
+    },
+
+    async set_housing_work_address({ address } = {}) {
+      const target = await _findHousingWindow();
+      if (!target.win) return { ok: false, error: target.error };
+      if (!address) return { ok: false, error: 'address is required' };
+      try {
+        const w = target.win;
+        const doc = w.document;
+        const input = doc.getElementById('work-address');
+        if (!input) return { ok: false, error: 'Work address input not found on the page.' };
+        input.value = address;
+        if (typeof w.calcDistances === 'function') {
+          await w.calcDistances();
+          // calcDistances geocodes via an external API; small wait so the
+          // resulting distances land on the listing objects before we read.
+          await new Promise(r => setTimeout(r, 1200));
+        }
+        return {
+          ok: true,
+          work_address: address,
+          note: 'Distances computed. Call read_housing to retrieve listings with distance_miles populated, or set sort to "distance" first.'
+        };
+      } catch (e) {
+        return { ok: false, error: 'set_housing_work_address failed: ' + e.message };
       }
     },
 
@@ -1909,6 +2190,8 @@
       'When the user asks anything about cruise line contracts, fees, terms, obligations, legal, insurance, positions, compliance, or pros/cons — first call read_contracts (or read_contracts_lines for a quick line list), then summarize the results. The Contracts dashboard is fully readable end-to-end via these tools.',
       'When the user asks to "open in new tab", "pop out", or "expand" a division, call popout_division. For analytics or chart questions on a division, call list_analytics_reports first to discover available reports, then read_analytics to pull the actual numbers behind the chart.',
       'When the user asks for an overall scan of the dashboard ("what is on the dashboard", "scan everything", "summarize the whole thing", "give me a full status", or any question that could span multiple divisions), call read_full_dashboard — it returns every page\'s title + text + iframe content in one call, even for hidden pages.',
+      'J1 HOUSING FINDER — this is a full sub-application on the j1housing page. It aggregates direct-owner rentals (6/12 month leases) for J-1 visa workers across major US cities, sourced from Craigslist, Airbnb, Vrbo, and Rent-by-Owner listings. Each listing has: city, neighborhood/area, beds, baths, monthly price, square footage, address, source tab, tags, internet/electric inclusion, owner notes, and lat/lng on a map. Filters: city (~100 cities), area (depends on city), bedrooms (Studio/1/2/3/4+), bathrooms (1/2/3+), max price (up to $3000/mo), internet included, electricity included, source tab (All / Craigslist / Airbnb / Vrbo / Rent by Owner), and sort (price asc/desc, most beds, distance to work). There is also a Work Address field that geocodes and computes distance to every listing.',
+      'For any housing-related question — "what is on this page", "show me Miami listings", "cheapest 2-bedroom under $1500", "what cities are covered", "filter to owner-direct", "what is the listing in Brickell", "calculate distances from this employer address", or anything else about housing — use the housing tools (read_housing, set_housing_filters, select_housing_listing, set_housing_work_address). Do NOT use read_full_dashboard for housing questions; it does not understand this page. Always call read_housing first to see the current filter state and listings, then act. When summarizing, mention the count, the price range, the cities/areas represented, and call out the owner-direct (cheapest, no broker) listings if relevant.',
       'If the user has popped a division out into a separate tab and you need to read what is in that tab, call list_popped_windows then read_popped_window. You can read the popped tab\'s text, iframes, and embed-mode state without the user having to switch back.',
       'INTERNET ACCESS — you have working web search. Call web_search whenever Robert asks about current events, news, prices, recent updates, partner intel, or anything outside your training data. Never say "I cannot search" or "I do not have internet access" — you do. Use depth: "advanced" for in-depth research questions, "basic" (default) for quick lookups. For specific URL contents, call fetch_url (CORS-limited; works for raw GitHub, JSON APIs, etc.).',
       'For media playback ("play that video", "pause the song", "stop the audio", "play the X video"), call list_media first to discover what is on the page, then play_media / pause_media / stop_media with id or title. The tools work on native video/audio AND YouTube/Vimeo iframes (and even on media in popped-out tabs).',

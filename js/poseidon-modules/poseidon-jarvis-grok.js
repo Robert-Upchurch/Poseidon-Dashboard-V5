@@ -39,6 +39,7 @@
     processor: null,
     micSource: null,
     playbackQueue: [],
+    playbackSources: [],
     playbackTime: 0,
     lastAssistantText: '',
     transcript: [],
@@ -157,6 +158,22 @@
       <div class="jv-cfg" id="jv-cfg-section">
         <label>Grok API Key <span style="color:#f59e0b">(stored locally)</span></label>
         <input type="password" id="jv-api-key" placeholder="xai-…" autocomplete="off" />
+        <label style="margin-top:6px">Voice</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="jv-voice" style="flex:1;background:#0a1628;border:1px solid rgba(148,163,184,0.18);border-radius:6px;padding:6px 8px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11px;outline:none">
+            <optgroup label="Male">
+              <option value="ara">ara</option>
+              <option value="atlas">atlas</option>
+              <option value="rex">rex</option>
+            </optgroup>
+            <optgroup label="Female">
+              <option value="eve">eve (default)</option>
+              <option value="celeste">celeste</option>
+            </optgroup>
+          </select>
+          <button id="jv-voice-apply" type="button" style="background:rgba(20,184,166,0.18);color:#5eead4;border:1px solid rgba(20,184,166,0.4);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Apply</button>
+        </div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px">Apply reconnects with the selected voice. Names not on this list can still be set via console: <code style="color:#94a3b8">PoseidonJarvis.setVoice('name')</code></div>
       </div>
     `;
     document.body.appendChild(panelEl);
@@ -182,6 +199,24 @@
       setApiKey(keyInput.value.trim());
       pushLog('tool', `API key saved (locally).`);
     });
+
+    const voiceSel = panelEl.querySelector('#jv-voice');
+    if (voiceSel) {
+      const cur = getVoice();
+      // Preselect; if cur isn't a known option, leave default selection alone
+      const opt = voiceSel.querySelector(`option[value="${cur}"]`);
+      if (opt) voiceSel.value = cur;
+      const applyBtn = panelEl.querySelector('#jv-voice-apply');
+      if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+          const v = voiceSel.value || 'eve';
+          setVoice(v);
+          pushLog('tool', `Voice set to "${v}". Reconnecting…`);
+          try { disconnect(); } catch (_) {}
+          setTimeout(() => { connect().catch(() => {}); }, 400);
+        });
+      }
+    }
   }
 
   function togglePanel() {
@@ -481,11 +516,12 @@
     {
       type: 'function',
       name: 'web_search',
-      description: 'Search the web for fresh information using DuckDuckGo Instant Answer (CORS-friendly, no API key needed). Best for definitions, simple facts, official site lookups, and disambiguation. For complex queries, fall back to your training data.',
+      description: 'Search the live web using Grok Live Search (server-side, with citations). Use this for ANYTHING outside your training data: current news, recent events, prices, scores, "what is X happening today", company updates, partner intel, or any fact that may have changed in the last 12 months. Returns a synthesized answer plus citation URLs. This actually works — do not refuse search requests, just call it.',
       parameters: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: 'Search query.' }
+          query: { type: 'string', description: 'Search query — write it as you would type into Google. Be specific.' },
+          depth: { type: 'string', enum: ['basic', 'advanced'], description: 'basic = 5 sources, fast. advanced = 15 sources, deeper research. Default basic.' }
         },
         required: ['query']
       }
@@ -947,31 +983,72 @@
       }
     },
 
-    // ─── Web search (DuckDuckGo Instant Answer — CORS-friendly) ─────
-    async web_search({ query }) {
+    // ─── Web search — Grok Live Search via /v1/responses ────────────
+    // Same vendor as the realtime voice (no extra API key). Grok performs
+    // the search server-side and returns a synthesized answer + citations.
+    // depth: 'basic' → up to 5 sources (cheaper, faster)
+    //        'advanced' → up to 15 sources (deeper research)
+    async web_search({ query, depth = 'basic' }) {
       try {
-        const url = 'https://api.duckduckgo.com/?format=json&no_html=1&skip_disambig=0&q=' + encodeURIComponent(query);
-        const r = await fetch(url);
-        if (!r.ok) return { ok: false, error: 'DuckDuckGo HTTP ' + r.status };
-        const d = await r.json();
-        const related = (d.RelatedTopics || []).slice(0, 8).map(t => ({
-          text: t.Text || (t.Topics && t.Topics[0]?.Text) || '',
-          url:  t.FirstURL || (t.Topics && t.Topics[0]?.FirstURL) || ''
-        })).filter(x => x.text);
-        return {
-          ok: true,
-          query,
-          abstract:        d.Abstract || d.AbstractText || '',
-          abstract_source: d.AbstractSource || '',
-          abstract_url:    d.AbstractURL || '',
-          definition:      d.Definition || '',
-          definition_url:  d.DefinitionURL || '',
-          answer:          d.Answer || '',
-          answer_type:     d.AnswerType || '',
-          heading:         d.Heading || '',
-          related,
-          fallback_url:    'https://duckduckgo.com/?q=' + encodeURIComponent(query)
+        const key = getApiKey();
+        if (!key) return { ok: false, error: 'No Grok API key configured. Open the Jarvis settings panel and paste it.' };
+        const max = depth === 'advanced' ? 15 : 5;
+        const body = {
+          model: 'grok-4-latest',
+          input: [
+            { role: 'system', content: 'You are a research assistant. Answer the user\'s question concisely (under 120 words) using the provided web sources. Include the most important factual detail. Do not pad.' },
+            { role: 'user',   content: query }
+          ],
+          search_parameters: {
+            mode: 'on',
+            max_search_results: max,
+            return_citations: true
+          },
+          temperature: 0.3
         };
+        const r = await fetch('https://api.x.ai/v1/responses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          body: JSON.stringify(body)
+        });
+        if (!r.ok) {
+          const err = await r.text();
+          return { ok: false, error: `Grok search ${r.status}: ${err.slice(0, 300)}` };
+        }
+        const d = await r.json();
+        // Extract the synthesized answer from the responses-API shape.
+        let answer = '';
+        if (typeof d.output_text === 'string') answer = d.output_text;
+        else if (Array.isArray(d.output)) {
+          for (const item of d.output) {
+            const c = item && item.content;
+            if (Array.isArray(c)) {
+              for (const part of c) {
+                if (part && (part.type === 'output_text' || part.type === 'text') && part.text) answer += part.text;
+              }
+            } else if (typeof c === 'string') {
+              answer += c;
+            }
+          }
+        }
+        // Citations live under output[].content[].annotations[] for url_citation entries.
+        const citations = [];
+        if (Array.isArray(d.output)) {
+          for (const item of d.output) {
+            const c = item && item.content;
+            if (!Array.isArray(c)) continue;
+            for (const part of c) {
+              const anns = part && part.annotations;
+              if (!Array.isArray(anns)) continue;
+              for (const a of anns) {
+                if (a && (a.type === 'url_citation' || a.url)) {
+                  citations.push({ title: a.title || '', url: a.url || a.uri || '' });
+                }
+              }
+            }
+          }
+        }
+        return { ok: true, query, depth, answer: (answer || '').trim(), citations };
       } catch (e) {
         return { ok: false, error: 'web_search failed: ' + e.message };
       }
@@ -1227,12 +1304,24 @@
     state.playbackTime = t0 + buffer.duration;
     setStatusClass('state-speaking');
     state.speaking = true;
+    state.playbackSources.push(src);
     src.onended = () => {
+      const idx = state.playbackSources.indexOf(src);
+      if (idx !== -1) state.playbackSources.splice(idx, 1);
       if (state.audioCtx.currentTime + 0.05 >= state.playbackTime) {
         state.speaking = false;
         setStatusClass(state.listening ? 'state-listening' : 'state-connected');
       }
     };
+  }
+
+  // Stop all in-flight TTS audio immediately. Called on barge-in
+  // (user speaks while Jarvis is talking) so Jarvis shuts up mid-syllable.
+  function flushPlayback() {
+    state.playbackSources.forEach(s => { try { s.onended = null; s.stop(); s.disconnect(); } catch (_) {} });
+    state.playbackSources.length = 0;
+    if (state.audioCtx) state.playbackTime = state.audioCtx.currentTime;
+    state.speaking = false;
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -1328,6 +1417,14 @@
         log('session', msg.type); break;
 
       case 'input_audio_buffer.speech_started':
+        // Barge-in: Robert started speaking. Stop talking immediately.
+        // Cancel any in-flight response, clear server-side audio buffer,
+        // and flush local PCM playback so we shut up mid-syllable.
+        if (state.speaking || state.playbackSources.length) {
+          try { sendWs({ type: 'response.cancel' }); } catch (_) {}
+          try { sendWs({ type: 'output_audio_buffer.clear' }); } catch (_) {}
+          flushPlayback();
+        }
         setStatusClass('state-listening'); break;
       case 'input_audio_buffer.speech_stopped':
         setStatusClass('state-connected'); break;
@@ -1716,6 +1813,10 @@
     return [
       'You are Jarvis, the voice assistant embedded inside the CTI Group / Poseidon executive dashboard.',
       'You speak to Robert Upchurch, CEO of CTI Group. Be warm, confident, efficient. Use short sentences. Never be chatty.',
+      'TURN-TAKING — when Robert starts speaking, stop talking immediately. Do not finish your sentence. Do not say "let me finish" or "as I was saying". Just stop and listen.',
+      'BREVITY — answer only the question that was asked. Then stop. Do not pivot, summarize what you just said, or volunteer related information unless he explicitly asks for more.',
+      'TOPIC HANDLING — if Robert\'s next question is on the same subject, continue with that subject. If it changes topic, drop the prior thread completely. No "before I forget" or "circling back" bridges.',
+      'DEFAULT LENGTH — one or two sentences. Go longer only when (a) Robert explicitly asks for detail, (b) you are reading a briefing, or (c) the answer truly requires it. When in doubt, be shorter.',
       'You have full tool access to the dashboard DOM: reading state, navigating pages, saving tasks/events, running simulations, opening the Directory, reading the changelog, generating briefings, and producing video briefs.',
       'When the user asks "what\'s on my day", "brief me", or similar, call morning_briefing, then deliver the returned script naturally.',
       'When the user asks about a KPI on a specific division, call read_kpi with that division.',
@@ -1725,7 +1826,7 @@
       'When the user asks to "open in new tab", "pop out", or "expand" a division, call popout_division. For analytics or chart questions on a division, call list_analytics_reports first to discover available reports, then read_analytics to pull the actual numbers behind the chart.',
       'When the user asks for an overall scan of the dashboard ("what is on the dashboard", "scan everything", "summarize the whole thing", "give me a full status", or any question that could span multiple divisions), call read_full_dashboard — it returns every page\'s title + text + iframe content in one call, even for hidden pages.',
       'If the user has popped a division out into a separate tab and you need to read what is in that tab, call list_popped_windows then read_popped_window. You can read the popped tab\'s text, iframes, and embed-mode state without the user having to switch back.',
-      'For fresh facts you do not know, call web_search (DuckDuckGo Instant Answer). For specific URL contents, call fetch_url — many sites will fail with CORS, so prefer known-friendly endpoints (raw GitHub files, JSON APIs, etc.).',
+      'INTERNET ACCESS — you have working web search. Call web_search whenever Robert asks about current events, news, prices, recent updates, partner intel, or anything outside your training data. Never say "I cannot search" or "I do not have internet access" — you do. Use depth: "advanced" for in-depth research questions, "basic" (default) for quick lookups. For specific URL contents, call fetch_url (CORS-limited; works for raw GitHub, JSON APIs, etc.).',
       'For media playback ("play that video", "pause the song", "stop the audio", "play the X video"), call list_media first to discover what is on the page, then play_media / pause_media / stop_media with id or title. The tools work on native video/audio AND YouTube/Vimeo iframes (and even on media in popped-out tabs).',
       'You have a long-term memory that persists across browser sessions. When the user tells you something worth keeping ("remember that X", a preference, a name, a deadline), call remember({topic, fact}). Before answering anything that depends on prior context (a person, a vendor, a past conversation, a stated preference), FIRST call recall(query) — your memory may already have it. Only use forget() when the user explicitly asks you to forget something.',
       _memorySnippet(),

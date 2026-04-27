@@ -5257,7 +5257,10 @@ function renderRecruiting() {
 const msalConfig = {
     auth: {
         clientId: 'aff2df6d-cd54-48f3-bd24-3584fd9ea3de',
-        authority: 'https://login.microsoftonline.com/common',
+        // CTI Group tenant (cti-usa.com). The Poseidon Dashboard app
+        // registration is single-tenant, so /common is rejected for
+        // apps created after 2018-10-15 (AADSTS50194).
+        authority: 'https://login.microsoftonline.com/ef421d3f-5736-4cca-a38f-e6a4d8607e7e',
         redirectUri: window.location.origin + window.location.pathname
     },
     cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }

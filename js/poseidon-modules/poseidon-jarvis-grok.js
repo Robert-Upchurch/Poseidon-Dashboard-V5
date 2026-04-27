@@ -160,20 +160,14 @@
         <input type="password" id="jv-api-key" placeholder="xai-…" autocomplete="off" />
         <label style="margin-top:6px">Voice</label>
         <div style="display:flex;gap:6px;align-items:center">
-          <select id="jv-voice" style="flex:1;background:#0a1628;border:1px solid rgba(148,163,184,0.18);border-radius:6px;padding:6px 8px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11px;outline:none">
-            <optgroup label="Male">
-              <option value="ara">ara</option>
-              <option value="atlas">atlas</option>
-              <option value="rex">rex</option>
-            </optgroup>
-            <optgroup label="Female">
-              <option value="eve">eve (default)</option>
-              <option value="celeste">celeste</option>
-            </optgroup>
-          </select>
-          <button id="jv-voice-apply" type="button" style="background:rgba(20,184,166,0.18);color:#5eead4;border:1px solid rgba(20,184,166,0.4);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Apply</button>
+          <input type="text" id="jv-voice-input" placeholder="e.g. eve" autocomplete="off" spellcheck="false" style="flex:1;background:#0a1628;border:1px solid rgba(148,163,184,0.18);border-radius:6px;padding:6px 8px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11px;outline:none" />
+          <button id="jv-voice-apply" type="button" style="background:rgba(20,184,166,0.18);color:#5eead4;border:1px solid rgba(20,184,166,0.4);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Try</button>
         </div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px">Apply reconnects with the selected voice. Names not on this list can still be set via console: <code style="color:#94a3b8">PoseidonJarvis.setVoice('name')</code></div>
+        <div id="jv-voice-quickpicks" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"></div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button id="jv-voice-discover" type="button" style="flex:1;background:rgba(59,130,246,0.12);color:#93c5fd;border:1px solid rgba(59,130,246,0.4);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit" title="Probe a list of common voice names against xAI and report which ones are recognized.">🔍 Discover Voices</button>
+        </div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px;line-height:1.4">Try any name, then watch the log: it will say <em>confirmed</em> or <em>xAI substituted</em>. xAI does not publish a voice list — Discover probes common names.</div>
       </div>
     `;
     document.body.appendChild(panelEl);
@@ -200,23 +194,88 @@
       pushLog('tool', `API key saved (locally).`);
     });
 
-    const voiceSel = panelEl.querySelector('#jv-voice');
-    if (voiceSel) {
-      const cur = getVoice();
-      // Preselect; if cur isn't a known option, leave default selection alone
-      const opt = voiceSel.querySelector(`option[value="${cur}"]`);
-      if (opt) voiceSel.value = cur;
-      const applyBtn = panelEl.querySelector('#jv-voice-apply');
-      if (applyBtn) {
-        applyBtn.addEventListener('click', () => {
-          const v = voiceSel.value || 'eve';
-          setVoice(v);
-          pushLog('tool', `Voice set to "${v}". Reconnecting…`);
-          try { disconnect(); } catch (_) {}
-          setTimeout(() => { connect().catch(() => {}); }, 400);
+    const voiceInput = panelEl.querySelector('#jv-voice-input');
+    const voiceApply = panelEl.querySelector('#jv-voice-apply');
+    const voiceQuick = panelEl.querySelector('#jv-voice-quickpicks');
+    const voiceDiscover = panelEl.querySelector('#jv-voice-discover');
+    // Names to suggest as quick-picks. xAI doesn't publish a list, so these
+    // are common AI-voice naming conventions to try. Click → fills input.
+    // Whichever ones xAI recognizes will be confirmed in the log;
+    // unrecognized names get substituted to default (also logged).
+    const QUICK_PICKS = ['eve','celeste','aria','luna','nova','ara','atlas','rex','marcus','samuel','adam','daniel','oliver','victor','james','albert','winston','jarvis'];
+    if (voiceInput) {
+      voiceInput.value = getVoice();
+      const applyVoice = (name) => {
+        const v = (name || voiceInput.value || 'eve').trim();
+        if (!v) return;
+        setVoice(v);
+        voiceInput.value = v;
+        pushLog('tool', `Voice → "${v}". Reconnecting to apply…`);
+        try { disconnect(); } catch (_) {}
+        setTimeout(() => { connect().catch(() => {}); }, 400);
+      };
+      if (voiceApply) voiceApply.addEventListener('click', () => applyVoice());
+      voiceInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyVoice(); } });
+      if (voiceQuick) {
+        QUICK_PICKS.forEach(name => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = name;
+          b.style.cssText = 'background:rgba(148,163,184,0.08);color:#cbd5e1;border:1px solid rgba(148,163,184,0.18);border-radius:6px;padding:3px 8px;font-size:10px;font-family:JetBrains Mono,monospace;cursor:pointer';
+          b.addEventListener('click', () => { voiceInput.value = name; applyVoice(name); });
+          voiceQuick.appendChild(b);
         });
       }
+      if (voiceDiscover) {
+        voiceDiscover.addEventListener('click', () => probeVoices(QUICK_PICKS));
+      }
     }
+  }
+
+  // Probe a list of voice names against xAI by sending session.update for
+  // each and listening for session.updated to see what voice came back.
+  // If the returned voice matches the requested one, it's confirmed real.
+  async function probeVoices(candidates) {
+    if (!state.connected || !state.ws || state.ws.readyState !== WebSocket.OPEN) {
+      pushLog('error', 'Connect Jarvis first (click Start Talking once), then click Discover Voices.');
+      return;
+    }
+    pushLog('tool', `🔍 Probing ${candidates.length} voice names — watch for results below…`);
+    const results = { confirmed: [], substituted: [] };
+    const originalHandler = state.ws.onmessage;
+    let pendingResolve = null;
+    state.ws.onmessage = (evt) => {
+      try {
+        const m = typeof evt.data === 'string' ? JSON.parse(evt.data) : null;
+        if (m && m.type === 'session.updated' && m.session && m.session.voice && pendingResolve) {
+          pendingResolve(m.session.voice);
+          pendingResolve = null;
+          return;
+        }
+      } catch (_) {}
+      if (originalHandler) originalHandler(evt);
+    };
+    try {
+      for (const name of candidates) {
+        const got = await new Promise((resolve) => {
+          pendingResolve = resolve;
+          try { sendWs({ type: 'session.update', session: { voice: name } }); } catch (_) { resolve(null); }
+          setTimeout(() => { if (pendingResolve === resolve) { pendingResolve = null; resolve(null); } }, 1500);
+        });
+        if (got === name) results.confirmed.push(name);
+        else if (got) results.substituted.push({ asked: name, got });
+      }
+    } finally {
+      state.ws.onmessage = originalHandler;
+      // Restore the user's chosen voice
+      try { sendWs({ type: 'session.update', session: { voice: getVoice() } }); } catch (_) {}
+    }
+    pushLog('tool', `🔍 Confirmed real xAI voices: ${results.confirmed.length ? results.confirmed.join(', ') : '(none from this list)'}`);
+    if (results.substituted.length) {
+      const s = results.substituted.map(x => `${x.asked}→${x.got}`).join(', ');
+      pushLog('tool', `🔍 Substituted (not real): ${s}`);
+    }
+    if (window.PoseidonJarvis) window.PoseidonJarvis.lastVoiceProbe = results;
   }
 
   function togglePanel() {
@@ -1413,8 +1472,20 @@
 
     switch (msg.type) {
       case 'session.created':
-      case 'session.updated':
-        log('session', msg.type); break;
+      case 'session.updated': {
+        log('session', msg.type);
+        // Surface the voice xAI actually accepted — if you ask for a name
+        // xAI doesn't recognize, it silently falls back to a default. The
+        // log below tells you what voice is REALLY being used.
+        const v = msg.session && msg.session.voice;
+        if (v) {
+          const requested = getVoice();
+          if (v !== requested) pushLog('tool', `Voice "${requested}" not recognized — xAI substituted "${v}".`);
+          else                 pushLog('tool', `Voice confirmed: "${v}"`);
+          if (window.PoseidonJarvis) window.PoseidonJarvis.lastConfirmedVoice = v;
+        }
+        break;
+      }
 
       case 'input_audio_buffer.speech_started':
         // Barge-in: Robert started speaking. Stop talking immediately.
@@ -1867,7 +1938,7 @@
     getVoiceEngine, setVoiceEngine,
     getTextModel, setTextModel,
     runBrowserTurn, speak, listenOnce,
-    supportsBrowserSpeech,
+    supportsBrowserSpeech, probeVoices,
     state, tools: TOOLS, toolImpl: TOOL_IMPL,
     pushLog  // for tests / integrations
   };

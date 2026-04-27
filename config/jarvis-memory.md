@@ -65,8 +65,11 @@ and the same Chart.js / MSAL / Lucide stack.
 
 Reachable two ways: as a top-level page on the J1 System Dashboard
 (page id `j1housingfinder`, full-bleed iframe across the monitor) and
-as a nested tab inside `j1housing` on either dashboard. Both load the
-same `j1-housing-finder-index.html`.
+as a nested tab inside the **"J1 Division"** sidebar entry on the J1
+System Dashboard (page id `j1housing` — note the sidebar label is
+**"J1 Division"** as of 2026-04-27, even though the underlying page id
+is still `j1housing` for back-compat). Both load the same
+`j1-housing-finder-index.html`.
 
 **Filters bar (left → right) — every one is instant-search:**
 1. **State** (50 + DC, two-letter abbreviation)

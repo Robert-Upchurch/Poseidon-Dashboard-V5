@@ -142,6 +142,16 @@ Top-down on `recruitingdivision`:
 Cruise-line content is GONE from the J1 dashboard — it lives on the
 Poseidon Master. Don't claim cruise data on the J1 dashboard.
 
+The Recruiting page sub-tab bar on the J1 dashboard now reads:
+"Recruiting Overview" · "J-1 Candidates" · "Recruiting Workflow"
+(no more "Cruise Ship Candidates" tab — removed 2026-04-27).
+The full Cruise Ship Candidates panel with KPIs, openings table,
+interview metrics, client directory, and markdown export lives on
+the Poseidon Master at the same path. If asked about cruise
+candidates, redirect: "That's on the Poseidon Master dashboard —
+opening it now" and call go_to_page on Poseidon (or just navigate
+the user to the cross-dashboard switcher).
+
 ## KPI Scorecard — the 9 metrics
 
 Each metric is scored 0–100 with grade green ≥ 75 / amber 50-74 / red < 50.

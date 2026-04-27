@@ -1337,7 +1337,8 @@
     <div class="flex gap-2 mb-4 flex-wrap" id="rd-tab-bar">
         <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-rdtab="rd-overview">Recruiting Overview</button>
         <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-rdtab="rd-j1">J-1 Candidates</button>
-        <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-rdtab="rd-cruise">Cruise Ship Candidates</button>
+        <!-- Cruise Ship Candidates tab + panel are intentionally absent on this dashboard.
+             They live on the Poseidon Master dashboard at the same path. -->
         <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-rdtab="rd-workflow">Recruiting Workflow</button>
     </div>
 
@@ -1824,131 +1825,10 @@
         </div>
     </div>
 
-    <!-- ═════ CRUISE SHIP CANDIDATES PANEL ═════ -->
-    <div class="rd-content" id="recruiting-cruise-candidates" style="display:none">
-
-        <!-- Summary KPI Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-indigo-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Active Cruise Openings</div>
-                <div class="text-2xl font-bold font-mono text-indigo-400" id="rd-cruise-kpi-openings">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-blue-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Interviews Performed</div>
-                <div class="text-2xl font-bold font-mono text-blue-400" id="rd-cruise-kpi-interviews">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-emerald-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Clients Interviewed</div>
-                <div class="text-2xl font-bold font-mono text-emerald-400" id="rd-cruise-kpi-clients">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-amber-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Open Positions Available</div>
-                <div class="text-2xl font-bold font-mono text-amber-400" id="rd-cruise-kpi-positions">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Last Live Update</div>
-                <div class="text-sm font-semibold text-zinc-200 truncate" id="rd-cruise-kpi-lastupdate">—</div>
-            </div>
-        </div>
-
-        <!-- Live Update Toolbar -->
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 mb-4">
-            <div class="flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center gap-3 flex-wrap">
-                    <button onclick="refreshRecruitingDivision('cruise')" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all flex items-center gap-2">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Live Update
-                    </button>
-                    <div class="text-xs text-zinc-500">
-                        <span class="text-zinc-400 font-medium">Last Refreshed:</span> <span id="rd-cruise-last-refresh" class="font-mono text-zinc-200">—</span>
-                    </div>
-                    <div class="text-xs text-zinc-500">
-                        <span class="text-zinc-400 font-medium">Accessed By:</span> <span id="rd-cruise-last-user" class="font-mono text-zinc-200">Robert Upchurch</span>
-                    </div>
-                    <div class="text-xs text-zinc-500">
-                        <span class="text-zinc-400 font-medium">Records Added:</span> <span id="rd-cruise-added-count" class="font-mono text-emerald-400">0</span>
-                    </div>
-                </div>
-                <div class="text-xs text-zinc-500 max-w-md truncate">
-                    <span class="text-zinc-400 font-medium">Change Summary:</span> <span id="rd-cruise-change-summary" class="text-zinc-300">No refresh yet</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Current Job Openings Table -->
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
-            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2"><i data-lucide="ship" class="w-4 h-4 text-indigo-400"></i> Current Cruise Ship Job Openings</h3>
-                <input type="text" id="rd-cruise-search" placeholder="Search position or client…" class="w-60 px-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50">
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead>
-                        <tr class="text-left text-zinc-500 border-b border-zinc-800">
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="cruise" data-col="position">Position</th>
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="cruise" data-col="jobOpening">Job Opening</th>
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="cruise" data-col="datePosted">Date Posted</th>
-                            <th class="py-2 px-2 font-medium">Positions</th>
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="cruise" data-col="client">Client</th>
-                            <th class="py-2 px-2 font-medium">Account Manager</th>
-                            <th class="py-2 px-2 font-medium">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rd-cruise-openings-tbody" class="text-zinc-300"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Interview Metrics + Client Directory -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="user-check" class="w-4 h-4 text-blue-400"></i> Interview Metrics</h3>
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
-                        <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Interviews Performed</div>
-                        <div class="text-xl font-bold font-mono text-blue-400" id="rd-cruise-mx-interviews">0</div>
-                    </div>
-                    <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
-                        <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Clients Interviewed</div>
-                        <div class="text-xl font-bold font-mono text-emerald-400" id="rd-cruise-mx-clients">0</div>
-                    </div>
-                </div>
-                <div class="text-[11px] text-zinc-400 font-medium mb-2">Recent Interview Activity</div>
-                <ul id="rd-cruise-recent-interviews" class="text-xs text-zinc-400 space-y-1"></ul>
-            </div>
-            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2"><i data-lucide="building-2" class="w-4 h-4 text-emerald-400"></i> Client Directory</h3>
-                    <input type="text" id="rd-cruise-client-search" placeholder="Search client…" class="w-48 px-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50">
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead>
-                            <tr class="text-left text-zinc-500 border-b border-zinc-800">
-                                <th class="py-2 px-2 font-medium">Client</th>
-                                <th class="py-2 px-2 font-medium">Contact</th>
-                                <th class="py-2 px-2 font-medium">Email</th>
-                                <th class="py-2 px-2 font-medium">Website</th>
-                                <th class="py-2 px-2 font-medium">Account Mgr</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rd-cruise-clients-tbody" class="text-zinc-300"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Markdown Export -->
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
-            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i> Markdown Export — Cruise Ship Recruiting</h3>
-                <div class="flex gap-2">
-                    <button onclick="generateCruiseRecruitingMarkdown()" class="px-3 py-1.5 text-xs font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all">Generate Markdown</button>
-                    <button onclick="copyRecruitingMarkdown('cruise')" class="px-3 py-1.5 text-xs font-medium bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 transition-all">Copy</button>
-                </div>
-            </div>
-            <pre id="rd-cruise-markdown" class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-[11px] text-zinc-200 font-mono overflow-auto max-h-80 whitespace-pre-wrap">Click "Generate Markdown" to produce an export block.</pre>
-        </div>
-    </div>
+    <!-- (CRUISE SHIP CANDIDATES PANEL removed from this dashboard.
+         The full panel + data lives on the Poseidon Master dashboard:
+         https://robert-upchurch.github.io/Poseidon/poseidon-dashboard-v6.html
+         Recruiting → Cruise Ship Candidates tab. This dashboard is J1-only.) -->
 
     <!-- ═════ RECRUITING WORKFLOW PANEL (moved from J-1 Division) ═════ -->
     <div class="rd-content" id="recruiting-workflow" style="display:none">

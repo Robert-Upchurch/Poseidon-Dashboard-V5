@@ -165,9 +165,9 @@
         </div>
         <div id="jv-voice-quickpicks" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"></div>
         <div style="display:flex;gap:6px;margin-top:4px">
-          <button id="jv-voice-discover" type="button" style="flex:1;background:rgba(59,130,246,0.12);color:#93c5fd;border:1px solid rgba(59,130,246,0.4);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit" title="Probe a list of common voice names against xAI and report which ones are recognized.">🔍 Discover Voices</button>
+          <button id="jv-voice-discover" type="button" style="flex:1;background:rgba(59,130,246,0.12);color:#93c5fd;border:1px solid rgba(59,130,246,0.4);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit" title="Probe each canonical voice name against xAI and report which the realtime endpoint actually accepts on this account.">🔍 Verify Voices</button>
         </div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px;line-height:1.4">Try any name, then watch the log: it will say <em>confirmed</em> or <em>xAI substituted</em>. xAI does not publish a voice list — Discover probes common names.</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px;line-height:1.4">xAI's 5 voices: <strong style="color:#93c5fd">leo</strong>, <strong style="color:#93c5fd">rex</strong> (male) · <strong style="color:#cbd5e1">sal</strong> (neutral) · <strong style="color:#f9a8d4">ara</strong>, <strong style="color:#f9a8d4">eve</strong> (female). Click a chip → reconnects → log shows <em>confirmed</em> or <em>substituted</em>.</div>
       </div>
     `;
     document.body.appendChild(panelEl);
@@ -198,11 +198,16 @@
     const voiceApply = panelEl.querySelector('#jv-voice-apply');
     const voiceQuick = panelEl.querySelector('#jv-voice-quickpicks');
     const voiceDiscover = panelEl.querySelector('#jv-voice-discover');
-    // Names to suggest as quick-picks. xAI doesn't publish a list, so these
-    // are common AI-voice naming conventions to try. Click → fills input.
-    // Whichever ones xAI recognizes will be confirmed in the log;
-    // unrecognized names get substituted to default (also logged).
-    const QUICK_PICKS = ['eve','celeste','aria','luna','nova','ara','atlas','rex','marcus','samuel','adam','daniel','oliver','victor','james','albert','winston','jarvis'];
+    // The five canonical xAI Grok Voice Agent voices, per
+    // https://docs.x.ai/developers/model-capabilities/audio/voice
+    // Format: [name, gender, blurb] — gender shown in the chip label.
+    const QUICK_PICKS = [
+      ['leo',   'M', 'Authoritative, commanding'],
+      ['rex',   'M', 'Confident, clear, professional'],
+      ['sal',   'N', 'Smooth, balanced, neutral'],
+      ['ara',   'F', 'Warm, friendly'],
+      ['eve',   'F', 'Energetic, upbeat (xAI default)']
+    ];
     if (voiceInput) {
       voiceInput.value = getVoice();
       const applyVoice = (name) => {
@@ -217,17 +222,25 @@
       if (voiceApply) voiceApply.addEventListener('click', () => applyVoice());
       voiceInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyVoice(); } });
       if (voiceQuick) {
-        QUICK_PICKS.forEach(name => {
+        QUICK_PICKS.forEach(([name, gender, blurb]) => {
           const b = document.createElement('button');
           b.type = 'button';
-          b.textContent = name;
-          b.style.cssText = 'background:rgba(148,163,184,0.08);color:#cbd5e1;border:1px solid rgba(148,163,184,0.18);border-radius:6px;padding:3px 8px;font-size:10px;font-family:JetBrains Mono,monospace;cursor:pointer';
+          b.textContent = `${name} (${gender})`;
+          b.title = blurb;
+          // Tint by gender so male/female/neutral are scannable at a glance
+          const tint = gender === 'M' ? 'rgba(59,130,246,0.16)'
+                     : gender === 'F' ? 'rgba(236,72,153,0.16)'
+                                      : 'rgba(148,163,184,0.10)';
+          const border = gender === 'M' ? 'rgba(59,130,246,0.45)'
+                       : gender === 'F' ? 'rgba(236,72,153,0.45)'
+                                        : 'rgba(148,163,184,0.25)';
+          b.style.cssText = `background:${tint};color:#e2e8f0;border:1px solid ${border};border-radius:6px;padding:3px 8px;font-size:10px;font-family:JetBrains Mono,monospace;cursor:pointer`;
           b.addEventListener('click', () => { voiceInput.value = name; applyVoice(name); });
           voiceQuick.appendChild(b);
         });
       }
       if (voiceDiscover) {
-        voiceDiscover.addEventListener('click', () => probeVoices(QUICK_PICKS));
+        voiceDiscover.addEventListener('click', () => probeVoices(QUICK_PICKS.map(p => p[0])));
       }
     }
   }

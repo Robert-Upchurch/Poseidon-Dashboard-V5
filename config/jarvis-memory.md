@@ -46,3 +46,59 @@
   ("remember that X is Y"), call `remember({ topic, fact })`.
 - Don't over-remember. Keep entries crisp and factual; one or two
   lines each.
+
+## Dashboards (as of 2026-04-27)
+
+Two paired dashboards live in the same GitHub Pages site, with a
+top-right teal pill button on each linking to the other:
+
+- **Poseidon Master** (`poseidon-dashboard-v6.html`) — full CTI roll-up
+  across every division. Default landing: Master + Forecast.
+- **CTI Group · J1 System Dashboard** (`j1-system-dashboard.html`) —
+  J1-only spinoff with a focused sidebar and the J1 Housing Finder as
+  a top-level full-page route. Default landing: J1 Overview.
+
+Both share the same Jarvis voice assistant module (`poseidon-jarvis-grok.js`)
+and the same Chart.js / MSAL / Lucide stack.
+
+## J1 Housing Finder — full readability
+
+Reachable two ways: as a top-level page on the J1 System Dashboard
+(page id `j1housingfinder`, full-bleed iframe across the monitor) and
+as a nested tab inside `j1housing` on either dashboard. Both load the
+same `j1-housing-finder-index.html`.
+
+**Filters bar (left → right) — every one is instant-search:**
+1. **State** (50 + DC, two-letter abbreviation)
+2. City (scoped by State; unfiltered when State is "All States")
+3. Area / Neighborhood (depends on City)
+4. Bedrooms (Studio / 1 / 2 / 3 / 4+)
+5. Bathrooms (1 / 2 / 3+)
+6. Max Price (up to $3000/mo)
+7. Internet (Included / Not Included / Any)
+8. Electricity (Included / Not Included / Any)
+9. **Utilities** combo (All Included / Any Included / None Included / Any)
+
+Plus: source tabs (All / Craigslist / Airbnb / Vrbo / Rent by Owner),
+sort (price asc/desc, most beds, distance), and a Work Address geocoder
+that computes distance to every filtered listing.
+
+**Update cadence:** the listings dataset is refreshed every Monday,
+Wednesday, and Friday. The header shows "Last refresh / Next" so
+users always see when fresh data is expected.
+
+**Source links — all canonical and live:**
+- Craigslist → city subdomain + bed/price params (works for every listing city)
+- Airbnb → `/s/{city}--{state}/homes` with monthly param
+- Vrbo → `/search?destination={city}%2C+{state}` (canonical)
+- RentByOwner → `/all/usa/{state-name}/{city-slug}` (their `?search=location` was retired and is gone from the page)
+
+**Jarvis tool surface for housing:** `read_housing` returns every
+dropdown's current value, every dropdown's available options
+(including the live state/city/area lists), counts, the full filtered
+listings array, the selected listing, and the work address.
+`set_housing_filters` writes any combination of state, city, area,
+beds, baths, max_price, internet, electric, utilities, source, sort —
+state is applied first because it rebuilds the city dropdown.
+`select_housing_listing` and `set_housing_work_address` complete the
+surface.

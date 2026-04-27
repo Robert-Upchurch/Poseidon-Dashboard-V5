@@ -1,7 +1,35 @@
 {
-  "currentVersion": "6.1.0",
-  "currentCodename": "Poseidon — Jarvis Release",
+  "currentVersion": "6.2.0",
+  "currentCodename": "J1 System Dashboard + Housing Finder",
   "releases": [
+    {
+      "version": "6.2.0",
+      "codename": "J1 System Dashboard + Housing Finder",
+      "date": "2026-04-27",
+      "summary": "Spinoff CTI Group · J1 System Dashboard with the J1 Housing Finder as its own full-page route, paired with the Poseidon master dashboard. State + Utilities filters added, every filter is instant-search, RentByOwner deep links fixed, Jarvis fully wired across every dropdown on every dashboard.",
+      "highlights": [
+        "NEW: CTI Group · J1 System Dashboard — focused J1-only spinoff at /j1-system-dashboard.html",
+        "NEW: Cross-dashboard switcher pills — top-right header on each dashboard jumps to the other",
+        "NEW: J1 Housing Finder is now a top-level full-bleed page on the J1 System Dashboard",
+        "NEW: State filter (50 + DC) — scopes the City dropdown automatically",
+        "NEW: Utilities combo filter (All / Any / None Included)",
+        "NEW: MWF (Mon/Wed/Fri) refresh cadence — header shows last + next refresh date",
+        "FIX: RentByOwner deep links — switched to canonical /all/usa/{state}/{city} (was 404 on every listing)",
+        "JARVIS: full readability of every housing finder dropdown + instant-search behavior"
+      ],
+      "changes": [
+        { "category": "feature",     "text": "CTI Group · J1 System Dashboard — single-file spinoff with focused J1-only sidebar (PR #17)" },
+        { "category": "feature",     "text": "Cross-dashboard switcher pill in both headers (PR #18)" },
+        { "category": "ui",          "text": "Boost contrast on switcher + Connect 365 buttons (solid bg, white text, AA-compliant) (PR #19)" },
+        { "category": "feature",     "text": "Swap Processing (CUK) for J1 Housing Finder full-page route on the J1 dashboard (PR #20)" },
+        { "category": "ui",          "text": "J1 Housing Finder page is full-bleed across the monitor — :has() lifts the 1500px cap only on this page (PR #21)" },
+        { "category": "fix",         "text": "Header padding so 'Back to V6' button no longer covers J1 Housing Finder title on direct visits (PR #22)" },
+        { "category": "fix",         "text": "RentByOwner deep links — canonical /all/usa/{state-name}/{city-slug} pattern; verified 19/19 listing cities return 200 (PR #23)" },
+        { "category": "feature",     "text": "Jarvis discovers J1 Housing Finder via the new j1housingfinder full-page route in addition to the legacy nested-tab path (PR #24)" },
+        { "category": "feature",     "text": "Add State + Utilities filters; every dropdown now fires applyFilters() on change for instant search (PR #25)" },
+        { "category": "feature",     "text": "MWF refresh cadence indicator (Mon/Wed/Fri) on housing finder header — shows last + next refresh date" }
+      ]
+    },
     {
       "version": "6.1.0",
       "codename": "Jarvis Release",

@@ -1453,9 +1453,33 @@ function updateStats() {
     document.getElementById('stat-markets').textContent = cities.size;
 }
 
+// ===== UPDATE CADENCE — Mon / Wed / Fri =====
+// The listings dataset is refreshed three times a week (Mon/Wed/Fri).
+// We compute the most recent and next refresh dates so users always see
+// "fresh as of X · next refresh Y".
+function getMwfDates(now = new Date()) {
+    const d = new Date(now);
+    const day = d.getDay();                              // 0=Sun … 6=Sat
+    const isMwf = (n) => n === 1 || n === 3 || n === 5;  // Mon/Wed/Fri
+    // Walk back to the most recent Mon/Wed/Fri (today counts).
+    const last = new Date(d);
+    while (!isMwf(last.getDay())) last.setDate(last.getDate() - 1);
+    last.setHours(0, 0, 0, 0);
+    // Walk forward to the next Mon/Wed/Fri AFTER today.
+    const next = new Date(d);
+    do { next.setDate(next.getDate() + 1); } while (!isMwf(next.getDay()));
+    next.setHours(0, 0, 0, 0);
+    return { last, next };
+}
+
 function updateTimestamp() {
     const now = new Date();
-    document.getElementById('updated-time').textContent = `Updated ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+    const { last, next } = getMwfDates(now);
+    const fmt = (dt) => dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const el = document.getElementById('updated-time');
+    if (el) {
+        el.innerHTML = `<span title="Listings refresh every Monday, Wednesday, and Friday">Last refresh: <b>${fmt(last)}</b> · Next: <b>${fmt(next)}</b></span>`;
+    }
 }
 
 function refreshData() {

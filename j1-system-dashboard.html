@@ -8719,7 +8719,9 @@ window.__j1hfOnFrameError = function(f) {
 //   - V6/J1 page render functions don't throw on currently-loaded data
 // Updates the System Check button label + color through the lifecycle.
 // ═══════════════════════════════════════════════════
-async function runSystemCheck() {
+async function runSystemCheck(opts) {
+    opts = opts || {};
+    const allowReload = opts.allowReload !== false;
     const btn = document.getElementById('system-check-btn');
     const setBtn = (label, cls, icon) => {
         if (!btn) return;
@@ -8731,84 +8733,146 @@ async function runSystemCheck() {
     btn && (btn.disabled = true);
     setBtn('Checking…', 'bg-amber-600 text-white border-amber-500', 'loader-2');
 
-    // 1) Sync core checks (re-uses the existing health check definition).
-    const sync = (typeof window.poseidonHealth === 'function')
-        ? window.poseidonHealth({ verbose: false })
-        : { results: [{ name: 'poseidonHealth missing', ok: false, err: 'function not defined' }], failed: 1 };
-
-    const results = [...sync.results];
-
-    // 2) M365 token + Graph reachability — only when signed in.
-    const acct = (typeof _msalActiveOrFirst === 'function') ? _msalActiveOrFirst()
-        : (window.msalInstance && window.msalInstance.getAllAccounts && window.msalInstance.getAllAccounts()[0]);
-    if (acct && window.msalInstance) {
-        let token = null;
-        try {
-            const r = await window.msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: acct });
-            token = r.accessToken;
-            results.push({ name: 'M365 token acquired silently', ok: !!token });
-        } catch (e) {
-            results.push({ name: 'M365 token acquired silently', ok: false, err: e.message || 'token error' });
-        }
-        if (token) {
+    async function _runAllChecks() {
+        const sync = (typeof window.poseidonHealth === 'function')
+            ? window.poseidonHealth({ verbose: false })
+            : { results: [{ name: 'poseidonHealth missing', ok: false, err: 'function not defined' }] };
+        const results = [...sync.results];
+        const acct = (typeof _msalActiveOrFirst === 'function') ? _msalActiveOrFirst()
+            : (window.msalInstance && window.msalInstance.getAllAccounts && window.msalInstance.getAllAccounts()[0]);
+        if (acct && window.msalInstance) {
+            let token = null;
             try {
-                const resp = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,mail',
-                    { headers: { Authorization: 'Bearer ' + token } });
-                results.push({ name: 'Microsoft Graph /me responds', ok: resp.ok, err: resp.ok ? null : 'HTTP ' + resp.status });
+                const r = await window.msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: acct });
+                token = r.accessToken;
+                results.push({ name: 'M365 token acquired silently', ok: !!token });
             } catch (e) {
-                results.push({ name: 'Microsoft Graph /me responds', ok: false, err: e.message });
+                results.push({ name: 'M365 token acquired silently', ok: false, err: e.message || 'token error' });
             }
-        }
-    } else {
-        results.push({ name: 'M365 connected', ok: false, err: 'No signed-in account' });
-    }
-
-    // 3) j1hf iframe contentDocument readable (waits up to 8s for it to load).
-    const frame = document.getElementById('j1hf-iframe');
-    if (frame) {
-        const readable = await new Promise(resolve => {
-            const start = Date.now();
-            (function poll() {
+            if (token) {
                 try {
-                    if (frame.contentDocument && frame.contentDocument.body && frame.contentDocument.body.innerText.length > 50) {
-                        return resolve(true);
-                    }
-                } catch (_) { return resolve(false); }
-                if (Date.now() - start > 8000) return resolve(false);
-                setTimeout(poll, 250);
-            })();
-        });
-        results.push({ name: 'J1 Housing iframe content readable', ok: readable, err: readable ? null : 'frame did not deliver readable body within 8s' });
-    }
-
-    // 4) Render functions don't throw.
-    const renderFns = ['renderDashboardHome','renderTasks','renderCalendar'];
-    for (const fnName of renderFns) {
-        const fn = window[fnName];
-        if (typeof fn !== 'function') {
-            results.push({ name: fnName + ' callable', ok: false, err: 'not a function' });
-            continue;
+                    const resp = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,mail',
+                        { headers: { Authorization: 'Bearer ' + token } });
+                    results.push({ name: 'Microsoft Graph /me responds', ok: resp.ok, err: resp.ok ? null : 'HTTP ' + resp.status });
+                } catch (e) {
+                    results.push({ name: 'Microsoft Graph /me responds', ok: false, err: e.message });
+                }
+            }
+        } else {
+            results.push({ name: 'M365 connected', ok: false, err: 'No signed-in account' });
         }
-        try { fn(); results.push({ name: fnName + ' callable', ok: true }); }
-        catch (e) { results.push({ name: fnName + ' callable', ok: false, err: e.message }); }
+        const frame = document.getElementById('j1hf-iframe');
+        if (frame) {
+            const readable = await new Promise(resolve => {
+                const start = Date.now();
+                (function poll() {
+                    try {
+                        if (frame.contentDocument && frame.contentDocument.body && frame.contentDocument.body.innerText.length > 50) return resolve(true);
+                    } catch (_) { return resolve(false); }
+                    if (Date.now() - start > 8000) return resolve(false);
+                    setTimeout(poll, 250);
+                })();
+            });
+            results.push({ name: 'J1 Housing iframe content readable', ok: readable, err: readable ? null : 'frame did not deliver readable body within 8s' });
+        }
+        for (const fnName of ['renderDashboardHome','renderTasks','renderCalendar']) {
+            const fn = window[fnName];
+            if (typeof fn !== 'function') { results.push({ name: fnName + ' callable', ok: false, err: 'not a function' }); continue; }
+            try { fn(); results.push({ name: fnName + ' callable', ok: true }); }
+            catch (e) { results.push({ name: fnName + ' callable', ok: false, err: e.message }); }
+        }
+        return results;
     }
 
-    // Report
-    const failed = results.filter(r => !r.ok);
-    console.groupCollapsed('%cSystem Check: ' + (failed.length ? failed.length + ' FAILED' : results.length + ' PASSED'),
-        'color:' + (failed.length ? '#f87171' : '#34d399') + ';font-weight:bold');
-    console.table(results.map(r => ({ check: r.name, status: r.ok ? 'OK' : 'FAIL', error: r.err || '' })));
-    console.groupEnd();
+    // Pass 1: identify failures.
+    let results = await _runAllChecks();
+    let failed = results.filter(r => !r.ok);
+
+    if (failed.length === 0) {
+        setBtn('System Complete', 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500', 'check-circle');
+        btn && (btn.disabled = false);
+        return { ok: true, failed: 0, results };
+    }
+
+    // Pass 2: auto-repair.
+    setBtn('Auto-repairing…', 'bg-amber-600 text-white border-amber-500', 'loader-2');
+    const failedNames = new Set(failed.map(r => r.name));
+
+    // Repair: msalInstance missing -> o365Init
+    if (failedNames.has('msalInstance created') && typeof o365Init === 'function') {
+        try { o365Init(); await new Promise(r => setTimeout(r, 1500)); } catch(_) {}
+    }
+
+    // Repair: M365 not connected / token can't be acquired -> sign-in redirect.
+    // Microsoft cookies are usually present so this returns silently and reloads
+    // the page back here with an account in cache.
+    const needSignIn = failedNames.has('M365 connected')
+                    || failedNames.has('M365 token acquired silently')
+                    || failedNames.has('Microsoft Graph /me responds');
+    if (needSignIn && typeof o365SignIn === 'function') {
+        // Save a flag so after the redirect we can resume the check.
+        try { sessionStorage.setItem('poseidon_resume_check', '1'); } catch(_){}
+        o365SignIn();
+        return { ok: false, redirecting: true };  // page navigates away here
+    }
+
+    // Repair: tasks/calEvents not arrays -> reset their localStorage shape.
+    if (failedNames.has('tasks is array') || failedNames.has('calEvents is array')) {
+        try { localStorage.setItem('poseidon-tasks',  '[]'); } catch(_){}
+        try { localStorage.setItem('poseidon-events', '[]'); } catch(_){}
+    }
+
+    // Repair: iframe not readable -> reload iframe src.
+    if (failedNames.has('J1 Housing iframe content readable')) {
+        const frame = document.getElementById('j1hf-iframe');
+        if (frame) { try { frame.src = frame.src; } catch(_){} await new Promise(r => setTimeout(r, 2000)); }
+    }
+
+    // Repair: a page div, button, or library is missing -> hard reload (CDN/cache miss).
+    const fatalNames = ['Connect 365 button in DOM','Update 365 button in DOM','MSAL library loaded',
+        'Dashboard page (#dashboard) exists','Tasks page (#tasks) exists','Calendar page (#calendar) exists',
+        'J1 Housing Finder page exists','j1hf iframe exists'];
+    if (allowReload && fatalNames.some(n => failedNames.has(n))) {
+        // Use a hard reload (bypass cache).
+        try { sessionStorage.setItem('poseidon_resume_check', '1'); } catch(_){}
+        location.reload();
+        return { ok: false, reloading: true };
+    }
+
+    // Pass 3: re-check after repairs.
+    setBtn('Re-checking…', 'bg-amber-600 text-white border-amber-500', 'loader-2');
+    results = await _runAllChecks();
+    failed = results.filter(r => !r.ok);
 
     if (failed.length === 0) {
         setBtn('System Complete', 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500', 'check-circle');
     } else {
-        setBtn(failed.length + ' issue' + (failed.length>1?'s':'') + ' — see console',
-               'bg-red-600 text-white border-red-500 hover:bg-red-500', 'alert-triangle');
+        // Last-resort: hard reload once if user hasn't already done one this session.
+        if (allowReload && !sessionStorage.getItem('poseidon_repair_attempted')) {
+            try { sessionStorage.setItem('poseidon_repair_attempted', '1'); } catch(_){}
+            location.reload();
+            return { ok: false, reloading: true };
+        }
+        setBtn('Cannot auto-fix · click to retry', 'bg-red-600 text-white border-red-500 hover:bg-red-500', 'alert-triangle');
     }
     btn && (btn.disabled = false);
     return { ok: failed.length === 0, failed: failed.length, results };
 }
+
+// If we returned from a sign-in redirect, resume the check automatically.
+(function _resumeAfterRedirect() {
+    function tryResume() {
+        let flag = null;
+        try { flag = sessionStorage.getItem('poseidon_resume_check'); } catch(_) {}
+        if (!flag) return;
+        try { sessionStorage.removeItem('poseidon_resume_check'); } catch(_) {}
+        // Wait a beat for o365Init/handleRedirectPromise to settle.
+        setTimeout(() => { if (typeof runSystemCheck === 'function') runSystemCheck(); }, 4000);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryResume);
+    else tryResume();
+})();
+
 
 // ═══════════════════════════════════════════════════
 // STARTUP HEALTH CHECK (added 2026-04-28)

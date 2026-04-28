@@ -6287,6 +6287,7 @@ function o365UpdateUI(connected) {
         if (connected) updBtn.classList.remove('hidden');
         else updBtn.classList.add('hidden');
     }
+    if (connected) _o365StartAutoRefresh(); else _o365StopAutoRefresh();
     if (status) {
         status.innerHTML = connected
             ? `<span class="flex items-center gap-2 text-emerald-400 text-sm"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Connected as ${o365Account?.username||'User'}</span>`
@@ -6314,6 +6315,23 @@ async function o365Fetch(url) {
 
 async function o365LoadAll() {
     await Promise.all([o365LoadMail(), o365LoadCalendar(), o365LoadTasks(), o365LoadFiles()]);
+}
+
+// ───── Background auto-refresh ─────
+// Refreshes M365 data every 5 minutes when connected. Silent (no spinner).
+// Tab visibility check skips the call when the tab is hidden.
+const O365_AUTO_REFRESH_MS = 5 * 60 * 1000;
+let _o365AutoRefreshTimer = null;
+function _o365StartAutoRefresh() {
+    if (_o365AutoRefreshTimer) return;
+    _o365AutoRefreshTimer = setInterval(() => {
+        if (document.hidden) return;
+        if (!msalInstance || !o365Account) return;
+        o365LoadAll().catch(e => console.warn('auto-refresh failed:', e?.message || e));
+    }, O365_AUTO_REFRESH_MS);
+}
+function _o365StopAutoRefresh() {
+    if (_o365AutoRefreshTimer) { clearInterval(_o365AutoRefreshTimer); _o365AutoRefreshTimer = null; }
 }
 
 // Manual refresh — wired to the "Update 365" button.

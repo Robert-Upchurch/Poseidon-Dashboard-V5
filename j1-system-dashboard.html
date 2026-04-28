@@ -699,6 +699,23 @@
         </div>
     </div>
 
+    <!-- CTI Group Onboarding Form — launcher (external site may be gated) -->
+    <div class="bg-zinc-900/40 border border-teal-500/30 rounded-xl p-6 mb-4">
+        <div id="ctionb-launcher" class="text-center">
+            <div class="w-14 h-14 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="clipboard-list" class="w-7 h-7 text-teal-400"></i>
+            </div>
+            <h3 class="text-lg font-bold text-zinc-100 mb-1">CTI Group Onboarding Form</h3>
+            <p class="text-sm text-zinc-400 max-w-xl mx-auto mb-5">Partner agency intake — agency info, fee structure, emergency contacts, host-employer relationships, and third-party providers. Hosted at <code class="text-zinc-300">robert-upchurch.github.io/cti-partner-onboarding</code>.</p>
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+                <button onclick="rdLaunchEmbed('ctionb','https://robert-upchurch.github.io/cti-partner-onboarding/','CTI Group Onboarding Form')" class="px-4 py-2 text-sm font-semibold bg-teal-500 text-white rounded-lg hover:bg-teal-600 flex items-center gap-1.5"><i data-lucide="play" class="w-4 h-4"></i> Load in Dashboard</button>
+                <a href="https://robert-upchurch.github.io/cti-partner-onboarding/" target="_blank" rel="noopener" class="px-4 py-2 text-sm font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 flex items-center gap-1.5"><i data-lucide="external-link" class="w-4 h-4"></i> Open in New Tab</a>
+            </div>
+            <p class="text-[10px] text-zinc-600 mt-4">If the dashboard embed is empty, the external site may be offline or blocking iframe embedding. Use "Open in New Tab" as a fallback.</p>
+        </div>
+        <div id="ctionb-frame-wrap" class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 hidden"></div>
+    </div>
+
     <!-- KPI strip -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4" id="po-kpi-strip"></div>
 
@@ -1030,7 +1047,6 @@
         <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-tab="j1-housing">J1 Housing</button>
         <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-accommodations">J1 Accommodations</button>
         <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-housing-finder">J1 Housing Finder</button>
-        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-onboarding">Partner Onboarding</button>
         <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-contracts">J1 Contract Analysis</button>
     </div>
     <!-- J1 Housing Finder — embeds the local file in this repo (j1-housing-finder-index.html) -->
@@ -1043,23 +1059,6 @@
             <span>Source: <code class="text-zinc-400">j1-housing-finder-index.html</code> (local)</span>
             <a href="j1-housing-finder-index.html" target="_blank" class="text-teal-400 hover:text-teal-300 flex items-center gap-1"><i data-lucide="external-link" class="w-3 h-3"></i> Open in new tab</a>
         </div>
-    </div>
-
-    <!-- Partner Onboarding — launcher (external site may be gated) -->
-    <div class="j1-content" id="j1-onboarding" style="display:none">
-        <div id="onb-launcher" class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-8 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="handshake" class="w-7 h-7 text-teal-400"></i>
-            </div>
-            <h3 class="text-lg font-bold text-zinc-100 mb-1">CIEE Partner Onboarding</h3>
-            <p class="text-sm text-zinc-400 max-w-xl mx-auto mb-5">Sponsor intake, host-entity verification, and J-1 partner onboarding workflow. Hosted at <code class="text-zinc-300">robert-upchurch.github.io/ciee-partner-onboarding</code>.</p>
-            <div class="flex items-center justify-center gap-2 flex-wrap">
-                <button onclick="rdLaunchEmbed('onb','https://robert-upchurch.github.io/ciee-partner-onboarding/','CIEE Partner Onboarding')" class="px-4 py-2 text-sm font-semibold bg-teal-500 text-white rounded-lg hover:bg-teal-600 flex items-center gap-1.5"><i data-lucide="play" class="w-4 h-4"></i> Load in Dashboard</button>
-                <a href="https://robert-upchurch.github.io/ciee-partner-onboarding/" target="_blank" rel="noopener" class="px-4 py-2 text-sm font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 flex items-center gap-1.5"><i data-lucide="external-link" class="w-4 h-4"></i> Open in New Tab</a>
-            </div>
-            <p class="text-[10px] text-zinc-600 mt-4">If the dashboard embed is empty, the external site may be offline or blocking iframe embedding. Use "Open in New Tab" as a fallback.</p>
-        </div>
-        <div id="onb-frame-wrap" class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 hidden"></div>
     </div>
 
     <!-- J1 Contract Analysis — launcher -->

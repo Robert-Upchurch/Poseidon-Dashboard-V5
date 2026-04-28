@@ -113,7 +113,7 @@ surface.
 - J1 Overview (`j1division`)
 - Recruiting (`recruitingdivision`)
 - **J1 Division** (`j1housing`) — housing & accommodations management + embedded J1 Housing Finder tab. Sidebar label was renamed from "J1 Housing" on 2026-04-27; underlying page id is unchanged.
-- **Partner Onboarding** (`partneronboarding`) — pipeline of host companies moving through 5 stages (New Lead → MOU/NDA → Documentation → System Setup → Active) with a stalled-60-day flag and standard onboarding checklist
+- **Partner Onboarding** (`partneronboarding`) — top of the page hosts the **CTI Group Onboarding Form** launcher (embeds `https://robert-upchurch.github.io/cti-partner-onboarding/` — used to be CIEE-specific, replaced 2026-04-27); below it is the pipeline of host companies moving through 5 stages (New Lead → MOU/NDA → Documentation → System Setup → Active) with a stalled-60-day flag and a standard onboarding checklist. The form previously lived as a sub-tab on the J1 Overview page and has been consolidated here.
 - **J1 Contract Analysis** (`j1contractanalysis`) — side-by-side comparison of Alliance Abroad / CIEE / Green Heart contracts (fees, terms, insurance, response time) plus fill-rate + pipeline-volume charts
 - J1 Housing Finder (`j1housingfinder`)
 - Partners (`partners`)

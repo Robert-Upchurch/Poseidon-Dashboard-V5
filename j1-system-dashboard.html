@@ -65,31 +65,34 @@
             color: #bfdbfe !important;  /* blue-200 */
         }
 
-        /* Inner sub-cards (smaller cards inside KPI groups) */
-        .dark .bg-zinc-950\/60.rounded-lg,
-        .dark .bg-zinc-950\/70.rounded-lg,
-        html.dark .bg-zinc-950\/60.rounded-lg,
-        html.dark .bg-zinc-950\/70.rounded-lg {
+        /* Inner sub-cards (smaller cards inside KPI groups). Matches any
+           rounded variant via attribute selector — covers `rounded`,
+           `rounded-md`, `rounded-lg`, `rounded-xl`, `rounded-2xl`. */
+        .dark [class*="bg-zinc-950/60"][class*="rounded"],
+        .dark [class*="bg-zinc-950/70"][class*="rounded"],
+        html.dark [class*="bg-zinc-950/60"][class*="rounded"],
+        html.dark [class*="bg-zinc-950/70"][class*="rounded"] {
             background-color: rgba(29, 78, 216, 0.16) !important;
             border-color: rgba(96, 165, 250, 0.35) !important;
         }
-        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-500,
-        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-500,
-        html.dark .bg-zinc-950\/60.rounded-lg .text-zinc-500,
-        html.dark .bg-zinc-950\/70.rounded-lg .text-zinc-500 {
+        .dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-500,
+        .dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-500,
+        html.dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-500,
+        html.dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-500 {
             color: #bfdbfe !important;  /* blue-200 */
         }
 
-        /* Light mode — softer blue tint with darker text */
+        /* Light mode — softer blue tint with darker text. Same attribute-
+           selector approach to catch all rounded-* variants. */
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg {
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"],
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] {
             background-color: rgba(219, 234, 254, 0.65) !important;   /* blue-100 @ 65% */
             border-color: rgba(59, 130, 246, 0.50) !important;
         }
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-500,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-500,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-500 {
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-500,
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-500 {
             color: #1e40af !important;  /* blue-800 */
         }
 
@@ -98,22 +101,23 @@
            crisp and clearly readable. Strengthen value text inside
            card bodies and bump page-section h2/h3 headers. */
 
-        /* KPI VALUE numbers — bigger, brighter on dark; darker on light */
+        /* KPI VALUE numbers — bigger, brighter on dark; darker on light.
+           Broadened with attribute selectors to catch all rounded-* mini-cards. */
         .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
-        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-100,
-        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-100,
         .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
-        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-200,
-        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+        .dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-100,
+        .dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-100,
+        .dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-200,
+        .dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-200 {
             color: #ffffff !important;  /* pure white for max readability */
             text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-100,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-100,
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-200,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-100,
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-100,
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-200,
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-200 {
             color: #0c1e3e !important;  /* near-black navy */
         }
 

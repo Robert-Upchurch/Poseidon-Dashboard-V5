@@ -48,28 +48,29 @@
         html.dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-500 {
             color: #bfdbfe !important;
         }
-        .dark .bg-zinc-950\/60.rounded-lg,
-        .dark .bg-zinc-950\/70.rounded-lg,
-        html.dark .bg-zinc-950\/60.rounded-lg,
-        html.dark .bg-zinc-950\/70.rounded-lg {
+        /* Inner sub-cards — attribute selector catches all rounded-* variants */
+        .dark [class*="bg-zinc-950/60"][class*="rounded"],
+        .dark [class*="bg-zinc-950/70"][class*="rounded"],
+        html.dark [class*="bg-zinc-950/60"][class*="rounded"],
+        html.dark [class*="bg-zinc-950/70"][class*="rounded"] {
             background-color: rgba(29, 78, 216, 0.16) !important;
             border-color: rgba(96, 165, 250, 0.35) !important;
         }
-        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-500,
-        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-500,
-        html.dark .bg-zinc-950\/60.rounded-lg .text-zinc-500,
-        html.dark .bg-zinc-950\/70.rounded-lg .text-zinc-500 {
+        .dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-500,
+        .dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-500,
+        html.dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-500,
+        html.dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-500 {
             color: #bfdbfe !important;
         }
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg {
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"],
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] {
             background-color: rgba(219, 234, 254, 0.65) !important;
             border-color: rgba(59, 130, 246, 0.50) !important;
         }
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-500,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-500,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-500 {
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-500,
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-500 {
             color: #1e40af !important;
         }
 
@@ -77,20 +78,20 @@
            Numbers and section headers across the dashboard need to be
            crisp and clearly readable. */
         .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
-        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-100,
-        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-100,
         .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
-        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-200,
-        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+        .dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-100,
+        .dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-100,
+        .dark [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-200,
+        .dark [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-200 {
             color: #ffffff !important;
             text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-100,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-100,
         html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
-        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-200,
-        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-100,
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-100,
+        html:not(.dark) [class*="bg-zinc-950/60"][class*="rounded"] .text-zinc-200,
+        html:not(.dark) [class*="bg-zinc-950/70"][class*="rounded"] .text-zinc-200 {
             color: #0c1e3e !important;
         }
         .dark .page h2.text-2xl {

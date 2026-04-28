@@ -344,6 +344,48 @@
   }
   function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+
+  // ── Compatibility helpers (added 2026-04-28) ─────────────────────
+  // Dashboard uses msalInstance.getAllAccounts(); older Jarvis code
+  // assumed getActiveAccount(). This helper returns a usable account
+  // either way. Returns null if no signed-in account is present.
+  function _msalActiveOrFirst() {
+    const m = window.msalInstance;
+    if (!m) return null;
+    try { const a = m.getActiveAccount && m.getActiveAccount(); if (a) return a; } catch (_) {}
+    try { const all = m.getAllAccounts && m.getAllAccounts(); if (all && all.length) return all[0]; } catch (_) {}
+    return null;
+  }
+
+  // Tasks/events on this dashboard are stored either as a flat array
+  // OR as a {TASKS, META, SHA} envelope written by the Poseidon
+  // enhancement modules. Always unwrap to a flat array.
+  function _readNormalizedArrayLS(key, innerKey) {
+    let raw;
+    try { raw = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { return []; }
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === 'object' && Array.isArray(raw[innerKey])) return raw[innerKey];
+    return [];
+  }
+
+  // Map a task record from the Tracker shape ({s,t,d,p,n,u,...})
+  // to Jarvis's expected shape ({done, title, due, priority, status, notes}).
+  function _normalizeTask(t) {
+    if (!t || typeof t !== 'object') return t;
+    const status = (t.status || t.s || '').toString().toUpperCase();
+    return Object.assign({}, t, {
+      title:    t.title    || t.t || t.name || '(untitled)',
+      due:      t.due      || t.dueDate || null,
+      done:     t.done === true || status === 'DONE' || status === 'COMPLETED' || status === 'CLOSED',
+      priority: t.priority || t.p || null,
+      status:   t.status   || t.s || null,
+      notes:    t.notes    || t.n || ''
+    });
+  }
+  function _readNormalizedTasks() {
+    return _readNormalizedArrayLS('poseidon-tasks', 'TASKS').map(_normalizeTask);
+  }
+
   // Find the J1 Housing Finder application window. The finder is reachable
   // from THREE different mount points across the two CTI dashboards:
   //   1) j1housingfinder page (J1 System Dashboard) — full-page iframe
@@ -889,7 +931,7 @@
         } catch (e) { /* fall through to direct write */ }
       }
       // Direct write to localStorage
-      let tasks = []; try { tasks = JSON.parse(localStorage.getItem('poseidon-tasks') || '[]'); } catch (_) {}
+      let tasks = _readNormalizedTasks();
       tasks.push({ id: Date.now(), title, due: due || null, priority: priority || 'medium', done: false, created: new Date().toISOString() });
       localStorage.setItem('poseidon-tasks', JSON.stringify(tasks));
       if (typeof window.renderTasks === 'function') try { window.renderTasks(); } catch (_) {}
@@ -958,8 +1000,8 @@
       let events = [];
       try {
         if (window.o365GetTodaysEvents) events = await window.o365GetTodaysEvents();
-        else if (window.msalInstance && window.msalInstance.getActiveAccount && window.msalInstance.getActiveAccount()) {
-          const acct = window.msalInstance.getActiveAccount();
+        else if (_msalActiveOrFirst()) {
+          const acct = _msalActiveOrFirst();
           const tokenResp = await window.msalInstance.acquireTokenSilent({ scopes: ['Calendars.Read'], account: acct });
           const start = new Date(); start.setHours(0,0,0,0);
           const end   = new Date(); end.setHours(23,59,59,999);
@@ -973,8 +1015,8 @@
         }
       } catch (e) { log('Calendar fetch failed', e); }
 
-      // Tasks
-      let tasks = []; try { tasks = JSON.parse(localStorage.getItem('poseidon-tasks') || '[]'); } catch (_) {}
+      // Tasks (envelope-aware, field-name-tolerant)
+      const tasks = _readNormalizedTasks();
       const openTasks = tasks.filter(t => !t.done);
       const dueToday = openTasks.filter(t => t.due === today);
       const overdue = openTasks.filter(t => t.due && t.due < today);
@@ -986,7 +1028,7 @@
         `Good morning. Today is ${wd}.`,
         events.length
           ? `You have ${events.length} meeting${events.length>1?'s':''}. First up: ${_firstMeetingLabel(events)}.`
-          : (window.msalInstance?.getActiveAccount?.() ? 'Your calendar is clear today.' : 'Microsoft 365 is not connected, so I cannot see your calendar yet.'),
+          : (_msalActiveOrFirst() ? 'Your calendar is clear today.' : 'Microsoft 365 is not connected, so I cannot see your calendar yet.'),
         overdue.length ? `You have ${overdue.length} overdue task${overdue.length>1?'s':''} to handle first.` : null,
         dueToday.length ? `${dueToday.length} task${dueToday.length>1?'s':''} due today: ${dueToday.slice(0,3).map(t=>t.title).join('; ')}.` : null,
         `Your current focus page is ${snap.pageTitle || 'the Master + Forecast dashboard'}.`,

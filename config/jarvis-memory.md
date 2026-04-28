@@ -179,3 +179,52 @@ up per recruiting team (one per sponsor + Visa Processing).
 When Robert asks any health / score / rating question, call
 `read_kpi_scorecard` (NOT `read_full_dashboard`). Lead with the
 overall score + grade, then call out the 1-2 worst-performing metrics.
+
+## Recent dashboard changes — added 2026-04-28
+
+### Microsoft 365 integration (both V6 and J1 System dashboards)
+- Click "Connect 365" (top-right header) to sign in with `ceo@cti-usa.com`.
+  Once signed in the button toggles to "Disconnect".
+- A green "Update 365" button appears next to it after sign-in. Click it
+  to refresh emails, calendar, tasks, and OneDrive files on demand. Spinner
+  + checkmark feedback.
+- Background auto-refresh: when connected, the dashboard silently re-pulls
+  M365 data every 5 minutes. Skipped while the tab is hidden. Stops on
+  disconnect.
+- Azure app: client_id `aff2df6d-cd54-48f3-bd24-3584fd9ea3de`, single-tenant
+  CTI Group (`ef421d3f-5736-4cca-a38f-e6a4d8607e7e`), SPA redirect URIs
+  registered for both dashboards' GitHub Pages URLs.
+
+### V6 dashboard new pages (added to sidebar Workspace section)
+- **Home** (`#dashboard`) — greeting, KPI tiles (today's tasks, overdue,
+  in-progress, meetings today), Daily Client Briefing, Priority Tasks,
+  Today's Schedule, Google Drive links, GitHub quick links, AI assistant
+  panel, Recent Activity. Renders via `renderDashboardHome()`.
+- **Tasks** (`#tasks`) — task list with priority/status filters and
+  Add Task button. Renders via `renderTasks()`.
+- **Calendar** (`#calendar`) — month/week/day views. Renders via
+  `renderCalendar()`.
+- These pages source `tasks` and `calEvents` from localStorage, with
+  tolerant load that accepts either a flat array or the
+  `{TASKS, META, SHA}` envelope written by Poseidon enhancement modules.
+
+### J1 Housing Finder iframe
+- Page id: `j1housingfinder` on the J1 System dashboard.
+- Iframe id: `j1hf-iframe`, src `j1-housing-finder-index.html`
+  (same-origin, GitHub Pages).
+- Was previously `loading="lazy"` which meant the frame did not load until
+  scrolled into view. Now `loading="eager"` plus an onload/onerror handler
+  writes status into `#j1hf-status` and sets `window.__j1hfFrameReady`.
+- When asked about J1 Housing Finder, prefer reading the iframe's
+  `contentDocument` (same-origin) once `__j1hfFrameReady === true`.
+
+### Repo hygiene
+- `.gitattributes` now forces LF line endings on all text files; future
+  commit diffs no longer show CRLF↔LF flip noise.
+
+### How to verify changes are live
+- Reload with Ctrl+F5 to bypass cache.
+- The Connect 365 button appears in the top-right header on both dashboards.
+- Live dashboard URLs:
+  - V6:        https://robert-upchurch.github.io/Poseidon/poseidon-dashboard-v6.html
+  - J1 System: https://robert-upchurch.github.io/Poseidon/j1-system-dashboard.html

@@ -7057,4 +7057,49 @@ function renderImportSummary(parsedOptions, activeIdx) {
                 <div>
                     <div class="text-[11px] font-semibold text-amber-400 mb-1">○ Missing / Unclear (${missing.length})</div>
                     <div class="bg-zinc-900/60 border border-zinc-800 rounded p-2 max-h-60 overflow-y-auto text-[11px] text-zinc-400">
-          
+                        ${missing.length ? missing.map(m => `<div>• ${m}</div>`).join('') : '<div class="text-zinc-500">All known fields found.</div>'}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    function _escape(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+}
+
+function clearImportedPdfData() {
+    if (!confirm('Clear pasted PDF text and parsed results?')) return;
+    localStorage.removeItem(J1PDF_RAW_KEY);
+    localStorage.removeItem(J1PDF_PARSED_KEY);
+    const ta = $('j1pdf-input'); if (ta) ta.value = '';
+    const opts = $('j1pdf-options'); if (opts) { opts.classList.add('hidden'); opts.innerHTML = ''; }
+    const sum  = $('j1pdf-summary'); if (sum)  { sum.classList.add('hidden');  sum.innerHTML  = ''; }
+    _showJ1HStatus('✓ Imported PDF data cleared', true);
+}
+
+function loadImportedPdfData() {
+    const raw = localStorage.getItem(J1PDF_RAW_KEY);
+    if (raw && $('j1pdf-input')) $('j1pdf-input').value = raw;
+    const parsed = _getParsedOptionsCached();
+    if (parsed && parsed.options && parsed.options.length) {
+        if (parsed.options.length > 1) renderHousingOptionsSelector(parsed.options);
+        renderImportSummary(parsed.options, 0);
+    }
+}
+
+// Wire on DOM ready (after main init already ran)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadImportedPdfData);
+} else {
+    loadImportedPdfData();
+}
+
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     POSEIDON ENHANCEMENT MODULES (v6.1 Jarvis Release)
+     Loads: training · directory · version+changelog · LLM layer
+     · Grok voice assistant. Non-destructive — existing code untouched.
+     ═══════════════════════════════════════════════════════════════ -->
+<script src="js/poseidon-modules/poseidon-integration.js" defer></script>
+</body>
+</html>

@@ -73,6 +73,46 @@
             color: #1e40af !important;
         }
 
+        /* ═══ READABILITY HARDENING (Robert 2026-04-27 — round 2) ═══
+           Numbers and section headers across the dashboard need to be
+           crisp and clearly readable. */
+        .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
+        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-100,
+        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-100,
+        .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
+        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-200,
+        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
+        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-100,
+        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-100,
+        html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
+        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-200,
+        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+            color: #0c1e3e !important;
+        }
+        .dark .page h2.text-2xl {
+            color: #f8fafc !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        .dark .page h3 {
+            color: #e0e7ff !important;
+        }
+        .dark .page p.text-xs.text-zinc-500 {
+            color: #93c5fd !important;
+        }
+        html:not(.dark) .page h2.text-2xl {
+            color: #0f172a !important;
+        }
+        html:not(.dark) .page h3 {
+            color: #1e3a8a !important;
+        }
+        html:not(.dark) .page p.text-xs.text-zinc-500 {
+            color: #1e40af !important;
+        }
+
         /* Calendar grid specifics */
         .cal-month-grid { display:grid; grid-template-columns:repeat(7,1fr); }
         .cal-week-grid-inner { display:grid; grid-template-columns:56px repeat(7,1fr); }
@@ -469,25 +509,21 @@
         <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="recruitingdivision">
             <i data-lucide="users" class="w-4 h-4"></i> Recruiting
         </a>
-        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="processingcuk">
-            <i data-lucide="file-check" class="w-4 h-4"></i> Processing (CUK)
-        </a>
-        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="j1division">
-            <i data-lucide="globe" class="w-4 h-4"></i> J1 Division
-        </a>
+        <!-- Processing (CUK), J1 Division, and J1 Housing relocated to the
+             CTI Group · J1 System Dashboard. Strict partition rule (2026-04-27):
+             nothing J1 lives on the Poseidon Master. -->
         <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="ittech">
             <i data-lucide="cpu" class="w-4 h-4"></i> IT & Technology
         </a>
         <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="contracts">
             <i data-lucide="file-signature" class="w-4 h-4"></i> Contracts
         </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="other">
+            <i data-lucide="inbox" class="w-4 h-4"></i> Other
+        </a>
 
         <!-- Divider -->
         <div class="border-t border-zinc-800 my-2"></div>
-
-        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="j1housing">
-            <i data-lucide="home" class="w-4 h-4"></i> J1 Housing
-        </a>
 
         <!-- Dark-mode toggle row -->
         <div class="flex items-center justify-between gap-2 px-3 py-2 mt-1 rounded-lg">
@@ -674,33 +710,34 @@
     </div>
 </div>
 
-<!-- ═══════════ PAGE: PROCESSING (CUK) ═══════════ -->
-<div id="processingcuk" class="page hidden">
-    <div class="flex items-start justify-between flex-wrap gap-3 mb-2">
-        <div>
-            <h2 class="text-2xl font-bold text-zinc-100 tracking-tight">Processing Dashboard (CUK)</h2>
-            <p class="text-xs text-zinc-500">Visa Processing · Document Tracking · Compliance</p>
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-            <button onclick="rdDivToolbar('processingcuk','refresh')" class="px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg hover:from-teal-400 hover:to-cyan-400 transition-all flex items-center gap-1.5 shadow-[0_0_16px_rgba(20,184,166,0.35)]"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Update Dashboard</button>
-            <button onclick="rdDivToolbar('processingcuk','simulate')" class="px-3 py-1.5 text-xs font-semibold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 flex items-center gap-1.5"><i data-lucide="fast-forward" class="w-3.5 h-3.5"></i> Simulate Week</button>
-            <button onclick="rdDivToolbar('processingcuk','whatif')" class="px-3 py-1.5 text-xs font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1.5"><i data-lucide="flask-conical" class="w-3.5 h-3.5"></i> What-If</button>
-            <button onclick="rdDivToolbar('processingcuk','import')" class="px-3 py-1.5 text-xs font-semibold bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-1.5"><i data-lucide="upload" class="w-3.5 h-3.5"></i> Import</button>
-            <button onclick="rdDivToolbar('processingcuk','export')" class="px-3 py-1.5 text-xs font-semibold bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export</button>
-            <button onclick="rdDivToolbar('processingcuk','pdf')" class="px-3 py-1.5 text-xs font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-1.5"><i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF</button>
-        </div>
-    </div>
-    <div class="text-[11px] text-zinc-500 mb-4" data-division-staleness="processingcuk">Not yet updated — click Update Dashboard to refresh</div>
+<!-- (PAGES: PROCESSING (CUK), J1 HOUSING, J1 DIVISION removed from this
+     dashboard on 2026-04-27. Per the strict J1/cruise partition rule,
+     all J1-related pages live on the CTI Group · J1 System Dashboard:
+     https://robert-upchurch.github.io/Poseidon/j1-system-dashboard.html ) -->
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5"><h3 class="text-sm font-semibold text-zinc-200 mb-3">Processing Volume + Forecast</h3><div class="relative" style="height:260px"><canvas id="cuk-chart-volume"></canvas></div></div>
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5"><h3 class="text-sm font-semibold text-zinc-200 mb-3">Visa Type Distribution</h3><div class="relative" style="height:260px"><canvas id="cuk-chart-types"></canvas></div></div>
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5"><h3 class="text-sm font-semibold text-zinc-200 mb-3">Processing Time Trend</h3><div class="relative" style="height:280px"><canvas id="cuk-chart-time"></canvas></div></div>
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5"><h3 class="text-sm font-semibold text-zinc-200 mb-3">Approval vs Rejection Rate</h3><div class="relative" style="height:280px"><canvas id="cuk-chart-approval"></canvas></div></div>
+<!-- ═══════════ PAGE: OTHER (holding area for items pending placement) ═══════════ -->
+<div id="other" class="page hidden">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-3">
+        <div>
+            <h2 class="text-2xl font-bold text-zinc-100 tracking-tight">Other</h2>
+            <p class="text-xs text-zinc-500">Holding area for items pending categorization. Drop ambiguous content here — easier to move or delete from this list than to misplace it on the wrong dashboard.</p>
+        </div>
     </div>
-    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 mt-4">
-        <h3 class="text-sm font-semibold text-zinc-200">Processing Queue</h3>
-        <p class="text-xs text-zinc-500 mt-1">Placeholder — active cases populate when CUK feed is connected.</p>
+    <div class="rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-900/15 via-zinc-900/60 to-zinc-900/40 p-6">
+        <div class="text-sm text-zinc-300 leading-relaxed">
+            <strong class="text-zinc-100">Partition rule (Robert, 2026-04-27):</strong>
+            <ul class="mt-3 list-disc list-inside space-y-1.5">
+                <li><strong class="text-blue-300">Cruise / maritime</strong> — Cruise Line contracts, cruise lines, ships, sea-based recruiting, cruise ship candidates → Poseidon Master only</li>
+                <li><strong class="text-teal-300">J-1 visa</strong> — J-1 recruiting, candidates, housing, sponsor contracts (Alliance Abroad / CIEE / Green Heart), hosting companies, airline tickets, Housing Finder → CTI Group · J1 System Dashboard only</li>
+                <li><strong class="text-amber-300">Unclear</strong> → land here in <em>Other</em> on whichever dashboard surfaces it; we'll move or delete after review</li>
+            </ul>
+        </div>
+        <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3" id="other-items-grid">
+            <!-- Items pending categorization render here. Add by writing HTML or using a small JS helper. -->
+            <div class="bg-zinc-950/70 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-400 text-center italic">
+                No items in <em>Other</em> right now. This is a clean dashboard — anything ambiguous lands here for review.
+            </div>
+        </div>
     </div>
 </div>
 
@@ -787,613 +824,20 @@
         <div id="contracts-frame-wrap"></div>
     </div>
 
-    <!-- ═════ J1 Contract Analysis (relocated from J1 Division on 2026-04-27) ═════ -->
-    <div class="mt-5 bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30">
-                <i data-lucide="file-search" class="w-4 h-4 text-amber-400"></i>
-            </span>
-            <div>
-                <h3 class="text-sm font-bold text-zinc-100 tracking-tight">J1 Contract Analysis</h3>
-                <div class="text-[11px] text-zinc-500">Sponsor agreement comparison · CTI Command Center workspace</div>
-            </div>
-        </div>
-        <div id="con-launcher" class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-6 text-center">
-            <p class="text-sm text-zinc-400 max-w-xl mx-auto mb-4">CTI Command Center — competitive intelligence and J-1 sponsor contract analysis. Hosted at <code class="text-zinc-300">robert-upchurch.github.io/cti-command-center</code>.</p>
-            <div class="flex items-center justify-center gap-2 flex-wrap">
-                <button onclick="rdLaunchEmbed('con','https://robert-upchurch.github.io/cti-command-center/','J1 Contract Analysis')" class="px-4 py-2 text-sm font-semibold bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1.5"><i data-lucide="play" class="w-4 h-4"></i> Load in Dashboard</button>
-                <a href="https://robert-upchurch.github.io/cti-command-center/" target="_blank" rel="noopener" class="px-4 py-2 text-sm font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 flex items-center gap-1.5"><i data-lucide="external-link" class="w-4 h-4"></i> Open in New Tab</a>
-            </div>
-            <p class="text-[10px] text-zinc-600 mt-4">If the dashboard embed is empty, the external site may be offline or blocking iframe embedding. Use "Open in New Tab" as a fallback.</p>
-        </div>
-        <div id="con-frame-wrap" class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 hidden"></div>
-    </div>
+    <!-- (J1 Contract Analysis removed from this dashboard. Per the strict
+         J1/cruise partition rule (2026-04-27), J1-related content lives
+         exclusively on the CTI Group · J1 System Dashboard. The J1
+         Contract Analysis page is at j1-system-dashboard.html → sidebar
+         entry "J1 Contract Analysis".) -->
 </div>
 
-<!-- ═══════════ PAGE: J1 HOUSING (promoted to top-level) ═══════════ -->
-<div id="j1housing" class="page hidden">
-    <div class="flex items-start justify-between flex-wrap gap-3 mb-4">
-        <div>
-            <h2 class="text-2xl font-bold text-zinc-100 tracking-tight">J1 Housing</h2>
-            <p class="text-xs text-zinc-500">Sponsor · Property · Financial · Occupancy · Candidate assignments</p>
-        </div>
-        <button onclick="switchPage('j1division'); setTimeout(()=>document.querySelector('.j1-tab[data-tab=j1-housing]')?.click(),50)" class="px-3 py-1.5 text-xs font-semibold bg-teal-500 text-white rounded-lg hover:bg-teal-600 flex items-center gap-1.5">
-            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open full J1 Housing workspace
-        </button>
-    </div>
-    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-        <p class="text-sm text-zinc-300">
-            J1 Housing lives under the <strong>J1 Division</strong> tab system where it's tightly coupled with <em>J1 Accommodations</em>, <em>J1 Housing Finder</em>, and the <em>PDF Housing Import</em> parser. Click "Open full J1 Housing workspace" to go there directly.
-        </p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-            <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
-                <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Active Housing Records</div>
-                <div class="text-2xl font-bold font-mono text-teal-400" id="jh-kpi-active">—</div>
-            </div>
-            <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
-                <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Candidates Placed</div>
-                <div class="text-2xl font-bold font-mono text-emerald-400" id="jh-kpi-placed">—</div>
-            </div>
-            <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
-                <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Upcoming Check-Ins (30d)</div>
-                <div class="text-2xl font-bold font-mono text-amber-400" id="jh-kpi-upcoming">—</div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- ═══════════ PAGE: DASHBOARD ═══════════ -->
-<div id="dashboard" class="page hidden">
-    <!-- Greeting + Date -->
-    <div class="mb-5">
-        <h2 id="greeting" class="text-2xl font-bold tracking-tight text-zinc-100"></h2>
-        <p id="today-date" class="text-sm text-zinc-500 mt-1"></p>
-    </div>
-
-    <!-- KPI Row -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-indigo-500/40 transition-all cursor-pointer group" onclick="switchPage('tasks')">
-            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Today's Tasks</div>
-            <div class="text-2xl font-bold font-mono text-zinc-100 group-hover:text-indigo-400 transition-colors" id="kpi-today-tasks">0</div>
-        </div>
-        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 border-l-2 border-l-red-500/60 hover:border-red-500/40 transition-all cursor-pointer group" onclick="switchPage('tasks')">
-            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Overdue</div>
-            <div class="text-2xl font-bold font-mono text-red-400 group-hover:text-red-300 transition-colors" id="kpi-overdue">0</div>
-        </div>
-        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-blue-500/40 transition-all cursor-pointer group" onclick="switchPage('tasks')">
-            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">In Progress</div>
-            <div class="text-2xl font-bold font-mono text-blue-400 group-hover:text-blue-300 transition-colors" id="kpi-in-progress">0</div>
-        </div>
-        <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-green-500/40 transition-all cursor-pointer group" onclick="switchPage('calendar')">
-            <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Meetings Today</div>
-            <div class="text-2xl font-bold font-mono text-green-400 group-hover:text-green-300 transition-colors" id="kpi-meetings">0</div>
-        </div>
-    </div>
-
-    <!-- Daily Client Briefing -->
-    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-6">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i> Daily Client Briefing</h3>
-            <button onclick="refreshBriefing()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors">Refresh ↻</button>
-        </div>
-        <div id="daily-briefing-content" class="text-sm text-zinc-400 leading-relaxed">
-            <div class="text-center py-6 text-zinc-600">
-                <p>Connect Microsoft 365 and refresh via Cowork to generate your daily briefing.</p>
-                <p class="text-xs mt-1">Combines CRM activity, client emails, and meeting summaries.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Two Column: Priority Tasks + Today's Schedule -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Priority Tasks</h3>
-                <a href="#" onclick="switchPage('tasks');return false;" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">View all →</a>
-            </div>
-            <div id="priority-tasks-list" class="space-y-2">
-                <p class="text-xs text-zinc-600 py-4 text-center">No priority tasks. Add tasks to get started.</p>
-            </div>
-        </div>
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-blue-400"></i> Today's Schedule</h3>
-                <a href="#" onclick="switchPage('calendar');return false;" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">Full calendar →</a>
-            </div>
-            <div id="today-schedule" class="space-y-2">
-                <p class="text-xs text-zinc-600 py-4 text-center">No events today. <span id="schedule-hint" class="hidden">Connect Microsoft 365 for live calendar.</span></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Links -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-            <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3"><i data-lucide="hard-drive" class="w-4 h-4 text-emerald-400"></i> Google Drive</h3>
-            <div id="drive-links" class="space-y-1"></div>
-        </div>
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-            <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3"><i data-lucide="github" class="w-4 h-4 text-zinc-400"></i> Quick Links</h3>
-            <div id="github-quick-links" class="grid grid-cols-2 gap-2"></div>
-        </div>
-    </div>
-
-    <!-- AI Co-Worker Assistant -->
-    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-        <div id="ai-assistant-panel"></div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-        <h3 class="text-sm font-semibold text-zinc-300 flex items-center gap-2 mb-3"><i data-lucide="activity" class="w-4 h-4 text-violet-400"></i> Recent Activity</h3>
-        <div id="activity-list" class="space-y-2">
-            <p class="text-xs text-zinc-600 py-2 text-center">Activity will appear as you use the dashboard.</p>
-        </div>
-    </div>
-</div>
-
-<!-- ═══════════ PAGE: TASKS ═══════════ -->
-<div id="tasks" class="page hidden">
-    <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3 flex-wrap">
-            <select id="priority-filter" class="px-3 py-1.5 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 focus:outline-none focus:border-indigo-500/50">
-                <option value="">All Priorities</option>
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-            </select>
-            <select id="status-filter" class="px-3 py-1.5 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 focus:outline-none focus:border-indigo-500/50">
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
-            </select>
-        </div>
-        <button onclick="openTaskModal()" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all flex items-center gap-1.5">
-            <i data-lucide="plus" class="w-4 h-4"></i> Add Task
-        </button>
-    </div>
-    <div id="task-list" class="space-y-2">
-        <div class="text-center py-12 text-zinc-600">
-            <i data-lucide="check-square" class="w-10 h-10 mx-auto mb-3 text-zinc-700"></i>
-            <p class="text-sm">No tasks yet. Click <strong class="text-indigo-400">+ Add Task</strong> to get started.</p>
-        </div>
-    </div>
-</div>
-
-<!-- ═══════════ PAGE: CALENDAR ═══════════ -->
-<div id="calendar" class="page hidden">
-    <div class="flex items-center justify-between mb-4">
-        <button onclick="openNewEvent()" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all flex items-center gap-1.5">
-            <i data-lucide="plus" class="w-4 h-4"></i> New Event
-        </button>
-        <span class="text-xs text-zinc-600">Click any day to add an event</span>
-    </div>
-    <div class="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-4">
-        <!-- Calendar Sidebar -->
-        <div class="space-y-4">
-            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <button onclick="miniCalPrev()" class="text-zinc-500 hover:text-zinc-300 text-sm px-1">‹</button>
-                    <span id="mini-cal-title" class="text-sm font-semibold text-zinc-300"></span>
-                    <button onclick="miniCalNext()" class="text-zinc-500 hover:text-zinc-300 text-sm px-1">›</button>
-                </div>
-                <div id="mini-cal-grid" class="grid grid-cols-7 gap-0.5 text-center text-xs"></div>
-            </div>
-            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
-                <h3 class="text-sm font-semibold text-zinc-300 mb-3">Upcoming</h3>
-                <div id="upcoming-list" class="space-y-1"></div>
-            </div>
-        </div>
-        <!-- Calendar Main -->
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                    <button onclick="calPrev()" class="px-2 py-1 text-sm text-zinc-400 hover:text-zinc-100 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all">‹</button>
-                    <button onclick="calGoToday()" class="px-3 py-1 text-sm text-zinc-400 hover:text-zinc-100 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all">Today</button>
-                    <button onclick="calNext()" class="px-2 py-1 text-sm text-zinc-400 hover:text-zinc-100 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all">›</button>
-                    <h3 id="cal-main-title" class="text-base font-semibold text-zinc-200 ml-2"></h3>
-                </div>
-                <div class="flex gap-1">
-                    <button id="view-month" onclick="setCalView('month')" class="cal-view-btn px-3 py-1 text-xs border border-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-all bg-indigo-500/20 text-indigo-300 border-indigo-500/30">Month</button>
-                    <button id="view-week" onclick="setCalView('week')" class="cal-view-btn px-3 py-1 text-xs border border-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-all">Week</button>
-                    <button id="view-day" onclick="setCalView('day')" class="cal-view-btn px-3 py-1 text-xs border border-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-100 transition-all">Day</button>
-                </div>
-            </div>
-            <!-- Month View -->
-            <div id="cal-month-view">
-                <div class="grid grid-cols-7 mb-1">
-                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Sun</div>
-                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Mon</div>
-                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Tue</div>
-                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Wed</div>
-                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Thu</div>
-                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Fri</div>
-                    <div class="text-center text-[11px] font-semibold text-zinc-500 py-1">Sat</div>
-                </div>
-                <div id="cal-month-grid" class="cal-month-grid"></div>
-            </div>
-            <div id="cal-week-view" style="display:none"></div>
-            <div id="cal-day-view" style="display:none"></div>
-        </div>
-    </div>
-</div>
-
-<!-- ═══════════ PAGE: J1 DIVISION ═══════════ -->
-<div id="j1division" class="page hidden">
-    <div class="flex gap-2 mb-4 flex-wrap" id="j1-tab-bar">
-        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-tab="j1-housing">J1 Housing</button>
-        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-accommodations">J1 Accommodations</button>
-        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-housing-finder">J1 Housing Finder</button>
-        <button class="j1-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-tab="j1-onboarding">Partner Onboarding</button>
-        <!-- J1 Contract Analysis tab moved to Sponsor Contracts → Contracts Dashboard (2026-04-27) -->
-    </div>
-    <!-- J1 Housing Finder — embeds the local file in this repo (j1-housing-finder-index.html) -->
-    <div class="j1-content" id="j1-housing-finder" style="display:none">
-        <div class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 relative">
-            <div id="hf-loader" class="absolute inset-0 flex items-center justify-center text-xs text-zinc-500 bg-zinc-900/60 pointer-events-none"><div><i data-lucide="loader" class="w-4 h-4 inline mr-1 animate-spin"></i> Loading J1 Housing Finder…</div></div>
-            <iframe src="j1-housing-finder-index.html" class="w-full border-none rounded-xl relative z-10" style="height:calc(100vh - 220px);min-height:600px;" loading="lazy" title="J1 Housing Finder" allow="clipboard-read; clipboard-write" onload="document.getElementById('hf-loader')?.remove()"></iframe>
-        </div>
-        <div class="mt-3 flex items-center justify-between text-[11px] text-zinc-500 flex-wrap gap-2">
-            <span>Source: <code class="text-zinc-400">j1-housing-finder-index.html</code> (local)</span>
-            <a href="j1-housing-finder-index.html" target="_blank" class="text-teal-400 hover:text-teal-300 flex items-center gap-1"><i data-lucide="external-link" class="w-3 h-3"></i> Open in new tab</a>
-        </div>
-    </div>
-
-    <!-- Partner Onboarding — launcher (external site may be gated) -->
-    <div class="j1-content" id="j1-onboarding" style="display:none">
-        <div id="onb-launcher" class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-8 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="handshake" class="w-7 h-7 text-teal-400"></i>
-            </div>
-            <h3 class="text-lg font-bold text-zinc-100 mb-1">CIEE Partner Onboarding</h3>
-            <p class="text-sm text-zinc-400 max-w-xl mx-auto mb-5">Sponsor intake, host-entity verification, and J-1 partner onboarding workflow. Hosted at <code class="text-zinc-300">robert-upchurch.github.io/ciee-partner-onboarding</code>.</p>
-            <div class="flex items-center justify-center gap-2 flex-wrap">
-                <button onclick="rdLaunchEmbed('onb','https://robert-upchurch.github.io/ciee-partner-onboarding/','CIEE Partner Onboarding')" class="px-4 py-2 text-sm font-semibold bg-teal-500 text-white rounded-lg hover:bg-teal-600 flex items-center gap-1.5"><i data-lucide="play" class="w-4 h-4"></i> Load in Dashboard</button>
-                <a href="https://robert-upchurch.github.io/ciee-partner-onboarding/" target="_blank" rel="noopener" class="px-4 py-2 text-sm font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 flex items-center gap-1.5"><i data-lucide="external-link" class="w-4 h-4"></i> Open in New Tab</a>
-            </div>
-            <p class="text-[10px] text-zinc-600 mt-4">If the dashboard embed is empty, the external site may be offline or blocking iframe embedding. Use "Open in New Tab" as a fallback.</p>
-        </div>
-        <div id="onb-frame-wrap" class="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/40 hidden"></div>
-    </div>
-
-    <!-- (J1 Contract Analysis launcher relocated to the Sponsor Contracts page on 2026-04-27.) -->
-
-    <!-- ═══════════ J1 HOUSING (intake + pricing) ═══════════ -->
-    <div class="j1-content active" id="j1-housing">
-
-        <!-- PDF Housing Import (Phase 2) -->
-        <div class="bg-zinc-900/40 border border-indigo-500/30 rounded-xl p-5 mb-4">
-            <div class="flex items-center justify-between mb-3 flex-wrap gap-3">
-                <div>
-                    <h2 class="text-lg font-bold text-zinc-200 flex items-center gap-2 mb-1">📄 PDF Housing Import</h2>
-                    <p class="text-xs text-zinc-500">Paste offer-letter or housing PDF text below. The parser will extract fields and populate J1 Housing (and optionally J1 Accommodations).</p>
-                </div>
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="clearImportedPdfData()" class="px-3 py-1.5 text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-lg hover:bg-zinc-700 transition-all">Clear Imported Data</button>
-                    <button onclick="parseJ1HousingPdfText()" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all">Import / Parse PDF Data</button>
-                </div>
-            </div>
-            <div class="mb-3">
-                <label class="block text-xs font-medium text-zinc-300 font-medium mb-1">Paste PDF Text</label>
-                <textarea id="j1pdf-input" rows="6" class="w-full px-3 py-2 text-xs font-mono bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50" placeholder="Paste raw text from the PDF / offer letter here… (Host Entity Name, Position Title, Stipend, Housing Lead, Address, etc.)"></textarea>
-                <div class="text-[10px] text-zinc-600 mt-1">Tip: open the PDF → Select All → Copy → paste above. The parser recognises variations in spacing and punctuation.</div>
-            </div>
-
-            <!-- Housing options selector (multi-housing aware) -->
-            <div id="j1pdf-options" class="hidden mb-3"></div>
-
-            <!-- Import summary -->
-            <div id="j1pdf-summary" class="hidden"></div>
-        </div>
-
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
-            <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <div>
-                    <h2 class="text-lg font-bold text-zinc-200 flex items-center gap-2 mb-1">🏠 J1 Housing</h2>
-                    <p class="text-xs text-zinc-500">Housing setup for J-1 participants — sponsor, property, financial, occupancy, and candidate assignments.</p>
-                </div>
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="clearJ1Housing()" class="px-3 py-1.5 text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-lg hover:bg-zinc-700 transition-all">Clear Form</button>
-                    <button onclick="saveJ1Housing()" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all">Save Housing</button>
-                    <button onclick="sendHousingToAccommodations()" class="px-4 py-1.5 text-sm font-medium bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all">Send to Accommodations →</button>
-                </div>
-            </div>
-            <div id="j1h-status" class="hidden text-xs mb-4 px-3 py-2 rounded-lg border"></div>
-
-            <!-- Core -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-2">A. Core</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Sponsor</label>
-                    <select id="j1h-sponsor" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50">
-                        <option value="">— Select Sponsor —</option>
-                        <option>Alliance Abroad</option><option>Greenheart</option><option>CIEE</option>
-                        <option>Intrax</option><option>Spirit Cultural Exchange</option><option>Other</option>
-                    </select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Host Entity Name</label><input id="j1h-host" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Work Location</label><input id="j1h-work-location" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Lead Name</label><input id="j1h-lead-name" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Lead Email</label><input id="j1h-lead-email" type="email" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Lead Phone</label><input id="j1h-lead-phone" type="tel" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Check-In Date</label><input id="j1h-checkin" type="date" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Check-Out Date</label><input id="j1h-checkout" type="date" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></div>
-            </div>
-            <div class="mb-4"><label class="block text-xs font-medium text-zinc-500 mb-1">Notes</label><textarea id="j1h-notes" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50"></textarea></div>
-
-            <!-- Program -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">B. Program</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">English Level</label>
-                    <select id="j1h-english" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Excellent</option><option>Good</option><option>Moderate</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Uniform Provided</label>
-                    <select id="j1h-uniform" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Payment Schedule</label>
-                    <select id="j1h-pay-schedule" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Weekly</option><option>Biweekly</option><option>Monthly</option><option>Other</option></select>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Training Schedule</label><textarea id="j1h-training" rows="3" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Grooming Standards</label><textarea id="j1h-grooming" rows="3" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Dress Code</label><textarea id="j1h-dresscode" rows="3" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Drug Screening Policy</label><textarea id="j1h-drug-policy" rows="3" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-            </div>
-
-            <!-- Property -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">C. Property</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Model</label><input id="j1h-model" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Gender Requirement</label>
-                    <select id="j1h-gender" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Male</option><option>Female</option><option>Any</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Housing Type</label>
-                    <select id="j1h-type" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Apartment</option><option>House</option><option>Other</option></select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Name</label><input id="j1h-name" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div class="md:col-span-2"><label class="block text-xs font-medium text-zinc-500 mb-1">Address</label><input id="j1h-address" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Email</label><input id="j1h-email" type="email" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Phone</label><input id="j1h-phone" type="tel" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Website</label><input id="j1h-website" type="url" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-            </div>
-
-            <!-- Financial -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">D. Financial</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Cost Per Participant</label><input id="j1h-cost" type="number" step="any" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Charge Basis</label>
-                    <select id="j1h-charge-basis" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Per Bed</option><option>Per Room</option><option>Per Participant</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Rent Frequency</label>
-                    <select id="j1h-rent-freq" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Weekly</option><option>Monthly</option><option>Other</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Payroll Deduction</label>
-                    <select id="j1h-payroll-deduct" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Deposit</label><input id="j1h-deposit" type="number" step="any" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Deposit Deducted</label>
-                    <select id="j1h-deposit-deducted" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Deposit Refundable</label>
-                    <select id="j1h-deposit-refundable" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-            </div>
-
-            <!-- Occupancy -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">E. Occupancy Structure</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Beds Per Room</label><input id="j1h-beds-per-room" type="number" min="1" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1"># of Bedrooms</label>
-                    <select id="j1h-bedrooms" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Bathrooms / Property</label><input id="j1h-bathrooms" type="number" min="0" step="0.5" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Participants / Property</label><input id="j1h-ppr-property" type="number" min="0" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Participants / Bedroom</label><input id="j1h-ppr-bedroom" type="number" min="0" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Participants / Bathroom</label><input id="j1h-ppr-bathroom" type="number" min="0" step="0.5" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Own Bed?</label>
-                    <select id="j1h-own-bed" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Co-Ed Allowed?</label>
-                    <select id="j1h-coed" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-            </div>
-
-            <!-- Details -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">F. Property Details</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Amenities</label><textarea id="j1h-amenities" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Distance to Work</label><input id="j1h-distance" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="e.g. 1.2 miles / 25 min bus"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Transportation Details</label><textarea id="j1h-transport" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Description</label><textarea id="j1h-description" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Kitchen Facilities</label><textarea id="j1h-kitchen" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Bedding Provided</label>
-                    <select id="j1h-bedding" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Additional Items Required</label><textarea id="j1h-addl-required" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Included in Cost</label><textarea id="j1h-included" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div class="md:col-span-2"><label class="block text-xs font-medium text-zinc-500 mb-1">Additional Included Items</label><textarea id="j1h-addl-included" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-            </div>
-
-            <!-- Lease / Policy -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">G. Lease / Policy</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Lease Required</label>
-                    <select id="j1h-lease-req" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Lease Length</label><input id="j1h-lease-length" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Employer Signs Lease</label>
-                    <select id="j1h-lease-employer" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div class="md:col-span-2"><label class="block text-xs font-medium text-zinc-500 mb-1">Refund Policy Notes</label><textarea id="j1h-refund-policy" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Fee Notes</label><textarea id="j1h-fee-notes" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-            </div>
-
-            <!-- Candidates -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">H. Candidates <span class="text-[10px] text-zinc-600 font-normal ml-1">(max 8)</span></h3>
-            <div id="j1h-candidates-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4"></div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Room Assignment</label><input id="j1h-room-assign" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Bed Assignment</label><input id="j1h-bed-assign" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Assignment Notes</label><input id="j1h-assign-notes" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════ J1 ACCOMMODATIONS (assignment + compliance) ═══════════ -->
-    <div class="j1-content" id="j1-accommodations" style="display:none">
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
-            <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <div>
-                    <h2 class="text-lg font-bold text-zinc-200 flex items-center gap-2 mb-1">🛏️ J1 Accommodations</h2>
-                    <p class="text-xs text-zinc-500">Occupant assignment, compliance, arrival logistics, and summary generation.</p>
-                </div>
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="clearJ1Accommodations()" class="px-3 py-1.5 text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-lg hover:bg-zinc-700 transition-all">Clear Form</button>
-                    <button onclick="checkAccommodationOccupancy()" class="px-4 py-1.5 text-sm font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all">Check Occupancy</button>
-                    <button onclick="saveJ1Accommodations()" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all">Save Accommodation</button>
-                    <button onclick="generateAccommodationSummary()" class="px-4 py-1.5 text-sm font-medium bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-all">Generate Summary</button>
-                </div>
-            </div>
-            <div id="j1a-status" class="hidden text-xs mb-4 px-3 py-2 rounded-lg border"></div>
-
-            <!-- Property Overview -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-2">A. Property Overview</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Sponsor</label><input id="j1a-sponsor" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Host Entity</label><input id="j1a-host" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Work Location</label><input id="j1a-work-location" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Name</label><input id="j1a-name" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div class="md:col-span-2"><label class="block text-xs font-medium text-zinc-500 mb-1">Address</label><input id="j1a-address" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Type</label><input id="j1a-type" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Housing Model</label><input id="j1a-model" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-            </div>
-
-            <!-- Occupancy + Billing -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">B. Occupancy &amp; Billing</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Bedrooms</label><input id="j1a-bedrooms" type="number" min="0" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" oninput="j1aRecalc()"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Beds Per Room</label><input id="j1a-beds-per-room" type="number" min="0" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" oninput="j1aRecalc()"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Total Beds <span class="text-[10px] text-zinc-600">(auto)</span></label><input id="j1a-total-beds" type="number" readonly class="w-full px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-emerald-300 font-mono"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Beds Assigned</label><input id="j1a-beds-assigned" type="number" min="0" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" oninput="j1aRecalc()"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Beds Remaining <span class="text-[10px] text-zinc-600">(auto)</span></label><input id="j1a-beds-remaining" type="number" readonly class="w-full px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-lg text-amber-300 font-mono"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Charge Per Bed</label><input id="j1a-charge-bed" type="number" step="any" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Charge Per Room</label><input id="j1a-charge-room" type="number" step="any" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Rent Frequency</label>
-                    <select id="j1a-rent-freq" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Weekly</option><option>Monthly</option><option>Other</option></select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Deposit</label><input id="j1a-deposit" type="number" step="any" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Refundable</label>
-                    <select id="j1a-refundable" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-            </div>
-
-            <!-- Occupants -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">C. Assigned Occupants <span class="text-[10px] text-zinc-600 font-normal ml-1">(max 8)</span></h3>
-            <div id="j1a-occupants-grid" class="space-y-2 mb-4"></div>
-
-            <!-- Compliance -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">D. Compliance</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Jurisdiction</label><input id="j1a-jurisdiction" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="City / County / State"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Rule Source</label><input id="j1a-rule-source" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="Ordinance / code citation"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Compliance Status</label>
-                    <select id="j1a-compliance-status" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option>Not Reviewed</option><option>Pending</option><option>Verified</option><option>Issue</option><option>Non-Compliant</option></select>
-                </div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Max Persons Per House</label><input id="j1a-max-house" type="number" min="0" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Max Persons Per Bedroom</label><input id="j1a-max-bedroom" type="number" min="0" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Verified By</label><input id="j1a-verified-by" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Verification Date</label><input id="j1a-verified-date" type="date" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div class="md:col-span-2"><label class="block text-xs font-medium text-zinc-500 mb-1">Compliance Notes</label><textarea id="j1a-compliance-notes" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-            </div>
-            <div id="j1a-occupancy-warning" class="hidden text-xs mb-4 px-3 py-2 rounded-lg border"></div>
-
-            <!-- Arrival -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">E. Arrival &amp; Support</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Arrival Airport</label><input id="j1a-airport" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Pickup Provided</label>
-                    <select id="j1a-pickup" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Contact Before Arrival</label>
-                    <select id="j1a-contact-before" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div class="md:col-span-2"><label class="block text-xs font-medium text-zinc-500 mb-1">Arrival Instructions</label><textarea id="j1a-arrival-instructions" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Transport Notes</label><textarea id="j1a-transport-notes" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Reporting Contact</label><input id="j1a-reporting-contact" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Arrival Days</label><input id="j1a-arrival-days" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="e.g. Mon–Fri"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Arrival Times</label><input id="j1a-arrival-times" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="e.g. 10:00–18:00"></div>
-            </div>
-
-            <!-- Social Security -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">F. Social Security Office</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div class="md:col-span-2"><label class="block text-xs font-medium text-zinc-500 mb-1">Office Address</label><input id="j1a-ssn-address" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div><label class="block text-xs font-medium text-zinc-500 mb-1">Distance</label><input id="j1a-ssn-distance" type="text" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Transport Provided</label>
-                    <select id="j1a-ssn-transport" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-500 mb-1">Assistance Provided</label>
-                    <select id="j1a-ssn-assistance" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"><option value="">—</option><option>Yes</option><option>No</option></select>
-                </div>
-                <div class="md:col-span-3"><label class="block text-xs font-medium text-zinc-500 mb-1">Notes</label><textarea id="j1a-ssn-notes" rows="2" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200"></textarea></div>
-            </div>
-
-            <!-- Cultural -->
-            <h3 class="text-sm font-semibold text-zinc-300 mb-3 mt-4">G. Cultural</h3>
-            <div class="mb-4"><label class="block text-xs font-medium text-zinc-500 mb-1">Activities</label><textarea id="j1a-cultural" rows="3" class="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200" placeholder="Scheduled cultural activities, community engagement, excursions…"></textarea></div>
-
-            <!-- Summary output -->
-            <div id="j1a-summary-output" class="hidden bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 mt-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold text-zinc-300">📄 Accommodation Summary</h3>
-                    <div class="flex gap-2">
-                        <button onclick="copyJ1aSummary('json')" class="px-2 py-1 text-[11px] bg-zinc-800 text-zinc-300 border border-zinc-700 rounded hover:bg-zinc-700">Copy JSON</button>
-                        <button onclick="copyJ1aSummary('md')" class="px-2 py-1 text-[11px] bg-zinc-800 text-zinc-300 border border-zinc-700 rounded hover:bg-zinc-700">Copy MD</button>
-                        <button onclick="document.getElementById('j1a-summary-output').classList.add('hidden')" class="px-2 py-1 text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700 rounded hover:bg-zinc-700">Close</button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    <pre id="j1a-summary-json" class="bg-zinc-950 border border-zinc-800 rounded p-2 text-[11px] text-emerald-300 font-mono overflow-auto max-h-80 whitespace-pre-wrap"></pre>
-                    <pre id="j1a-summary-md" class="bg-zinc-950 border border-zinc-800 rounded p-2 text-[11px] text-zinc-200 font-mono overflow-auto max-h-80 whitespace-pre-wrap"></pre>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- ═══════════ PAGE: RECRUITING DIVISION ═══════════ -->
 <div id="recruitingdivision" class="page hidden">
     <!-- Tab Bar -->
     <div class="flex gap-2 mb-4 flex-wrap" id="rd-tab-bar">
         <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-indigo-500 text-white" data-rdtab="rd-overview">Recruiting Overview</button>
-        <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-rdtab="rd-j1">J-1 Candidates</button>
         <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-rdtab="rd-cruise">Cruise Ship Candidates</button>
         <button class="rd-tab px-4 py-1.5 text-sm font-medium rounded-lg transition-all bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-700" data-rdtab="rd-workflow">Recruiting Workflow</button>
     </div>
@@ -1572,132 +1016,6 @@
                     <tbody id="rd-ov-stagnant-tbody" class="text-zinc-300"></tbody>
                 </table>
             </div>
-        </div>
-    </div>
-
-    <!-- ═════ J-1 CANDIDATES PANEL ═════ -->
-    <div class="rd-content" id="recruiting-j1-candidates" style="display:none">
-
-        <!-- Summary KPI Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-indigo-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Active J-1 Openings</div>
-                <div class="text-2xl font-bold font-mono text-indigo-400" id="rd-j1-kpi-openings">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-blue-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Interviews Performed</div>
-                <div class="text-2xl font-bold font-mono text-blue-400" id="rd-j1-kpi-interviews">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-emerald-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Clients Interviewed</div>
-                <div class="text-2xl font-bold font-mono text-emerald-400" id="rd-j1-kpi-clients">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-amber-500/40 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Open Positions Available</div>
-                <div class="text-2xl font-bold font-mono text-amber-400" id="rd-j1-kpi-positions">0</div>
-            </div>
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-all">
-                <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-1">Last Live Update</div>
-                <div class="text-sm font-semibold text-zinc-200 truncate" id="rd-j1-kpi-lastupdate">—</div>
-            </div>
-        </div>
-
-        <!-- Live Update Toolbar -->
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 mb-4">
-            <div class="flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center gap-3 flex-wrap">
-                    <button onclick="refreshRecruitingDivision('j1')" class="px-4 py-1.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all flex items-center gap-2">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Live Update
-                    </button>
-                    <div class="text-xs text-zinc-500">
-                        <span class="text-zinc-400 font-medium">Last Refreshed:</span> <span id="rd-j1-last-refresh" class="font-mono text-zinc-200">—</span>
-                    </div>
-                    <div class="text-xs text-zinc-500">
-                        <span class="text-zinc-400 font-medium">Accessed By:</span> <span id="rd-j1-last-user" class="font-mono text-zinc-200">Robert Upchurch</span>
-                    </div>
-                    <div class="text-xs text-zinc-500">
-                        <span class="text-zinc-400 font-medium">Records Added:</span> <span id="rd-j1-added-count" class="font-mono text-emerald-400">0</span>
-                    </div>
-                </div>
-                <div class="text-xs text-zinc-500 max-w-md truncate">
-                    <span class="text-zinc-400 font-medium">Change Summary:</span> <span id="rd-j1-change-summary" class="text-zinc-300">No refresh yet</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Current Job Openings Table -->
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
-            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4 text-indigo-400"></i> Current J-1 / Land-Based Job Openings</h3>
-                <input type="text" id="rd-j1-search" placeholder="Search position or client…" class="w-60 px-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50">
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead>
-                        <tr class="text-left text-zinc-500 border-b border-zinc-800">
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="j1" data-col="position">Position</th>
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="j1" data-col="jobOpening">Job Opening</th>
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="j1" data-col="datePosted">Date Posted</th>
-                            <th class="py-2 px-2 font-medium">Positions</th>
-                            <th class="py-2 px-2 font-medium cursor-pointer hover:text-zinc-200" data-rdsort="j1" data-col="client">Client</th>
-                            <th class="py-2 px-2 font-medium">Account Manager</th>
-                            <th class="py-2 px-2 font-medium">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rd-j1-openings-tbody" class="text-zinc-300"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Interview Metrics + Client Directory -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2 mb-3"><i data-lucide="user-check" class="w-4 h-4 text-blue-400"></i> Interview Metrics</h3>
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
-                        <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Interviews Performed</div>
-                        <div class="text-xl font-bold font-mono text-blue-400" id="rd-j1-mx-interviews">0</div>
-                    </div>
-                    <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
-                        <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Clients Interviewed</div>
-                        <div class="text-xl font-bold font-mono text-emerald-400" id="rd-j1-mx-clients">0</div>
-                    </div>
-                </div>
-                <div class="text-[11px] text-zinc-400 font-medium mb-2">Recent Interview Activity</div>
-                <ul id="rd-j1-recent-interviews" class="text-xs text-zinc-400 space-y-1"></ul>
-            </div>
-            <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5">
-                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2"><i data-lucide="building-2" class="w-4 h-4 text-emerald-400"></i> Client Directory</h3>
-                    <input type="text" id="rd-j1-client-search" placeholder="Search client…" class="w-48 px-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-indigo-500/50">
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead>
-                            <tr class="text-left text-zinc-500 border-b border-zinc-800">
-                                <th class="py-2 px-2 font-medium">Client</th>
-                                <th class="py-2 px-2 font-medium">Contact</th>
-                                <th class="py-2 px-2 font-medium">Email</th>
-                                <th class="py-2 px-2 font-medium">Website</th>
-                                <th class="py-2 px-2 font-medium">Account Mgr</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rd-j1-clients-tbody" class="text-zinc-300"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Markdown Export -->
-        <div class="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-4">
-            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i> Markdown Export — J-1 Recruiting</h3>
-                <div class="flex gap-2">
-                    <button onclick="generateJ1RecruitingMarkdown()" class="px-3 py-1.5 text-xs font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all">Generate Markdown</button>
-                    <button onclick="copyRecruitingMarkdown('j1')" class="px-3 py-1.5 text-xs font-medium bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg hover:bg-zinc-700 transition-all">Copy</button>
-                </div>
-            </div>
-            <pre id="rd-j1-markdown" class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-[11px] text-zinc-200 font-mono overflow-auto max-h-80 whitespace-pre-wrap">Click "Generate Markdown" to produce an export block.</pre>
         </div>
     </div>
 

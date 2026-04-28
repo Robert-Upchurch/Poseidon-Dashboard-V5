@@ -93,6 +93,51 @@
             color: #1e40af !important;  /* blue-800 */
         }
 
+        /* ═══ READABILITY HARDENING (Robert 2026-04-27 — round 2) ═══
+           Numbers and section headers across the dashboard need to be
+           crisp and clearly readable. Strengthen value text inside
+           card bodies and bump page-section h2/h3 headers. */
+
+        /* KPI VALUE numbers — bigger, brighter on dark; darker on light */
+        .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
+        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-100,
+        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-100,
+        .dark .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
+        .dark .bg-zinc-950\/60.rounded-lg .text-zinc-200,
+        .dark .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+            color: #ffffff !important;  /* pure white for max readability */
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-100,
+        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-100,
+        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-100,
+        html:not(.dark) .bg-zinc-900\/60.border-l-4.rounded-xl .text-zinc-200,
+        html:not(.dark) .bg-zinc-950\/60.rounded-lg .text-zinc-200,
+        html:not(.dark) .bg-zinc-950\/70.rounded-lg .text-zinc-200 {
+            color: #0c1e3e !important;  /* near-black navy */
+        }
+
+        /* PAGE SECTION HEADERS — h2 inside any .page, h3 inside cards */
+        .dark .page h2.text-2xl {
+            color: #f8fafc !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        .dark .page h3 {
+            color: #e0e7ff !important;
+        }
+        .dark .page p.text-xs.text-zinc-500 {
+            color: #93c5fd !important;  /* page subtitle — brighter blue */
+        }
+        html:not(.dark) .page h2.text-2xl {
+            color: #0f172a !important;
+        }
+        html:not(.dark) .page h3 {
+            color: #1e3a8a !important;
+        }
+        html:not(.dark) .page p.text-xs.text-zinc-500 {
+            color: #1e40af !important;
+        }
+
         /* Calendar grid specifics */
         .cal-month-grid { display:grid; grid-template-columns:repeat(7,1fr); }
         .cal-week-grid-inner { display:grid; grid-template-columns:56px repeat(7,1fr); }
@@ -508,6 +553,9 @@
         <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="videos">
             <i data-lucide="film" class="w-4 h-4"></i> Recruitment Videos
         </a>
+        <a class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60" data-page="other">
+            <i data-lucide="inbox" class="w-4 h-4"></i> Other
+        </a>
 
         <!-- Divider -->
         <div class="border-t border-zinc-800 my-2"></div>
@@ -739,6 +787,31 @@
      was removed from this dashboard and lives only on the Poseidon
      Master at /poseidon-dashboard-v6.html → Contracts. Use the
      cross-dashboard switcher pill in the top-right header to jump there. -->
+
+<!-- ═══════════ PAGE: OTHER (holding area for items pending placement) ═══════════ -->
+<div id="other" class="page hidden">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-3">
+        <div>
+            <h2 class="text-2xl font-bold text-zinc-100 tracking-tight">Other</h2>
+            <p class="text-xs text-zinc-500">Holding area for items pending categorization. Drop ambiguous content here — easier to move or delete from this list than to misplace it on the wrong dashboard.</p>
+        </div>
+    </div>
+    <div class="rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-900/15 via-zinc-900/60 to-zinc-900/40 p-6">
+        <div class="text-sm text-zinc-300 leading-relaxed">
+            <strong class="text-zinc-100">Partition rule (Robert, 2026-04-27):</strong>
+            <ul class="mt-3 list-disc list-inside space-y-1.5">
+                <li><strong class="text-blue-300">Cruise / maritime</strong> — Cruise Line contracts, cruise lines, ships, sea-based recruiting, cruise ship candidates → Poseidon Master only</li>
+                <li><strong class="text-teal-300">J-1 visa</strong> — J-1 recruiting, candidates, housing, sponsor contracts (Alliance Abroad / CIEE / Green Heart), hosting companies, airline tickets, Housing Finder → CTI Group · J1 System Dashboard only</li>
+                <li><strong class="text-amber-300">Unclear</strong> → land here in <em>Other</em> on whichever dashboard surfaces it; we'll move or delete after review</li>
+            </ul>
+        </div>
+        <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3" id="other-items-grid">
+            <div class="bg-zinc-950/70 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-400 text-center italic">
+                No items in <em>Other</em> right now. This is a clean dashboard — anything ambiguous lands here for review.
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ═══════════ PAGE: J1 HOUSING (promoted to top-level) ═══════════ -->
 <div id="j1housing" class="page hidden">

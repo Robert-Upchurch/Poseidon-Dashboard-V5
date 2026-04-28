@@ -47,19 +47,20 @@
 - Don't over-remember. Keep entries crisp and factual; one or two
   lines each.
 
-## Dashboards (as of 2026-04-27)
+## Dashboards (as of 2026-04-27 — STRICT PARTITION)
 
 Two paired dashboards live in the same GitHub Pages site, with a
-top-right teal pill button on each linking to the other:
+top-right teal pill button on each linking to the other.
 
-- **Poseidon Master** (`poseidon-dashboard-v6.html`) — full CTI roll-up
-  across every division. Default landing: Master + Forecast.
-- **CTI Group · J1 System Dashboard** (`j1-system-dashboard.html`) —
-  J1-only spinoff with a focused sidebar and the J1 Housing Finder as
-  a top-level full-page route. Default landing: J1 Overview.
+**STRICT PARTITION RULE — non-negotiable**
 
-Both share the same Jarvis voice assistant module (`poseidon-jarvis-grok.js`)
-and the same Chart.js / MSAL / Lucide stack.
+- **Poseidon Master** (`poseidon-dashboard-v6.html`) carries **cruise / maritime ONLY**: Cruise Line Contracts, cruise lines, ships, sea-based recruiting, Cruise Ship Candidates.
+- **CTI Group · J1 System Dashboard** (`j1-system-dashboard.html`) carries **J-1 visa ONLY**: J-1 recruiting, J1 candidates, J1 housing, J1 sponsor contracts (Alliance Abroad / CIEE / Green Heart), J1 hosting companies, airline tickets, J1 Housing Finder, J1 Contract Analysis.
+- **Nothing J1 lives on Poseidon.** **Nothing cruise lives on the J1 dashboard.**
+- Each dashboard has an `"Other"` sidebar entry (page id `other`) — a holding area for ambiguous items only. Never put a clearly-categorized item there.
+- If a user asks about cruise content while on the J1 dashboard (or J1 content on Poseidon), redirect to the other dashboard via the cross-dashboard switcher pill.
+
+Both share the same Jarvis voice assistant module (`poseidon-jarvis-grok.js`) and the same Chart.js / MSAL / Lucide stack.
 
 ## J1 Housing Finder — full readability
 

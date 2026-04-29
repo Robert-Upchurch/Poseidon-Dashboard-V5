@@ -2452,7 +2452,7 @@ function renderDashboardHome() {
                 <div class="w-1 h-8 rounded-full" style="background:${e.color||'#6366f1'}"></div>
                 <div class="flex-1">
                     <div class="text-sm text-zinc-200">${h(e.title)}</div>
-                    <div class="text-[10px] text-zinc-500">${e.time||'All day'}${e.location?' · '+h(e.location):''}</div>
+                    <div class="text-[10px] text-zinc-500">${e.time?_fmtTime12(e.time):'All day'}${e.location?' · '+h(e.location):''}</div>
                 </div>
             </div>
         `).join('') : '<p class="text-zinc-500 text-sm py-4">No events today. Add events from the Calendar page or connect Outlook.</p>';
@@ -2746,7 +2746,7 @@ function renderMonthView() {
         const dayEvents = calEvents.filter(e => e.date === dateStr);
         html += `<div class="border ${isToday?'border-indigo-500/50 bg-indigo-500/5':'border-zinc-800/30'} rounded-lg p-1.5 min-h-[80px] cursor-pointer hover:border-zinc-600 transition-colors" onclick="calDate=new Date(${y},${m},${d});calView='day';renderCalendar()">
             <div class="text-xs ${isToday?'text-indigo-400 font-bold':'text-zinc-500'} mb-1">${d}</div>
-            ${dayEvents.slice(0,3).map(e => `<div class="text-[10px] px-1 py-0.5 rounded mb-0.5 truncate" style="background:${e.color||'#6366f1'}22;color:${e.color||'#6366f1'}">${e.time?e.time+' ':''}${h(e.title)}</div>`).join('')}
+            ${dayEvents.slice(0,3).map(e => `<div class="text-[10px] px-1 py-0.5 rounded mb-0.5 truncate" style="background:${e.color||'#6366f1'}22;color:${e.color||'#6366f1'}">${e.time?_fmtTime12(e.time)+' ':''}${h(e.title)}</div>`).join('')}
             ${dayEvents.length > 3 ? `<div class="text-[10px] text-zinc-600">+${dayEvents.length-3} more</div>` : ''}
         </div>`;
     }
@@ -2779,7 +2779,7 @@ function renderWeekView() {
                         <div class="w-1 h-6 rounded-full" style="background:${e.color||'#6366f1'}"></div>
                         <div>
                             <div class="text-xs text-zinc-300">${h(e.title)}</div>
-                            <div class="text-[10px] text-zinc-600">${e.time||'All day'}</div>
+                            <div class="text-[10px] text-zinc-600">${e.time?_fmtTime12(e.time):'All day'}</div>
                         </div>
                     </div>
                 `).join('') : '<div class="text-xs text-zinc-700 py-2">No events</div>'}
@@ -2830,7 +2830,7 @@ function renderUpcomingEvents() {
             <div class="w-1 h-8 rounded-full shrink-0" style="background:${e.color||'#6366f1'}"></div>
             <div class="min-w-0 flex-1">
                 <div class="text-xs text-zinc-300 truncate">${h(e.title)}</div>
-                <div class="text-[10px] text-zinc-600">${e.date} ${e.time||''}</div>
+                <div class="text-[10px] text-zinc-600">${e.date} ${e.time?_fmtTime12(e.time):''}</div>
             </div>
         </div>
     `).join('') : '<p class="text-zinc-600 text-xs py-2">No upcoming events</p>';
@@ -2918,7 +2918,7 @@ function showEventDetail(id) {
             </div>
             <div class="space-y-2 text-sm text-zinc-400">
                 <div>📅 ${e.date}</div>
-                ${e.time ? '<div>🕐 '+e.time+'</div>' : ''}
+                ${e.time ? '<div>🕐 '+_fmtTime12(e.time)+'</div>' : ''}
                 ${e.location ? '<div>📍 '+h(e.location)+'</div>' : ''}
                 ${e.source ? '<div class="text-[10px] text-zinc-600 mt-2">Source: '+e.source+'</div>' : ''}
             </div>
@@ -5189,18 +5189,57 @@ async function o365LoadMail() {
     }
 }
 
-async function o365LoadCalendar() {
-    // Widened 2026-04-29: was now..+14d top=50 (many events missing).
-    // Now: -7d through +60d, top=250 — covers running meetings,
-    // recurring expansions, and longer-horizon planning blocks.
-    const now = new Date();
-    const start = new Date(now.getTime() - 7*86400000).toISOString();
-    const end   = new Date(now.getTime() + 60*86400000).toISOString();
-    const data = await o365Fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=250&$orderby=start/dateTime&$select=subject,start,end,location,isAllDay`);
-    if (!data || !data.value) return;
+// 12-hour AM/PM formatter ("14:30" -> "2:30 PM"). Stored time stays
+// 24-hour HH:mm so the renderer's hour-bucketing keeps working;
+// only the display sites call _fmtTime12.
+function _fmtTime12(hhmm) {
+    if (!hhmm || typeof hhmm !== 'string') return hhmm || '';
+    const m = hhmm.match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return hhmm;
+    let h = parseInt(m[1], 10);
+    const min = m[2];
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + min + ' ' + ampm;
+}
 
-    // Merge into calEvents
-    const outlookEvents = data.value.map((e, i) => ({
+async function o365LoadCalendar() {
+    // Robert 2026-04-29: extend to next 24 months, force device-local
+    // time (Prefer outlook.timezone), paginate via @odata.nextLink.
+    const now = new Date();
+    const start = new Date(now.getTime() -   7*86400000).toISOString();
+    const end   = new Date(now.getTime() + 730*86400000).toISOString(); // ~24 months
+    const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (_) { return 'UTC'; } })();
+    const token = await o365GetToken();
+    if (!token) return;
+    const headers = {
+        'Authorization': 'Bearer ' + token,
+        'Prefer':        'outlook.timezone="' + tz + '"'
+    };
+    let url = 'https://graph.microsoft.com/v1.0/me/calendarView'
+            + '?startDateTime=' + start
+            + '&endDateTime=' + end
+            + '&$top=500&$orderby=start/dateTime'
+            + '&$select=subject,start,end,location,isAllDay';
+    const all = [];
+    for (let page = 0; page < 12 && url; page++) { // up to 6000 events
+        const resp = await fetch(url, { headers });
+        if (!resp.ok) { console.warn('[o365] calendar page ' + page + ' failed:', resp.status); break; }
+        const data = await resp.json();
+        if (!data) break;
+        if (Array.isArray(data.value)) all.push(...data.value);
+        url = data['@odata.nextLink'] || null;
+    }
+    if (!all.length) {
+        // No events in window; still wipe stale Outlook entries so the UI is consistent.
+        calEvents = calEvents.filter(e => e.source !== 'Outlook');
+        saveEvents();
+        if (currentPage === 'calendar') renderCalendar();
+        if (currentPage === 'dashboard') renderDashboardHome();
+        return;
+    }
+
+    const outlookEvents = all.map((e, i) => ({
         id: 90000 + i,
         title: e.subject || '(no title)',
         date: e.start.dateTime.split('T')[0],
@@ -5210,7 +5249,6 @@ async function o365LoadCalendar() {
         source: 'Outlook'
     }));
 
-    // Remove old Outlook events, add fresh ones
     calEvents = calEvents.filter(e => e.source !== 'Outlook');
     calEvents.push(...outlookEvents);
     saveEvents();

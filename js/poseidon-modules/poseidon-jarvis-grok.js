@@ -442,14 +442,19 @@
     // Fast path — already loaded somewhere.
     let found = _findHousingWindowSync();
     if (found.win) return found;
-    // Auto-load: prefer the full-page j1housingfinder route (J1 System
-    // Dashboard) — it's a single click. Fall back to the nested tab on
-    // j1housing (Poseidon Master).
+    // Auto-load: prefer the full-page j1housingfinder route — it's a
+    // single click. Fall back to the nested tab on j1housing.
     try {
       const j1hfLink = document.querySelector('.nav-link[data-page="j1housingfinder"]');
       if (j1hfLink) {
         j1hfLink.click();
-        await new Promise(r => setTimeout(r, 250));
+        // Wait for the iframe + ALL_LISTINGS to be ready (up to 8s).
+        const start = Date.now();
+        while (Date.now() - start < 8000) {
+          await new Promise(r => setTimeout(r, 250));
+          const sync = _findHousingWindowSync();
+          if (sync.win) return sync;
+        }
       } else {
         // Legacy path: j1housing page + click the nested tab.
         const j1housingLink = document.querySelector('.nav-link[data-page="j1housing"]');
@@ -1431,11 +1436,58 @@
       try {
         const w = target.win;
         const doc = w.document;
-        const setVal = (id, v) => { const el = doc.getElementById(id); if (el && v !== undefined) { el.value = v; return true; } return false; };
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+
+        // Set value AND fire change/input events. If the option with that
+        // value doesn't exist, try matching by visible text (case-insensitive).
+        const setVal = (id, v) => {
+          const el = doc.getElementById(id);
+          if (!el || v === undefined) return false;
+          const has = Array.from(el.options || []).some(o => o.value === v);
+          if (has) {
+            el.value = v;
+          } else if (v) {
+            const want = String(v).toLowerCase();
+            const opt = Array.from(el.options || []).find(o =>
+              o.value.toLowerCase() === want ||
+              (o.textContent || '').trim().toLowerCase() === want ||
+              (o.textContent || '').trim().toLowerCase().includes(want)
+            );
+            if (opt) el.value = opt.value; else el.value = v;  // last-ditch
+          } else {
+            el.value = '';
+          }
+          el.dispatchEvent(new w.Event('input',  { bubbles: true }));
+          el.dispatchEvent(new w.Event('change', { bubbles: true }));
+          return true;
+        };
+
+        // Wait until a select's options reflect the new dependency.
+        const waitForOptions = async (id, predicate, ms = 1500) => {
+          const start = Date.now();
+          while (Date.now() - start < ms) {
+            const el = doc.getElementById(id);
+            if (el && predicate(Array.from(el.options || []))) return true;
+            await wait(80);
+          }
+          return false;
+        };
+
         const applied = [];
-        // State must be applied BEFORE city, since state-change rebuilds the City dropdown.
-        if (args.state !== undefined)     { setVal('filter-state', args.state); applied.push('state'); if (typeof w.onStateChange === 'function') w.onStateChange(); }
-        if (args.city !== undefined)      { setVal('filter-city', args.city); applied.push('city'); if (typeof w.onCityChange === 'function') w.onCityChange(); }
+
+        // State -> rebuilds City -> rebuilds Area.
+        if (args.state !== undefined) {
+          setVal('filter-state', args.state);
+          if (typeof w.onStateChange === 'function') w.onStateChange();
+          applied.push('state');
+          await waitForOptions('filter-city', opts => opts.length > 1 || args.state === '');
+        }
+        if (args.city !== undefined) {
+          setVal('filter-city', args.city);
+          if (typeof w.onCityChange === 'function') w.onCityChange();
+          applied.push('city');
+          await waitForOptions('filter-area', () => true);
+        }
         if (args.area !== undefined)      { setVal('filter-area', args.area);          applied.push('area'); }
         if (args.beds !== undefined)      { setVal('filter-beds', args.beds);          applied.push('beds'); }
         if (args.baths !== undefined)     { setVal('filter-baths', args.baths);        applied.push('baths'); }
@@ -1445,12 +1497,12 @@
         if (args.utilities !== undefined) { setVal('filter-utilities', args.utilities); applied.push('utilities'); }
         if (args.sort !== undefined)      { setVal('sort-select', args.sort);          applied.push('sort'); }
         if (args.source !== undefined && typeof w.filterSource === 'function') {
-          // The page's filterSource expects (source, btnEl). We pass the matching tab button.
           const btn = doc.querySelector(`.source-tab[data-source="${args.source}"]`);
           w.filterSource(args.source, btn);
           applied.push('source');
         }
         if (typeof w.applyFilters === 'function') w.applyFilters();
+        await wait(150);  // let the listings rerender
         return {
           ok: true,
           applied,

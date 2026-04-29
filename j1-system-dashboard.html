@@ -896,10 +896,11 @@
                 <option value="attachments">With attachments</option>
             </select>
             <button onclick="emailsRefresh()" class="px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white border border-emerald-500 rounded-lg hover:bg-emerald-500 transition-all flex items-center gap-1.5"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh</button>
+            <button onclick="emailsForceConsent()" class="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white border border-blue-500 rounded-lg hover:bg-blue-500 transition-all flex items-center gap-1.5" title="Re-grant Mail.Read consent if Refresh keeps showing 0 emails"><i data-lucide="key" class="w-3.5 h-3.5"></i> Force Re-consent</button>
         </div>
     </div>
 
-    <div id="emails-status" class="text-[11px] text-zinc-500 mb-2"></div>
+    <div id="emails-status" class="hidden mb-3 px-3 py-2 rounded-lg text-xs font-medium border"></div>
 
     <div class="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-4">
         <!-- LEFT — list -->
@@ -8784,37 +8785,78 @@ async function _emailsAcquireMailToken(acct) {
     }
 }
 
+function _emailsBanner(kind, msg) {
+    const s = $('emails-status'); if (!s) return;
+    const styles = {
+        info:  'bg-blue-500/10 border-blue-500/40 text-blue-300',
+        ok:    'bg-emerald-500/10 border-emerald-500/40 text-emerald-300',
+        warn:  'bg-amber-500/10 border-amber-500/40 text-amber-300',
+        error: 'bg-red-500/10 border-red-500/40 text-red-300'
+    };
+    s.className = 'mb-3 px-3 py-2 rounded-lg text-xs font-medium border ' + (styles[kind] || styles.info);
+    s.textContent = msg;
+}
+function _emailsListMsg(html) {
+    const list = $('emails-list'); if (list) list.innerHTML = html;
+}
+
 async function emailsRefresh() {
-    const status = $('emails-status');
-    if (status) status.textContent = 'Refreshing…';
+    _emailsBanner('info', 'Refreshing…');
     if (!window.msalInstance || !window.msalInstance.getAllAccounts || !window.msalInstance.getAllAccounts().length) {
-        if (status) status.textContent = 'Microsoft 365 not connected. Click "Sign in to M365" in the top header.';
+        _emailsBanner('warn', 'Microsoft 365 is not connected on this tab. Click "Sign in to M365" in the top header.');
+        _emailsListMsg('<div class="text-center py-12 text-zinc-500 text-xs">Sign in to M365 to load emails.</div>');
         return;
     }
     const acct = window.msalInstance.getAllAccounts()[0];
     let token;
     try { token = await _emailsAcquireMailToken(acct); }
     catch (e) {
-        if (status) status.textContent = 'Could not get a Mail.Read token: ' + (e.errorCode || e.message || e);
+        _emailsBanner('error', 'Could not get a Mail.Read token: ' + (e.errorCode || e.message || e) + ' — click "Force Re-consent" to re-grant.');
         return;
     }
-    // Use /me/messages so subfolder messages also show up (rules-routed mail).
     const url = 'https://graph.microsoft.com/v1.0/me/messages?$top=50&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,isRead,hasAttachments,bodyPreview,webLink,parentFolderId';
     let resp;
     try { resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } }); }
     catch (e) {
-        if (status) status.textContent = 'Network error: ' + e.message;
+        _emailsBanner('error', 'Network error: ' + e.message);
         return;
     }
     if (!resp.ok) {
         const txt = await resp.text();
-        if (status) status.textContent = 'Graph ' + resp.status + ': ' + txt.slice(0, 180);
+        _emailsBanner('error', 'Microsoft Graph ' + resp.status + ': ' + txt.slice(0, 220));
+        _emailsListMsg('<div class="text-center py-12 text-red-300 text-xs">Microsoft Graph rejected the request. Click "Force Re-consent" to re-authenticate.</div>');
         return;
     }
     const data = await resp.json();
     _emailsCache = data.value || [];
-    if (status) status.textContent = 'Loaded ' + _emailsCache.length + ' email' + (_emailsCache.length === 1 ? '' : 's') + ' · ' + new Date().toLocaleTimeString();
+    if (_emailsCache.length === 0) {
+        _emailsBanner('warn', 'Microsoft Graph returned 0 messages. Most likely the token does not have Mail.Read consent. Click "Force Re-consent".');
+        _emailsListMsg('<div class="text-center py-12"><p class="text-zinc-300 text-sm font-semibold">No emails returned</p><p class="text-zinc-500 text-xs mt-2">Microsoft Graph accepted the request but sent zero messages.</p><p class="text-zinc-500 text-xs">Click <span class="text-blue-300 font-semibold">Force Re-consent</span> above to re-authenticate.</p></div>');
+        return;
+    }
+    _emailsBanner('ok', 'Loaded ' + _emailsCache.length + ' email' + (_emailsCache.length === 1 ? '' : 's') + ' · ' + new Date().toLocaleTimeString());
     renderEmails();
+}
+
+async function emailsForceConsent() {
+    _emailsBanner('info', 'Opening Microsoft consent window…');
+    try {
+        if (typeof window.msalInstance.loginPopup === 'function') {
+            await window.msalInstance.loginPopup({
+                scopes: ['User.Read','Mail.Read','Calendars.Read','Tasks.Read','Files.Read'],
+                prompt: 'consent'
+            });
+            _emailsBanner('ok', 'Re-consent complete. Refreshing emails…');
+            return emailsRefresh();
+        }
+        // Fallback: redirect-based re-consent.
+        await window.msalInstance.loginRedirect({
+            scopes: ['User.Read','Mail.Read','Calendars.Read','Tasks.Read','Files.Read'],
+            prompt: 'consent'
+        });
+    } catch (e) {
+        _emailsBanner('error', 'Re-consent failed: ' + (e.errorCode || e.message || e));
+    }
 }
 
 function renderEmails() {

@@ -250,12 +250,18 @@
   function closeTour(completed) {
     if (!overlayEl) return;
     overlayEl.classList.remove('active');
-    if (completed) {
-      try {
-        localStorage.setItem(LS_COMPLETE, JSON.stringify({ at: new Date().toISOString(), version: (CFG && CFG.version) || '1.0.0' }));
-        localStorage.removeItem(LS_PROGRESS);
-      } catch (_) {}
-    }
+    // Always persist the close decision — finished OR skipped.
+    // Either way, the user does not want to be re-prompted on every login.
+    // PoseidonTraining.restart() forces a replay if needed.
+    try {
+      localStorage.setItem(LS_COMPLETE, JSON.stringify({
+        at: new Date().toISOString(),
+        version: (CFG && CFG.version) || '1.0.0',
+        completed: !!completed,
+        skipped: !completed
+      }));
+      localStorage.removeItem(LS_PROGRESS);
+    } catch (_) {}
   }
 
   async function startTour(opts) {
@@ -280,9 +286,10 @@
     try {
       const raw = localStorage.getItem(LS_COMPLETE);
       if (!raw) return true;
-      const parsed = JSON.parse(raw);
-      // Re-run if config version is newer than last-completed version.
-      return CFG && CFG.version && parsed.version !== CFG.version;
+      // The user has already taken or skipped the tour. Do NOT auto-re-run
+      // on future logins, even if the tour config version changes. The user
+      // can replay anytime via the "Replay Onboarding Tour" button.
+      return false;
     } catch (_) { return true; }
   }
 

@@ -2052,14 +2052,6 @@
     </div>
 </div>
 
-<!-- ═══════════ JARVIS AI MODAL ═══════════ -->
-<div id="jarvis-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center" onclick="if(event.target===this)closeJarvis()">
-    <div class="w-[420px] h-[620px] rounded-2xl overflow-hidden shadow-2xl relative bg-zinc-900">
-        <button onclick="closeJarvis()" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-red-500/80 transition-colors">✕</button>
-        <div id="jarvis-widget-container" class="w-full h-full flex items-center justify-center"></div>
-    </div>
-</div>
-<script src="https://elevenlabs.io/convai-widget/index.js" async></script>
 
 
 <script>
@@ -2548,7 +2540,6 @@ function renderAIAssistant() {
                     <div class="text-[10px] text-zinc-500">Tasks I can handle for you today</div>
                 </div>
             </div>
-            <button onclick="openJarvis()" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors font-medium">Talk to Jarvis</button>
         </div>
         <div class="space-y-1.5">
             ${relevantSugs.map((s,i) => `
@@ -4268,77 +4259,6 @@ function rdExportDivisionPDF(divId) {
     w.document.write(panel.innerHTML);
     w.document.write(`
 
-<script>
-// ===== Screen Wake Lock — keep phone awake while dashboard is in use =====
-// Locked by Robert 2026-04-29:
-//   - Acquire on page load (dashboard just opened)
-//   - Release after 10 min of no voice activity (Jarvis speaking/listening)
-//   - Re-acquire on next voice activity
-//   - Re-acquire on tab visible (Wake Lock auto-releases when tab is hidden)
-// No-op on browsers without Wake Lock API.
-(function _poseidonWakeLock() {
-    if (window.__poseidonWakeLockWired) return;
-    window.__poseidonWakeLockWired = true;
-    if (!('wakeLock' in navigator)) {
-        console.info('[wake-lock] Wake Lock API not available in this browser; skipping.');
-        return;
-    }
-
-    const IDLE_MS = 10 * 60 * 1000;
-    let lock = null;
-    let lastActivity = Date.now();
-
-    async function acquire() {
-        if (lock) return;
-        try {
-            lock = await navigator.wakeLock.request('screen');
-            lock.addEventListener('release', () => { lock = null; });
-            console.info('[wake-lock] acquired');
-        } catch (e) {
-            console.warn('[wake-lock] acquire failed:', e && e.message ? e.message : e);
-        }
-    }
-    async function release() {
-        if (!lock) return;
-        try { await lock.release(); } catch (_) {}
-        lock = null;
-        console.info('[wake-lock] released (10 min idle)');
-    }
-
-    // Initial acquire — user just opened the dashboard, they're engaged.
-    acquire();
-
-    // When tab becomes visible again, re-acquire (browsers auto-release on hide)
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            lastActivity = Date.now();
-            acquire();
-        }
-    });
-
-    // Poll Jarvis voice state every 5s. If actively speaking or listening,
-    // bump lastActivity. If we go IDLE_MS without activity, release.
-    setInterval(() => {
-        try {
-            const s = window.PoseidonJarvis && window.PoseidonJarvis.state;
-            if (s && (s.speaking || s.listening)) {
-                lastActivity = Date.now();
-                if (!lock) acquire();
-            }
-        } catch (_) {}
-        if (lock && (Date.now() - lastActivity > IDLE_MS)) {
-            release();
-        }
-    }, 5000);
-
-    // Expose a manual hook for any other code that wants to register activity
-    window.poseidonRegisterActivity = function () {
-        lastActivity = Date.now();
-        if (!lock) acquire();
-    };
-})();
-</script>
-
 </body></html>`);
     w.document.close();
     setTimeout(()=>{ try { w.print(); } catch(e){} }, 600);
@@ -5355,21 +5275,14 @@ function playerClose() {
 
 let jarvisLoaded = false;
 
+// Old ElevenLabs Jarvis was removed 2026-04-29. These now delegate
+// to the new Grok Jarvis (window.PoseidonJarvis) so any old call
+// site still works.
 function openJarvis() {
-    const modal = $('jarvis-modal');
-    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
-    if (!jarvisLoaded) {
-        const container = $('jarvis-widget-container');
-        if (container) {
-            container.innerHTML = '<elevenlabs-convai agent-id="agent_2401knj1whdcepxrp744rkf8ap06"></elevenlabs-convai>';
-            jarvisLoaded = true;
-        }
-    }
+    if (window.PoseidonJarvis && window.PoseidonJarvis.open) window.PoseidonJarvis.open();
 }
-
 function closeJarvis() {
-    const modal = $('jarvis-modal');
-    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    if (window.PoseidonJarvis && window.PoseidonJarvis.close) window.PoseidonJarvis.close();
 }
 
 // ═══════════════════════════════════════════════════
@@ -8100,6 +8013,78 @@ window.poseidonHealth = function poseidonHealth(opts) {
             });
         }).catch(() => {});
     });
+})();
+</script>
+
+
+<script>
+// ===== Screen Wake Lock — keep phone awake while dashboard is in use =====
+// Locked by Robert 2026-04-29:
+//   - Acquire on page load (dashboard just opened)
+//   - Release after 10 min of no voice activity (Jarvis speaking/listening)
+//   - Re-acquire on next voice activity
+//   - Re-acquire on tab visible (Wake Lock auto-releases when tab is hidden)
+// No-op on browsers without Wake Lock API.
+(function _poseidonWakeLock() {
+    if (window.__poseidonWakeLockWired) return;
+    window.__poseidonWakeLockWired = true;
+    if (!('wakeLock' in navigator)) {
+        console.info('[wake-lock] Wake Lock API not available in this browser; skipping.');
+        return;
+    }
+
+    const IDLE_MS = 10 * 60 * 1000;
+    let lock = null;
+    let lastActivity = Date.now();
+
+    async function acquire() {
+        if (lock) return;
+        try {
+            lock = await navigator.wakeLock.request('screen');
+            lock.addEventListener('release', () => { lock = null; });
+            console.info('[wake-lock] acquired');
+        } catch (e) {
+            console.warn('[wake-lock] acquire failed:', e && e.message ? e.message : e);
+        }
+    }
+    async function release() {
+        if (!lock) return;
+        try { await lock.release(); } catch (_) {}
+        lock = null;
+        console.info('[wake-lock] released (10 min idle)');
+    }
+
+    // Initial acquire — user just opened the dashboard, they're engaged.
+    acquire();
+
+    // When tab becomes visible again, re-acquire (browsers auto-release on hide)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            lastActivity = Date.now();
+            acquire();
+        }
+    });
+
+    // Poll Jarvis voice state every 5s. If actively speaking or listening,
+    // bump lastActivity. If we go IDLE_MS without activity, release.
+    setInterval(() => {
+        try {
+            const s = window.PoseidonJarvis && window.PoseidonJarvis.state;
+            if (s && (s.speaking || s.listening)) {
+                lastActivity = Date.now();
+                if (!lock) acquire();
+            }
+        } catch (_) {}
+        if (lock && (Date.now() - lastActivity > IDLE_MS)) {
+            release();
+        }
+    }, 5000);
+
+    // Expose a manual hook for any other code that wants to register activity
+    window.poseidonRegisterActivity = function () {
+        lastActivity = Date.now();
+        if (!lock) acquire();
+    };
 })();
 </script>
 

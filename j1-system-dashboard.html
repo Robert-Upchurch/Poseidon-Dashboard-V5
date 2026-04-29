@@ -8765,30 +8765,56 @@ window.__j1hfOnFrameError = function(f) {
 // ─── EMAILS PAGE ────────────────────────────────────────────────
 let _emailsCache = [];
 
+async function _emailsAcquireMailToken(acct) {
+    try {
+        const r = await window.msalInstance.acquireTokenSilent({ scopes: ['Mail.Read'], account: acct });
+        return r.accessToken;
+    } catch (e) {
+        // Likely interaction_required because Mail.Read was not in the
+        // original consent. Pop up a brief Microsoft window to grant it.
+        if (typeof window.msalInstance.acquireTokenPopup === 'function') {
+            try {
+                const r2 = await window.msalInstance.acquireTokenPopup({ scopes: ['Mail.Read'], account: acct });
+                return r2.accessToken;
+            } catch (e2) {
+                throw e2;
+            }
+        }
+        throw e;
+    }
+}
+
 async function emailsRefresh() {
     const status = $('emails-status');
     if (status) status.textContent = 'Refreshing…';
-    if (typeof o365LoadMail === 'function') {
-        try { await o365LoadMail({ top: 50 }); } catch(_) {}
+    if (!window.msalInstance || !window.msalInstance.getAllAccounts || !window.msalInstance.getAllAccounts().length) {
+        if (status) status.textContent = 'Microsoft 365 not connected. Click "Sign in to M365" in the top header.';
+        return;
     }
-    if (window.msalInstance && window.msalInstance.getAllAccounts && window.msalInstance.getAllAccounts().length) {
-        try {
-            const acct = window.msalInstance.getAllAccounts()[0];
-            const tok = await window.msalInstance.acquireTokenSilent({ scopes: ['Mail.Read'], account: acct });
-            const url = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=50&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,isRead,hasAttachments,bodyPreview,webLink';
-            const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok.accessToken } });
-            if (r.ok) {
-                const data = await r.json();
-                _emailsCache = data.value || [];
-                if (status) status.textContent = `Loaded ${_emailsCache.length} emails · ${new Date().toLocaleTimeString()}`;
-                renderEmails();
-                return;
-            }
-            if (status) status.textContent = 'Graph error: ' + r.status;
-        } catch (e) { if (status) status.textContent = 'Sign in to M365 first.'; }
-    } else {
-        if (status) status.textContent = 'Microsoft 365 not connected. Click "Sign in to M365".';
+    const acct = window.msalInstance.getAllAccounts()[0];
+    let token;
+    try { token = await _emailsAcquireMailToken(acct); }
+    catch (e) {
+        if (status) status.textContent = 'Could not get a Mail.Read token: ' + (e.errorCode || e.message || e);
+        return;
     }
+    // Use /me/messages so subfolder messages also show up (rules-routed mail).
+    const url = 'https://graph.microsoft.com/v1.0/me/messages?$top=50&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,isRead,hasAttachments,bodyPreview,webLink,parentFolderId';
+    let resp;
+    try { resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } }); }
+    catch (e) {
+        if (status) status.textContent = 'Network error: ' + e.message;
+        return;
+    }
+    if (!resp.ok) {
+        const txt = await resp.text();
+        if (status) status.textContent = 'Graph ' + resp.status + ': ' + txt.slice(0, 180);
+        return;
+    }
+    const data = await resp.json();
+    _emailsCache = data.value || [];
+    if (status) status.textContent = 'Loaded ' + _emailsCache.length + ' email' + (_emailsCache.length === 1 ? '' : 's') + ' · ' + new Date().toLocaleTimeString();
+    renderEmails();
 }
 
 function renderEmails() {
@@ -8831,9 +8857,9 @@ async function emailsOpen(id) {
     detail.innerHTML = '<div class="text-zinc-500 text-xs">Loading…</div>';
     try {
         const acct = window.msalInstance.getAllAccounts()[0];
-        const tok = await window.msalInstance.acquireTokenSilent({ scopes: ['Mail.Read'], account: acct });
+        const token = await _emailsAcquireMailToken(acct);
         const r = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(id)}?$select=id,subject,from,toRecipients,receivedDateTime,body,hasAttachments,webLink`,
-            { headers: { Authorization: 'Bearer ' + tok.accessToken } });
+            { headers: { Authorization: 'Bearer ' + token } });
         if (!r.ok) throw new Error('Graph ' + r.status);
         const m = await r.json();
         let bodyText = m.body?.content || '';
@@ -8857,7 +8883,7 @@ async function emailsOpen(id) {
         if (typeof lucide !== 'undefined') lucide.createIcons();
         if (m.hasAttachments) {
             const attR = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(id)}/attachments?$select=id,name,contentType,size`,
-                { headers: { Authorization: 'Bearer ' + tok.accessToken } });
+                { headers: { Authorization: 'Bearer ' + token } });
             const attData = await attR.json();
             const attBox = $('email-att-' + id);
             if (attBox) attBox.innerHTML = '<div class="font-semibold text-zinc-300 mb-1">Attachments:</div>' + (attData.value || []).map(a => `
@@ -8874,9 +8900,9 @@ async function emailsOpen(id) {
 async function emailsDownloadAttachment(messageId, attId, name, contentType) {
     try {
         const acct = window.msalInstance.getAllAccounts()[0];
-        const tok = await window.msalInstance.acquireTokenSilent({ scopes: ['Mail.Read'], account: acct });
+        const token = await _emailsAcquireMailToken(acct);
         const r = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attId)}`,
-            { headers: { Authorization: 'Bearer ' + tok.accessToken } });
+            { headers: { Authorization: 'Bearer ' + token } });
         const a = await r.json();
         if (!a.contentBytes) throw new Error('no contentBytes');
         const bin = atob(a.contentBytes);

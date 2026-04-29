@@ -6289,7 +6289,7 @@ const msalConfig = {
         authority: 'https://login.microsoftonline.com/ef421d3f-5736-4cca-a38f-e6a4d8607e7e',
         redirectUri: window.location.origin + window.location.pathname
     },
-    cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+    cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
 };
 const o365Scopes = ['User.Read','Mail.Read','Calendars.Read','Tasks.Read','Files.Read'];
 let msalInstance = null;
@@ -6392,6 +6392,24 @@ function _o365StartAutoRefresh() {
 function _o365StopAutoRefresh() {
     if (_o365AutoRefreshTimer) { clearInterval(_o365AutoRefreshTimer); _o365AutoRefreshTimer = null; }
 }
+
+
+// ───── Refresh M365 the moment the tab becomes visible ─────
+// Without this, when a user alt-tabs away for 30 min and comes back,
+// they see stale data until the 5-min auto-refresh tick. With this,
+// every focus = fresh data. No-op if not connected.
+(function _o365WireVisibilityRefresh() {
+    if (window.__o365VisibilityWired) return;
+    window.__o365VisibilityWired = true;
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) return;
+        try {
+            if (typeof msalInstance !== 'undefined' && msalInstance && o365Account && typeof o365LoadAll === 'function') {
+                o365LoadAll().catch(e => console.warn('[o365] visibility-refresh failed:', e && e.message ? e.message : e));
+            }
+        } catch (_) {}
+    });
+})();
 
 // Manual refresh — wired to the "Update 365" button.
 // Re-fetches mail, calendar, tasks, files from Microsoft Graph.

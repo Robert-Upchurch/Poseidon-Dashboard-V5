@@ -4158,7 +4158,7 @@ const msalConfig = {
         authority: 'https://login.microsoftonline.com/ef421d3f-5736-4cca-a38f-e6a4d8607e7e',
         redirectUri: window.location.origin + window.location.pathname
     },
-    cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+    cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
 };
 const o365Scopes = ['User.Read','Mail.Read','Calendars.Read','Tasks.Read','Files.Read'];
 let msalInstance = null;

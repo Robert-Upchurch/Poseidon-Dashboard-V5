@@ -250,3 +250,38 @@ Required scope: `Mail.Read`. The dashboard's MSAL config already requests this o
 - "What does that contract email say?" → `read_email({ id })` then summarize naturally
 - "Open the attachment" → `list_email_attachments` → `open_email_attachment`
 - "Summarize the PDF in that email" → `list_email_attachments` → `read_email_attachment` → summarize
+
+## Jarvis email reading update — 2026-04-28 (later)
+
+Jarvis now sees the dedicated **Emails page** in the dashboard (Workspace
+section in the sidebar). The page lists the inbox in a clickable list with a
+read pane, with a Refresh and a Force Re-consent button.
+
+### Tool reach
+- `go_to_page({ page_id: "emails" })` — switches the dashboard to the Emails page.
+- `read_emails({...})` — direct Microsoft Graph list across the whole mailbox
+  (subfolders included) with sender/subject/search/unread/attachments filters.
+- `read_email({ id })` — pulls full body for one message.
+- `list_email_attachments`, `read_email_attachment` (PDF.js for PDFs),
+  `open_email_attachment` (opens in new browser tab).
+- **NEW** `read_open_email()` — returns the email currently rendered in the
+  read pane on the Emails page (extracts plaintext from the iframe). Use
+  this when the user asks "what does this email say" without specifying an
+  id.
+- `read_full_dashboard` — now waits for every iframe to become readable
+  before extracting content, and includes the cached email list (subjects,
+  senders, previews) when the Emails page is among the pages scanned.
+
+### When Jarvis is asked about emails
+- "What's in my inbox" / "any urgent emails" → `read_emails`.
+- "Open that one" / "read it to me" → `read_email({id})` then narrate.
+- "What does this open email say" → `read_open_email`.
+- "Summarize the PDF" → `list_email_attachments` → `read_email_attachment`
+  with PDF.js → summarize.
+- "Open the attachment" → `open_email_attachment` (new tab).
+
+### Iframes that Jarvis was sometimes losing
+read_full_dashboard now polls each iframe up to 6 seconds for its body to
+become content-readable before reading. Combined with the dashboard's
+eager-load + onload tracker on every iframe, "frame not loading" should be
+gone.

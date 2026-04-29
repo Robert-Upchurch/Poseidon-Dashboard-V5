@@ -483,7 +483,7 @@
       parameters: {
         type: 'object',
         properties: {
-          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','j1housingfinder','partneronboarding','j1contractanalysis','other','dashboard','tasks','calendar','videos','projects','partners','settings'], description: 'The page ID to open.' }
+          page_id: { type: 'string', enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','j1housingfinder','partneronboarding','j1contractanalysis','other','dashboard','tasks','calendar','emails','videos','projects','partners','settings'], description: 'The page ID to open.' }
         },
         required: ['page_id']
       }
@@ -544,7 +544,7 @@
         properties: {
           page_id: {
             type: 'string',
-            enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','j1housingfinder','partneronboarding','j1contractanalysis','other','dashboard','tasks','calendar','videos','projects','partners','settings'],
+            enum: ['masterforecast','finance','recruitingdivision','processingcuk','j1division','ittech','contracts','j1housing','j1housingfinder','partneronboarding','j1contractanalysis','other','dashboard','tasks','calendar','emails','videos','projects','partners','settings'],
             description: 'The page whose content to read.'
           },
           max_len_per_field: {
@@ -969,6 +969,12 @@
         required: ['id','attachment_id']
       }
     },
+    {
+      type: 'function',
+      name: 'read_open_email',
+      description: 'Return the currently-displayed email in the Emails read pane (subject, sender, received time, plain-text body extracted from the body iframe). Use after the user opens an email and asks "what does it say", "summarize this", or "any action items in it".',
+      parameters: { type: 'object', properties: {} }
+    },
 
   ];
 
@@ -1242,8 +1248,9 @@
 
       const ALL_PAGES = [
         'masterforecast','finance','recruitingdivision','processingcuk',
-        'j1division','ittech','contracts','j1housing',
-        'dashboard','tasks','calendar','videos','projects','partners','settings'
+        'j1division','ittech','contracts','j1housing','j1housingfinder',
+        'partneronboarding','j1contractanalysis','other',
+        'dashboard','tasks','calendar','emails','videos','projects','partners','settings'
       ];
       const pages = {};
       let totalChars = 0;
@@ -1253,19 +1260,41 @@
         const raw = (el.textContent || '').replace(/\s+/g, ' ').trim();
         let iframeText = '';
         if (include_iframes) {
-          el.querySelectorAll('iframe').forEach(f => {
+          const frames = Array.from(el.querySelectorAll('iframe'));
+          await Promise.all(frames.map(f => new Promise(resolve => {
+            const start = Date.now();
+            (function poll() {
+              try {
+                if (f.contentDocument && f.contentDocument.body && (f.contentDocument.body.innerText || '').length > 5) return resolve();
+              } catch (_) { return resolve(); }
+              if (f.dataset.frameLoaded === '1') return resolve();
+              if (Date.now() - start > 6000) return resolve();
+              setTimeout(poll, 250);
+            })();
+          })));
+          for (const f of frames) {
             try {
               const inner = f.contentDocument?.body?.innerText || '';
-              if (inner) iframeText += `\n[iframe ${f.id || 'anon'}]:\n${inner.slice(0, max_chars_per_page)}`;
+              if (inner) iframeText += '\n[iframe ' + (f.id || 'anon') + ']:\n' + inner.slice(0, max_chars_per_page);
             } catch (_) {
-              iframeText += `\n[iframe ${f.id || 'anon'}]: cross-origin, cannot read`;
+              iframeText += '\n[iframe ' + (f.id || 'anon') + ']: cross-origin, cannot read';
             }
-          });
+          }
+        }
+        let extra = '';
+        if (id === 'emails' && Array.isArray(window._emailsCache) && window._emailsCache.length) {
+          extra = '\n[email list cached]:\n' + window._emailsCache.slice(0, 25).map((m, i) =>
+            (i+1) + '. ' + (m.subject || '(no subject)') +
+            ' | from ' + (m.from?.emailAddress?.name || m.from?.emailAddress?.address || '') +
+            ' | ' + (m.receivedDateTime || '') +
+            ' | id=' + m.id +
+            ' | preview: ' + ((m.bodyPreview || '').slice(0, 200))
+          ).join('\n');
         }
         pages[id] = {
           title:    el.querySelector('h2')?.textContent?.trim() || el.querySelector('h1')?.textContent?.trim() || id,
-          text:     raw.slice(0, max_chars_per_page),
-          char_count_total: raw.length,
+          text:     (raw + extra).slice(0, max_chars_per_page),
+          char_count_total: raw.length + extra.length,
           iframe:   iframeText.slice(0, max_chars_per_page),
           hidden:   el.classList.contains('hidden')
         };
@@ -1872,6 +1901,31 @@
         setTimeout(() => URL.revokeObjectURL(url), 60000);
         return { ok: true, name: a.name, contentType: a.contentType };
       } catch (e) { return { ok: false, error: e.message }; }
+    },
+
+    async read_open_email() {
+      const detail = document.getElementById('emails-detail');
+      if (!detail) return { ok: false, error: 'Emails page not loaded.' };
+      const subject = detail.querySelector('.text-base.font-semibold')?.textContent?.trim() || '';
+      const from    = detail.querySelector('.text-xs.text-zinc-500')?.textContent?.trim() || '';
+      const stamp   = detail.querySelector('.text-\\[11px\\].text-zinc-600')?.textContent?.trim() || '';
+      const frame   = document.getElementById('email-body-frame');
+      let body = '';
+      if (frame) {
+        await new Promise(resolve => {
+          const start = Date.now();
+          (function poll() {
+            try {
+              if (frame.contentDocument && frame.contentDocument.body && frame.contentDocument.body.innerText) return resolve();
+            } catch (_) { return resolve(); }
+            if (Date.now() - start > 4000) return resolve();
+            setTimeout(poll, 200);
+          })();
+        });
+        try { body = frame.contentDocument?.body?.innerText || ''; } catch (_) {}
+      }
+      if (!subject && !body) return { ok: false, error: 'No email is open in the read pane. Call read_emails first, then read_email with an id.' };
+      return { ok: true, subject, from, received: stamp, body: body.slice(0, 12000) };
     },
 
   };

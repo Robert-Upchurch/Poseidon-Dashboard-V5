@@ -9233,7 +9233,13 @@ window.poseidonHealth = function poseidonHealth(opts) {
         ['J1 Housing Finder page exists',          () => !!document.getElementById('j1housingfinder')],
         ['j1hf iframe exists',                     () => !!document.getElementById('j1hf-iframe')],
         ['Jarvis loaded (PoseidonJarvis)',         () => typeof PoseidonJarvis === 'object' && PoseidonJarvis !== null],
-        ['Jarvis memory loaded (JarvisMemory)',    () => typeof JarvisMemory === 'object' && JarvisMemory !== null]
+        ['Jarvis memory loaded (JarvisMemory)',    () => typeof JarvisMemory === 'object' && JarvisMemory !== null],
+        ['Jarvis: read_emails registered',         () => !!(window.PoseidonJarvis?.toolImpl?.read_emails)],
+        ['Jarvis: read_email registered',          () => !!(window.PoseidonJarvis?.toolImpl?.read_email)],
+        ['Jarvis: read_open_email registered',     () => !!(window.PoseidonJarvis?.toolImpl?.read_open_email)],
+        ['Jarvis: list_email_attachments',         () => !!(window.PoseidonJarvis?.toolImpl?.list_email_attachments)],
+        ['Jarvis: read_email_attachment',          () => !!(window.PoseidonJarvis?.toolImpl?.read_email_attachment)],
+        ['Jarvis: open_email_attachment',          () => !!(window.PoseidonJarvis?.toolImpl?.open_email_attachment)]
     ];
     const results = checks.map(([name, fn]) => {
         let ok = false, err = null;

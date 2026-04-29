@@ -400,23 +400,32 @@
   // Auto-loads when needed: prefers the full-page route on the J1 System
   // Dashboard (no extra clicks), otherwise navigates to j1housing and
   // reveals the nested tab.
+  function _isHousingWin(w) {
+    if (!w) return false;
+    try {
+      // Either the const-array-exposed-on-window is reachable, OR the
+      // function-declared applyFilters is. The latter exists as soon as
+      // the page's main <script> has executed.
+      return !!(w.ALL_LISTINGS || w.applyFilters);
+    } catch (_) { return false; }
+  }
   function _findHousingWindowSync() {
-    // 1) Full-page route on the J1 System Dashboard
+    // 1) Full-page route
     try {
       const fullPage = document.getElementById('j1housingfinder');
       if (fullPage) {
         const frame = fullPage.querySelector('#j1hf-iframe, iframe[src*="j1-housing"]');
-        if (frame && frame.contentWindow && frame.contentWindow.ALL_LISTINGS) {
+        if (frame && _isHousingWin(frame.contentWindow)) {
           return { win: frame.contentWindow, location: 'iframe-on-j1housingfinder-page' };
         }
       }
     } catch (_) {}
-    // 2) Nested tab on the legacy j1housing page (Poseidon Master)
+    // 2) Nested tab on the legacy j1housing page
     try {
       const page = document.getElementById('j1housing');
       if (page) {
         const frame = page.querySelector('iframe[src*="j1-housing"]');
-        if (frame && frame.contentWindow && frame.contentWindow.ALL_LISTINGS) {
+        if (frame && _isHousingWin(frame.contentWindow)) {
           return { win: frame.contentWindow, location: 'iframe-on-j1housing-page' };
         }
       }
@@ -427,9 +436,9 @@
       for (const p of popouts) {
         if (!p.win || p.win.closed) continue;
         try {
-          if (p.win.ALL_LISTINGS) return { win: p.win, location: 'popped-window-direct' };
+          if (_isHousingWin(p.win)) return { win: p.win, location: 'popped-window-direct' };
           const frame = p.win.document.querySelector('iframe[src*="j1-housing"]');
-          if (frame && frame.contentWindow && frame.contentWindow.ALL_LISTINGS) {
+          if (frame && _isHousingWin(frame.contentWindow)) {
             return { win: frame.contentWindow, location: 'popped-window-iframe' };
           }
         } catch (_) {}

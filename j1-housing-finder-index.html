@@ -1049,6 +1049,9 @@ const ALL_LISTINGS = [
 // ===== STATE =====
 let map, markers = [], workMarker = null, workCoords = null;
 let filteredListings = [...ALL_LISTINGS];
+// Expose to parent scripts (Jarvis runs from the parent document).
+window.ALL_LISTINGS = ALL_LISTINGS;
+window.filteredListings = filteredListings;
 let activeSource = 'all';
 let selectedListingId = null;
 
@@ -1309,6 +1312,7 @@ function applyFilters() {
         filteredListings.sort((a, b) => getDist(a.lat, a.lng) - getDist(b.lat, b.lng));
     }
 
+    window.filteredListings = filteredListings;
     renderListings();
     updateMapMarkers();
     updateStats();
@@ -1494,38 +1498,4 @@ function getMwfDates(now = new Date()) {
     const d = new Date(now);
     const day = d.getDay();                              // 0=Sun … 6=Sat
     const isMwf = (n) => n === 1 || n === 3 || n === 5;  // Mon/Wed/Fri
-    // Walk back to the most recent Mon/Wed/Fri (today counts).
-    const last = new Date(d);
-    while (!isMwf(last.getDay())) last.setDate(last.getDate() - 1);
-    last.setHours(0, 0, 0, 0);
-    // Walk forward to the next Mon/Wed/Fri AFTER today.
-    const next = new Date(d);
-    do { next.setDate(next.getDate() + 1); } while (!isMwf(next.getDay()));
-    next.setHours(0, 0, 0, 0);
-    return { last, next };
-}
-
-function updateTimestamp() {
-    const now = new Date();
-    const { last, next } = getMwfDates(now);
-    const fmt = (dt) => dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    const el = document.getElementById('updated-time');
-    if (el) {
-        el.innerHTML = `<span title="Listings refresh every Monday, Wednesday, and Friday">Last refresh: <b>${fmt(last)}</b> · Next: <b>${fmt(next)}</b></span>`;
-    }
-}
-
-function refreshData() {
-    updateTimestamp();
-    applyFilters();
-}
-
-// ===== LAUNCH =====
-document.addEventListener('DOMContentLoaded', init);
-</script>
-
-<!-- Poseidon "Back to V6" floating button (v6.1 Jarvis Release) -->
-<script src="js/poseidon-modules/poseidon-back-to-v6.js" defer></script>
-
-</body>
-</html>
+    // Walk back to the most recent Mon/

@@ -456,6 +456,10 @@
             *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
         }
     </style>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <meta name="apple-mobile-web-app-title" content="Poseidon">
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
 
@@ -5588,7 +5592,8 @@ function rdExportDivisionPDF(divId) {
     w.document.write(`<!DOCTYPE html><html class="dark"><head><title>${panel.querySelector('h2')?.textContent || 'Poseidon'} — ${new Date().toLocaleDateString()}</title>${styles}<style>@media print { body { background:white !important; color:black !important; } canvas { max-width:100% !important; } }</style></head><body class="bg-[#0a1628] text-zinc-100 p-6">`);
     w.document.write(`<p class="text-xs text-zinc-500 mb-4">${new Date().toLocaleString()} · CTI Group Worldwide Services</p>`);
     w.document.write(panel.innerHTML);
-    w.document.write(`</body></html>`);
+    w.document.write(`
+</body></html>`);
     w.document.close();
     setTimeout(()=>{ try { w.print(); } catch(e){} }, 600);
 }
@@ -9021,5 +9026,30 @@ window.poseidonHealth = function poseidonHealth(opts) {
      · Grok voice assistant. Non-destructive — existing code untouched.
      ═══════════════════════════════════════════════════════════════ -->
 <script src="js/poseidon-modules/poseidon-integration.js" defer></script>
-</body>
-</html>
+
+<script>
+// Service Worker registration — always runs the latest deploy and falls
+// back to cache when offline. Updates check on every page load.
+(function () {
+    if (!('serviceWorker' in navigator)) return;
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').then(reg => {
+            // Force an update check on every page load.
+            try { reg.update(); } catch(_) {}
+            reg.addEventListener('updatefound', () => {
+                const sw = reg.installing;
+                if (!sw) return;
+                sw.addEventListener('statechange', () => {
+                    if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                        // A new version is ready; reload silently to apply.
+                        try { location.reload(); } catch(_) {}
+                    }
+                });
+            });
+        }).catch(() => {});
+    });
+})();
+</script>
+
+</body></html>

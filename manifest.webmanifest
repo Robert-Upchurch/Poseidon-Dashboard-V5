@@ -1,0 +1,31 @@
+{
+  "name": "Poseidon Dashboard",
+  "short_name": "Poseidon",
+  "description": "CTI Group unified command center — Master, Forecast, J1, Recruiting, IT, Contracts, Other.",
+  "start_url": "/Poseidon/poseidon-dashboard-v6.html",
+  "scope": "/Poseidon/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

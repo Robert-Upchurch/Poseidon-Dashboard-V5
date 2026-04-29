@@ -5640,6 +5640,78 @@ function rdExportDivisionPDF(divId) {
     w.document.write(`<p class="text-xs text-zinc-500 mb-4">${new Date().toLocaleString()} · CTI Group Worldwide Services</p>`);
     w.document.write(panel.innerHTML);
     w.document.write(`
+
+<script>
+// ===== Screen Wake Lock — keep phone awake while dashboard is in use =====
+// Locked by Robert 2026-04-29:
+//   - Acquire on page load (dashboard just opened)
+//   - Release after 10 min of no voice activity (Jarvis speaking/listening)
+//   - Re-acquire on next voice activity
+//   - Re-acquire on tab visible (Wake Lock auto-releases when tab is hidden)
+// No-op on browsers without Wake Lock API.
+(function _poseidonWakeLock() {
+    if (window.__poseidonWakeLockWired) return;
+    window.__poseidonWakeLockWired = true;
+    if (!('wakeLock' in navigator)) {
+        console.info('[wake-lock] Wake Lock API not available in this browser; skipping.');
+        return;
+    }
+
+    const IDLE_MS = 10 * 60 * 1000;
+    let lock = null;
+    let lastActivity = Date.now();
+
+    async function acquire() {
+        if (lock) return;
+        try {
+            lock = await navigator.wakeLock.request('screen');
+            lock.addEventListener('release', () => { lock = null; });
+            console.info('[wake-lock] acquired');
+        } catch (e) {
+            console.warn('[wake-lock] acquire failed:', e && e.message ? e.message : e);
+        }
+    }
+    async function release() {
+        if (!lock) return;
+        try { await lock.release(); } catch (_) {}
+        lock = null;
+        console.info('[wake-lock] released (10 min idle)');
+    }
+
+    // Initial acquire — user just opened the dashboard, they're engaged.
+    acquire();
+
+    // When tab becomes visible again, re-acquire (browsers auto-release on hide)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            lastActivity = Date.now();
+            acquire();
+        }
+    });
+
+    // Poll Jarvis voice state every 5s. If actively speaking or listening,
+    // bump lastActivity. If we go IDLE_MS without activity, release.
+    setInterval(() => {
+        try {
+            const s = window.PoseidonJarvis && window.PoseidonJarvis.state;
+            if (s && (s.speaking || s.listening)) {
+                lastActivity = Date.now();
+                if (!lock) acquire();
+            }
+        } catch (_) {}
+        if (lock && (Date.now() - lastActivity > IDLE_MS)) {
+            release();
+        }
+    }, 5000);
+
+    // Expose a manual hook for any other code that wants to register activity
+    window.poseidonRegisterActivity = function () {
+        lastActivity = Date.now();
+        if (!lock) acquire();
+    };
+})();
+</script>
+
 </body></html>`);
     w.document.close();
     setTimeout(()=>{ try { w.print(); } catch(e){} }, 600);

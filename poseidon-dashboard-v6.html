@@ -5003,18 +5003,41 @@ async function o365LoadAll() {
     await Promise.all([o365LoadMail(), o365LoadCalendar(), o365LoadTasks(), o365LoadFiles()]);
 }
 
-// ───── Background auto-refresh ─────
-// Refreshes M365 data every 5 minutes when connected. Silent (no spinner).
-// Tab visibility check skips the call when the tab is hidden.
-const O365_AUTO_REFRESH_MS = 5 * 60 * 1000;
+// ───── Background auto-refresh — Robert's cadence (2026-04-29) ─────
+// Mon-Fri: every 10 min from 7:00am through 4:00pm inclusive.
+// Sat/Sun: only at 8:00am, 12:00pm, 4:00pm.
+// Implementation: tick every 30s, fire when current minute matches
+// a slot. lastFireKey dedup prevents double-fire within a minute.
 let _o365AutoRefreshTimer = null;
+let _o365LastFireKey = '';
+function _o365ShouldFireNow() {
+    const d = new Date();
+    const dow = d.getDay();          // 0=Sun..6=Sat
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const isWeekday = dow >= 1 && dow <= 5;
+    if (isWeekday) {
+        if (h < 7 || h > 16) return false;
+        if (h === 16 && m > 0) return false;   // 4pm fires only at :00
+        return m % 10 === 0;                    // every 10 min on the dot
+    }
+    // Weekend: only on-the-hour at 8, 12, 16
+    return m === 0 && (h === 8 || h === 12 || h === 16);
+}
 function _o365StartAutoRefresh() {
     if (_o365AutoRefreshTimer) return;
     _o365AutoRefreshTimer = setInterval(() => {
-        if (document.hidden) return;
-        if (!msalInstance || !o365Account) return;
-        o365LoadAll().catch(e => console.warn('auto-refresh failed:', e?.message || e));
-    }, O365_AUTO_REFRESH_MS);
+        try {
+            if (document.hidden) return;
+            if (!msalInstance || !o365Account) return;
+            if (!_o365ShouldFireNow()) return;
+            const d = new Date();
+            const key = d.toDateString() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+            if (key === _o365LastFireKey) return;
+            _o365LastFireKey = key;
+            o365LoadAll().catch(e => console.warn('[o365] scheduled refresh failed:', e && e.message ? e.message : e));
+        } catch (e) { console.warn('[o365] scheduler error:', e && e.message ? e.message : e); }
+    }, 30 * 1000);
 }
 function _o365StopAutoRefresh() {
     if (_o365AutoRefreshTimer) { clearInterval(_o365AutoRefreshTimer); _o365AutoRefreshTimer = null; }
@@ -5095,10 +5118,13 @@ async function o365LoadMail() {
 }
 
 async function o365LoadCalendar() {
+    // Widened 2026-04-29: was now..+14d top=50 (many events missing).
+    // Now: -7d through +60d, top=250 — covers running meetings,
+    // recurring expansions, and longer-horizon planning blocks.
     const now = new Date();
-    const start = now.toISOString();
-    const end = new Date(now.getTime() + 14*86400000).toISOString();
-    const data = await o365Fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=subject,start,end,location,isAllDay`);
+    const start = new Date(now.getTime() - 7*86400000).toISOString();
+    const end   = new Date(now.getTime() + 60*86400000).toISOString();
+    const data = await o365Fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=250&$orderby=start/dateTime&$select=subject,start,end,location,isAllDay`);
     if (!data || !data.value) return;
 
     // Merge into calEvents

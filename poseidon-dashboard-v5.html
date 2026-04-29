@@ -4258,10 +4258,13 @@ async function o365LoadMail() {
 }
 
 async function o365LoadCalendar() {
+    // Widened 2026-04-29: was now..+14d top=50 (many events missing).
+    // Now: -7d through +60d, top=250 — covers running meetings,
+    // recurring expansions, and longer-horizon planning blocks.
     const now = new Date();
-    const start = now.toISOString();
-    const end = new Date(now.getTime() + 14*86400000).toISOString();
-    const data = await o365Fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=50&$select=subject,start,end,location,isAllDay`);
+    const start = new Date(now.getTime() - 7*86400000).toISOString();
+    const end   = new Date(now.getTime() + 60*86400000).toISOString();
+    const data = await o365Fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${start}&endDateTime=${end}&$top=250&$orderby=start/dateTime&$select=subject,start,end,location,isAllDay`);
     if (!data || !data.value) return;
 
     // Merge into calEvents
